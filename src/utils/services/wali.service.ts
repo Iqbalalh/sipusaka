@@ -9,7 +9,7 @@ import {
 import { deleteResource } from "../fetch/deleteResource";
 import { fetchWithAuth } from "../fetch/fetchWithAuth";
 
-export const getWaliList = async (): Promise<Wali[]> => {
+export const getWalis = async (): Promise<Wali[]> => {
   try {
     const json = await apiClient<ApiResponseList<Wali>>(API_WALI);
     return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Wali[];
@@ -37,6 +37,15 @@ export const updateWali = async (id: string | number, fd: FormData) => {
 export const deleteWali = async (id: number) => {
   try {
     return await deleteResource(`${API_WALI}/${id}`);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getWaliList = async () => {
+  try {
+    const json = await apiClient<ApiResponseList<Wali>>(`${API_WALI}/list`);
+    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Wali[];
   } catch (error) {
     throw error;
   }
