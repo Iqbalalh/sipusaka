@@ -35,11 +35,8 @@ export default function PartnerTable() {
     init();
   }, []);
 
-  // Generate columns with regions and delete handler
-  const columns = getPartnerColumns(regions, (id) => {
-    // Delete is handled by DataTable component
-    // This callback is passed to the columns for the delete button
-  });
+  // Generate columns with regions
+  const columns = getPartnerColumns(regions);
 
   return (
     <DataTable<Partner>

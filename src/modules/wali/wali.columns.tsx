@@ -10,9 +10,7 @@ import type { ColumnsType } from "antd/es/table";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getWaliColumns = (
-  openDeleteModal: (id: number) => void
-): ColumnsType<Wali> => [
+export const getWaliColumns = (): ColumnsType<Wali> => [
   {
     title: "Foto",
     dataIndex: "waliPict",
@@ -143,7 +141,8 @@ export const getWaliColumns = (
           size="xs"
           onClick={() => {
             if (!wali.id) return;
-            openDeleteModal(wali.id);
+            // @ts-ignore - _openDeleteModal is injected by DataTable
+            wali._openDeleteModal(wali.id);
           }}
         >
           <DeleteOutlined />

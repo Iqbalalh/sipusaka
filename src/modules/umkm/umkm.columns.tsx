@@ -12,8 +12,7 @@ import type { ColumnsType } from "antd/es/table";
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
 export const getUmkmColumns = (
-  regions: Region[],
-  openDeleteModal: (id: number) => void
+  regions: Region[]
 ): ColumnsType<Umkm> => [
   {
     title: "Foto",
@@ -164,7 +163,8 @@ export const getUmkmColumns = (
           size="xs"
           onClick={() => {
             if (!umkm.id) return;
-            openDeleteModal(umkm.id);
+            // @ts-ignore - _openDeleteModal is injected by DataTable
+            umkm._openDeleteModal(umkm.id);
           }}
         >
           <DeleteOutlined />

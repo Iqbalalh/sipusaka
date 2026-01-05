@@ -175,16 +175,17 @@ export default function DataTable<T extends Record<string, any>>({
   const enhancedColumns = useMemo(() => {
     return columns.map((col) => {
       if (col.key === "actions" && col.render) {
+        const originalRender = col.render;
         return {
           ...col,
-          render: (_: any, record: T) => {
-            // Type cast using unknown to bypass TypeScript's strict type checking
-            const originalRender = col.render as unknown as (
-              _: any,
-              record: T,
-              openDeleteModal: (id: number) => void
-            ) => React.ReactNode;
-            return originalRender(_, record, openDeleteModal);
+          render: (_: any, record: T, index: number) => {
+            // Call the original render with openDeleteModal as a fourth parameter
+            // We use a workaround by attaching it to the record temporarily
+            const recordWithDeleteHandler = {
+              ...record,
+              _openDeleteModal: openDeleteModal,
+            };
+            return originalRender(_, recordWithDeleteHandler as T, index);
           },
         };
       }

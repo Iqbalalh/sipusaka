@@ -16,11 +16,8 @@ import {
 import { getWaliColumns } from "./wali.columns";
 
 export default function WaliTable() {
-  // Generate columns with delete handler
-  const columns = getWaliColumns((id) => {
-    // Delete is handled by DataTable component
-    // This callback is passed to the columns for the delete button
-  });
+  // Generate columns
+  const columns = getWaliColumns();
 
   return (
     <DataTable<Wali>

@@ -35,11 +35,8 @@ export default function EmployeeTable() {
     init();
   }, []);
 
-  // Generate columns with regions and delete handler
-  const columns = getEmployeeColumns(regions, (id) => {
-    // Delete is handled by DataTable component
-    // This callback is passed to the columns for the delete button
-  });
+  // Generate columns with regions
+  const columns = getEmployeeColumns(regions);
 
   return (
     <DataTable<Employee>

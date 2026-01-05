@@ -1,5 +1,3 @@
-import { toSnakeCase } from "../formatter/toSnakeCase";
-
 export const buildFormData = <T extends Record<string, any>>(data: T) => {
   const fd = new FormData();
 
@@ -12,7 +10,7 @@ export const buildFormData = <T extends Record<string, any>>(data: T) => {
       finalValue = value ? 1 : 0;
     }
 
-    fd.append(toSnakeCase(key), String(finalValue));
+    fd.append(key, String(finalValue));
   });
 
   return fd;

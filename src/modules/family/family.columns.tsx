@@ -4,7 +4,7 @@ import { Image } from "antd";
 import Link from "next/link";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
-import { EyeOutlined, EditOutlined } from "@ant-design/icons";
+import { EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
@@ -13,8 +13,7 @@ import type { ColumnsType } from "antd/es/table";
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
 export const getFamilyColumns = (
-  regions: Region[],
-  openDeleteModal: (id: number) => void
+  regions: Region[]
 ): ColumnsType<HomeTable> => [
   {
     title: "Pegawai",
@@ -134,8 +133,7 @@ export const getFamilyColumns = (
   },
   {
     title: "Aksi",
-    dataIndex: "id",
-    key: "id",
+    key: "actions",
     render: (_, home) => (
       <div className="flex gap-2 text-xs">
         <Link href={`family/view/${home.id}`}>
@@ -148,6 +146,16 @@ export const getFamilyColumns = (
             <EditOutlined />
           </Button>
         </Link>
+        <Button
+          size="xs"
+          onClick={() => {
+            if (!home.id) return;
+            // @ts-ignore - _openDeleteModal is injected by DataTable
+            home._openDeleteModal(home.id);
+          }}
+        >
+          <DeleteOutlined />
+        </Button>
       </div>
     ),
   },
