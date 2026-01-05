@@ -13,8 +13,7 @@ import type { ColumnsType } from "antd/es/table";
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
 export const getPartnerColumns = (
-  regions: Region[],
-  openDeleteModal: (id: number) => void
+  regions: Region[]
 ): ColumnsType<Partner> => [
   {
     title: "Foto",
@@ -182,7 +181,8 @@ export const getPartnerColumns = (
           size="xs"
           onClick={() => {
             if (!partner.id) return;
-            openDeleteModal(partner.id);
+            // @ts-ignore - _openDeleteModal is injected by DataTable
+            partner._openDeleteModal(partner.id);
           }}
         >
           <DeleteOutlined />

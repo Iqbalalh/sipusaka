@@ -35,11 +35,8 @@ export default function UmkmTable() {
     init();
   }, []);
 
-  // Generate columns with regions and delete handler
-  const columns = getUmkmColumns(regions, (id) => {
-    // Delete is handled by DataTable component
-    // This callback is passed to the columns for the delete button
-  });
+  // Generate columns with regions
+  const columns = getUmkmColumns(regions);
 
   return (
     <DataTable<Umkm>

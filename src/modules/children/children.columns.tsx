@@ -13,8 +13,7 @@ import type { ColumnsType } from "antd/es/table";
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
 export const getChildrenColumns = (
-  regions: Region[],
-  openDeleteModal: (id: number) => void
+  regions: Region[]
 ): ColumnsType<Children> => [
   {
     title: "Foto",
@@ -210,7 +209,8 @@ export const getChildrenColumns = (
           size="xs"
           onClick={() => {
             if (!child.id) return;
-            openDeleteModal(child.id);
+            // @ts-ignore - _openDeleteModal is injected by DataTable
+            child._openDeleteModal(child.id);
           }}
         >
           <DeleteOutlined />
