@@ -150,11 +150,6 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
             <EditOutlined />
           </Button>
         </Link>
-        <Link href={`family/visit?homeId=${home.id}`}>
-          <Button size="xs">
-            <FileTextOutlined />
-          </Button>
-        </Link>
         <Button
           size="xs"
           onClick={() => {
