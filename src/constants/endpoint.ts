@@ -38,3 +38,9 @@ export const API_IMAGE = `${baseUrl}/api/images`;
 
 // Family Visits
 export const API_FAMILY_VISIT = `${baseUrl}/api/family-visits`;
+
+// UMKM Visits
+export const API_UMKM_VISIT = `${baseUrl}/api/umkm-visits`;
+
+// UMKM Monitoring
+export const API_UMKM_MONITORING = `${baseUrl}/api/umkm-monitoring`;

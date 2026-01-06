@@ -48,11 +48,7 @@ const navItems: NavItem[] = [
   {
     icon: <FaShop className="text-2xl" />,
     name: "UMKM",
-    subItems: [
-      { name: "Usaha", path: "/umkm", pro: false },
-      { name: "Kunjungan", path: "/umkm/visit", pro: false },
-      { name: "Monitoring", path: "/umkm/monitoring", pro: false },
-    ],
+    path: "/umkm"
   },
 ];
 
