@@ -4,7 +4,12 @@ import { Image } from "antd";
 import Link from "next/link";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
-import { EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
@@ -12,9 +17,7 @@ import type { ColumnsType } from "antd/es/table";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getFamilyColumns = (
-  regions: Region[]
-): ColumnsType<HomeTable> => [
+export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
   {
     title: "Pegawai",
     dataIndex: "employees",
@@ -118,7 +121,7 @@ export const getFamilyColumns = (
     title: "Status",
     dataIndex: "partners",
     key: "isActive",
-    fixed: "right",
+
     width: 120,
     filters: [
       { text: "Aktif", value: true },
@@ -134,6 +137,7 @@ export const getFamilyColumns = (
   {
     title: "Aksi",
     key: "actions",
+    fixed: "right",
     render: (_, home) => (
       <div className="flex gap-2 text-xs">
         <Link href={`family/view/${home.id}`}>
@@ -144,6 +148,11 @@ export const getFamilyColumns = (
         <Link href={`family/edit/${home.id}`}>
           <Button size="xs">
             <EditOutlined />
+          </Button>
+        </Link>
+        <Link href={`family/visit?homeId=${home.id}`}>
+          <Button size="xs">
+            <FileTextOutlined />
           </Button>
         </Link>
         <Button

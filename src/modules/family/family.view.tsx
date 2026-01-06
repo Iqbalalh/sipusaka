@@ -1,11 +1,21 @@
 "use client";
 
 // Hooks
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 // Components
-import { Image, Spin } from "antd";
+import {
+  Image,
+  Spin,
+  Modal,
+  Form,
+  Input,
+  DatePicker,
+  Upload,
+  message,
+  Space,
+} from "antd";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
 import { InfoItem } from "@/components/ui/field/InfoItem";
@@ -14,10 +24,28 @@ import { InfoItem } from "@/components/ui/field/InfoItem";
 import Link from "next/link";
 
 // Icons
-import { LoadingOutlined } from "@ant-design/icons";
+import {
+  LoadingOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UploadOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
 
 // Type
 import { Home } from "@/types/models/home";
+import {
+  FamilyVisit,
+  FamilyVisitDoc,
+  getFamilyVisits,
+  createFamilyVisit,
+  updateFamilyVisit,
+  deleteFamilyVisit,
+  deleteFamilyVisitDocument,
+} from "@/utils/services/famvisit.service";
+import type { UploadFile } from "antd/es/upload/interface";
+import dayjs from "dayjs";
 
 // Utils
 import { getHomeDetail } from "@/utils/services/home.service";
@@ -35,6 +63,16 @@ export default function FamilyView() {
   // Page State
   const [loading, setLoading] = useState(true);
   const { notify } = useNotify();
+
+  // Visit state
+  const [visits, setVisits] = useState<FamilyVisit[]>([]);
+  const [visitsLoading, setVisitsLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingVisit, setEditingVisit] = useState<FamilyVisit | null>(null);
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [messageApi, contextHolder] = message.useMessage();
+  const [deletingVisitId, setDeletingVisitId] = useState<number | null>(null);
 
   // ==========================
   // FETCH INITIAL DATA
@@ -59,6 +97,158 @@ export default function FamilyView() {
     init();
   }, [id, notify]);
 
+  // ==========================
+  // FETCH FAMILY VISITS
+  // ==========================
+  const fetchVisits = useCallback(async () => {
+    try {
+      setVisitsLoading(true);
+      const data = await getFamilyVisits(Number(id));
+      setVisits(data);
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    } finally {
+      setVisitsLoading(false);
+    }
+  }, [id, notify]);
+
+  useEffect(() => {
+    if (id) {
+      fetchVisits();
+    }
+  }, [fetchVisits, id]);
+
+  // ==========================
+  // VISIT HANDLERS
+  // ==========================
+  const handleCreateVisit = () => {
+    setEditingVisit(null);
+    setFileList([]);
+    form.resetFields();
+    form.setFieldsValue({ homeId: Number(id) });
+    setModalVisible(true);
+  };
+
+  const handleEditVisit = (record: FamilyVisit) => {
+    setEditingVisit(record);
+    setFileList([]);
+    form.setFieldsValue({
+      ...record,
+      visitDate: dayjs(record.visitDate),
+    });
+    setModalVisible(true);
+  };
+
+  const handleDeleteDocumentFromModal = async (docId: number) => {
+    try {
+      if (editingVisit) {
+        await deleteFamilyVisitDocument(editingVisit.id, docId);
+        messageApi.success({
+          content: "Document deleted successfully",
+          key: "delete-doc-modal",
+          duration: 2,
+        });
+        fetchVisits();
+        // Refresh the editing visit data
+        const updatedVisits = await getFamilyVisits(Number(id));
+        const updatedVisit = updatedVisits.find(
+          (v) => v.id === editingVisit.id
+        );
+        if (updatedVisit) {
+          setEditingVisit(updatedVisit);
+        }
+      }
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    }
+  };
+
+  const handleDeleteVisit = async (visitId: number) => {
+    try {
+      setDeletingVisitId(visitId);
+      await deleteFamilyVisit(visitId);
+      messageApi.success({
+        content: "Family visit deleted successfully",
+        key: "delete-visit",
+        duration: 2,
+      });
+      fetchVisits();
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    } finally {
+      setDeletingVisitId(null);
+    }
+  };
+
+  const handleDeleteDocument = async (visitId: number, docId: number) => {
+    try {
+      await deleteFamilyVisitDocument(visitId, docId);
+      messageApi.success({
+        content: "Document deleted successfully",
+        key: "delete-doc",
+        duration: 2,
+      });
+      fetchVisits();
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    }
+  };
+
+  const handleSubmitVisit = async () => {
+    try {
+      const values = await form.validateFields();
+      const formData = new FormData();
+
+      formData.append("homeId", values.homeId);
+      formData.append("visitDate", values.visitDate.format("YYYY-MM-DD"));
+      formData.append("visitNumber", values.visitNumber);
+      formData.append("officer", values.officer);
+      if (values.notes) {
+        formData.append("notes", values.notes);
+      }
+
+      // Append files
+      fileList.forEach((file: UploadFile) => {
+        if (file.originFileObj) {
+          formData.append("documents", file.originFileObj);
+        }
+      });
+
+      if (editingVisit) {
+        await updateFamilyVisit(editingVisit.id, formData);
+        messageApi.success({
+          content: "Family visit updated successfully",
+          key: "update-visit",
+          duration: 2,
+        });
+      } else {
+        await createFamilyVisit(formData);
+        messageApi.success({
+          content: "Family visit created successfully",
+          key: "create-visit",
+          duration: 2,
+        });
+      }
+
+      setModalVisible(false);
+      fetchVisits();
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    }
+  };
+
+  const beforeUpload = (file: UploadFile) => {
+    const isImage = file.type?.startsWith("image/");
+    if (!isImage) {
+      messageApi.error({
+        content: "Hanya file gambar yang diperbolehkan!",
+        key: "upload-error",
+        duration: 2,
+      });
+    }
+    return isImage;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -69,6 +259,7 @@ export default function FamilyView() {
 
   return (
     <>
+      {contextHolder}
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         {/* Home Info */}
         <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 mb-6">
@@ -204,7 +395,9 @@ export default function FamilyView() {
                 <Image
                   width={80}
                   height={80}
-                  src={data?.partner?.partnerPict || "/images/user/alt-user.png"}
+                  src={
+                    data?.partner?.partnerPict || "/images/user/alt-user.png"
+                  }
                   alt={"Profile"}
                 />
               </div>
@@ -220,7 +413,9 @@ export default function FamilyView() {
                   </p>
                   <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    <Badge color={data?.partner?.isActive ? "success" : "error"}>
+                    <Badge
+                      color={data?.partner?.isActive ? "success" : "error"}
+                    >
                       {data?.partner?.isActive ? "Aktif" : "Tidak Aktif"}
                     </Badge>
                   </p>
@@ -365,7 +560,10 @@ export default function FamilyView() {
                     label="Hubungan"
                     value={data.wali?.relation || "-"}
                   />
-                  <InfoItem label="Alamat" value={data.wali?.waliAddress || "-"} />
+                  <InfoItem
+                    label="Alamat"
+                    value={data.wali?.waliAddress || "-"}
+                  />
                   <InfoItem
                     label="Koordinat Alamat"
                     value={data.wali?.addressCoordinate || "-"}
@@ -509,7 +707,253 @@ export default function FamilyView() {
             </p>
           )}
         </div>
+
+        {/* Family Visits */}
+        <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Kunjungan Keluarga ({visits.length})
+            </h4>
+            <Button
+              onClick={handleCreateVisit}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              <PlusOutlined className="mr-2" />
+              Tambah Kunjungan
+            </Button>
+          </div>
+
+          {visitsLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <Spin indicator={<LoadingOutlined spin />} size="large" />
+            </div>
+          ) : visits.length > 0 ? (
+            <div className="space-y-4">
+              {visits.map((visit) => (
+                <div
+                  key={visit.id}
+                  className="p-4 border border-gray-200 rounded-xl dark:border-gray-700"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-6 justify-between items-center">
+                      <div className="block gap-4">
+                        <div className="flex items-center gap-2">
+                          <Button size="xs" className="text-xs text-gray-800 dark:text-white/90">
+                            {visit.visitNumber}
+                          </Button>
+                          <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">
+                            {visit.officer}
+                          </span>
+                          <p className="text-lg text-gray-500 dark:text-gray-400">
+                            ({dayjs(visit.visitDate).format("DD-MM-YYYY")})
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <Space>
+                      <Button size="sm" onClick={() => handleEditVisit(visit)}>
+                        <EditOutlined className="mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-red-600 text-white hover:bg-red-700"
+                        onClick={() => handleDeleteVisit(visit.id)}
+                        disabled={deletingVisitId === visit.id}
+                      >
+                        {deletingVisitId === visit.id ? (
+                          <>
+                            <Spin size="small" className="mr-2" />
+                            Menghapus...
+                          </>
+                        ) : (
+                          <>
+                            <DeleteOutlined className="mr-2" />
+                            Hapus
+                          </>
+                        )}
+                      </Button>
+                    </Space>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 mb-3">
+                    {visit.notes && (
+                      <div>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          Catatan:
+                        </span>
+                        <span className="ml-2 text-gray-800 dark:text-white/90">
+                          {visit.notes}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {visit.familyVisitDocs &&
+                    visit.familyVisitDocs.length > 0 && (
+                      <div>
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
+                          Dokumentasi:
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+                          {visit.familyVisitDocs.map((doc: FamilyVisitDoc) => (
+                            <div key={doc.id} className="relative group">
+                              <div className="relative w-full h-32 overflow-hidden rounded-lg">
+                                <Image.PreviewGroup>
+                                  <Image
+                                    src={doc.urlDoc}
+                                    alt={doc.name}
+                                    className="object-cover w-full h-full cursor-pointer"
+                                    preview={{
+                                      cover: (
+                                        <div className="text-white">Lihat</div>
+                                      ),
+                                    }}
+                                  />
+                                </Image.PreviewGroup>
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                {doc.name}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">
+              Belum ada kunjungan yang tercatat.
+            </p>
+          )}
+        </div>
       </div>
+
+      {/* Modal for Create/Edit Visit */}
+      <Modal
+        title={
+          editingVisit ? "Edit Kunjungan Keluarga" : "Tambah Kunjungan Keluarga"
+        }
+        open={modalVisible}
+        onOk={handleSubmitVisit}
+        onCancel={() => setModalVisible(false)}
+        width={600}
+        okText="Simpan"
+        cancelText="Batal"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="homeId"
+            label="ID Keluarga"
+            rules={[
+              { required: true, message: "Silakan masukkan ID keluarga" },
+            ]}
+          >
+            <Input type="number" disabled />
+          </Form.Item>
+
+          <Form.Item
+            name="visitDate"
+            label="Tanggal Kunjungan"
+            rules={[
+              { required: true, message: "Silakan pilih tanggal kunjungan" },
+            ]}
+          >
+            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+          </Form.Item>
+
+          <Form.Item
+            name="visitNumber"
+            label="Kunjungan ke-"
+            rules={[
+              { required: true, message: "Wajib diisi" },
+            ]}
+          >
+            <Input type="number" min={1} />
+          </Form.Item>
+
+          <Form.Item
+            name="officer"
+            label="Petugas"
+            rules={[
+              { required: true, message: "Silakan masukkan nama petugas" },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="notes" label="Catatan">
+            <Input.TextArea rows={4} />
+          </Form.Item>
+
+          <Form.Item label="Dokumen">
+            <Upload
+              fileList={fileList}
+              onChange={({ fileList }) => setFileList(fileList)}
+              beforeUpload={beforeUpload}
+              multiple
+              listType="picture"
+              accept="image/*"
+            >
+              <Button>
+                <UploadOutlined className="mr-2" />
+                Upload Gambar
+              </Button>
+            </Upload>
+            <div className="text-sm text-gray-500 mt-2">
+              Anda dapat mengunggah beberapa gambar (JPG, PNG, WEBP, dll.)
+            </div>
+
+            {/* Show existing documents when editing */}
+            {editingVisit &&
+              editingVisit.familyVisitDocs &&
+              editingVisit.familyVisitDocs.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Dokumen yang ada:
+                  </div>
+                  <div className="space-y-2">
+                    {editingVisit.familyVisitDocs.map((doc: FamilyVisitDoc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FileTextOutlined className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                            {doc.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <a
+                            href={doc.urlDoc}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 text-sm"
+                          >
+                            Lihat
+                          </a>
+                          <Button
+                            size="sm"
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            onClick={() =>
+                              handleDeleteDocumentFromModal(doc.id)
+                            }
+                          >
+                            <DeleteOutlined className="mr-2" />
+                            Hapus
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 }
