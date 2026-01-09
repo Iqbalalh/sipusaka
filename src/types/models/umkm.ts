@@ -1,3 +1,5 @@
+import { Region } from "./region";
+
 export interface Umkm {
   id: number;
   partnerId: number | null;
@@ -16,6 +18,11 @@ export interface Umkm {
   waliId: number | null;
   childrenId: number | null;
   umkmPict?: string | null;
+  umkmPict2?: string | null;
+  umkmPict3?: string | null;
+  umkmPict4?: string | null;
+  umkmPict5?: string | null;
+  regions: Region
 
   // Non-native Field
   regionName?: string | null;

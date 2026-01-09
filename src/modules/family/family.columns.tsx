@@ -1,6 +1,6 @@
 "use client";
 
-import { Image } from "antd";
+import { Image, Input } from "antd";
 import Link from "next/link";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
@@ -9,10 +9,88 @@ import {
   EditOutlined,
   DeleteOutlined,
   FileTextOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
+import type { InputRef } from "antd";
+
+// ==============================================
+// SEARCH CONFIGURATION
+// ==============================================
+const getColumnSearchProps = (dataIndex: string): any => ({
+  filterDropdown: ({
+    setSelectedKeys,
+    selectedKeys,
+    confirm,
+    clearFilters,
+  }: any) => (
+    <div style={{ padding: 8 }}>
+      <Input
+        placeholder={`Cari ${dataIndex}`}
+        value={selectedKeys[0]}
+        onChange={(e) =>
+          setSelectedKeys(e.target.value ? [e.target.value] : [])
+        }
+        onPressEnter={() => confirm()}
+        style={{ marginBottom: 8, display: "block" }}
+      />
+      <div className="flex gap-2">
+        <button
+          className="text-white bg-blue-500 px-2 py-1 rounded text-xs"
+          onClick={() => confirm()}
+        >
+          Cari
+        </button>
+        <button
+          className="text-gray-700 bg-gray-200 px-2 py-1 rounded text-xs"
+          onClick={() => {
+            clearFilters && clearFilters();
+            confirm();
+          }}
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  ),
+  filterIcon: (filtered: boolean) => (
+    <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
+  ),
+  onFilter: (value: string | number | boolean, record: HomeTable) => {
+    // Handle nested object properties
+    if (dataIndex === "employeeName") {
+      return record.employees?.employeeName
+        ? record.employees.employeeName
+            .toLowerCase()
+            .includes(String(value).toLowerCase())
+        : false;
+    }
+    if (dataIndex === "nipNipp") {
+      return record.employees?.nipNipp
+        ? record.employees.nipNipp
+            .toLowerCase()
+            .includes(String(value).toLowerCase())
+        : false;
+    }
+    if (dataIndex === "partnerName") {
+      return record.partners?.partnerName
+        ? record.partners.partnerName
+            .toLowerCase()
+            .includes(String(value).toLowerCase())
+        : false;
+    }
+    if (dataIndex === "waliName") {
+      return record.wali?.waliName
+        ? record.wali.waliName
+            .toLowerCase()
+            .includes(String(value).toLowerCase())
+        : false;
+    }
+    return false;
+  },
+});
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
@@ -20,8 +98,9 @@ import type { ColumnsType } from "antd/es/table";
 export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
   {
     title: "Pegawai",
-    dataIndex: "employees",
-    key: "employees",
+    dataIndex: "employeeName",
+    key: "employeeName",
+    ...getColumnSearchProps("employeeName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.employees?.employeePict ? (
@@ -55,8 +134,9 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
   },
   {
     title: "Pasangan",
-    dataIndex: "partners",
-    key: "partners",
+    dataIndex: "partnerName",
+    key: "partnerName",
+    ...getColumnSearchProps("partnerName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.partners?.partnerPict ? (
@@ -92,8 +172,9 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
   },
   {
     title: "Wali",
-    dataIndex: "wali",
-    key: "wali",
+    dataIndex: "waliName",
+    key: "waliName",
+    ...getColumnSearchProps("waliName"),
     render: (_, home) => home.wali?.waliName || "-",
   },
   {
