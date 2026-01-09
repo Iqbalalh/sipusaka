@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Image, Popconfirm, Flex, Spin } from "antd";
-import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Image, Popconfirm, Flex, Spin, Upload, message } from "antd";
+import { LoadingOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
+import type { UploadFile } from "antd/es/upload/interface";
 
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -49,6 +50,11 @@ const INITIAL_FORM_STATE: Partial<Umkm> = {
   employeeId: undefined,
   waliId: undefined,
   childrenId: undefined,
+  umkmPict: undefined,
+  umkmPict2: undefined,
+  umkmPict3: undefined,
+  umkmPict4: undefined,
+  umkmPict5: undefined,
 };
 
 // ==============================================
@@ -87,8 +93,8 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
   const [walis, setWalis] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Partial<Umkm>>(INITIAL_FORM_STATE);
-
-  const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [messageApi, contextHolder] = message.useMessage();
 
   // ==============================================
   // SUBMIT HOOK
@@ -108,6 +114,35 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
       router.push("/umkm");
     }
   );
+
+  // ==============================================
+  // FILE UPLOAD HANDLERS
+  // ==============================================
+  const beforeUpload = (file: UploadFile) => {
+    const isImage = file.type?.startsWith("image/");
+    if (!isImage) {
+      messageApi.error({
+        content: "Hanya file gambar yang diperbolehkan!",
+        key: "upload-error",
+        duration: 2,
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleDeletePhoto = async (photoField: keyof Umkm) => {
+    if (!form[photoField]) return;
+
+    try {
+      notify("info", "Sedang menghapus foto dari server...");
+      await hardDeleteFile(form[photoField] as string);
+      setForm((prev) => ({ ...prev, [photoField]: undefined }));
+      notify("success", "Foto berhasil dihapus secara permanen!");
+    } catch (err: any) {
+      notify("error", err.message || "Gagal menghapus foto.");
+    }
+  };
 
   // ==============================================
   // FETCH INITIAL DATA
@@ -167,24 +202,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     init();
   }, [mode, umkmId, notify]);
 
-  // ==============================================
-  // DELETE PHOTO (EDIT MODE ONLY)
-  // ==============================================
-  const handleDeletePhoto = async () => {
-    if (!form?.umkmPict)
-      return notify("warning", "Tidak ada foto untuk dihapus.");
-
-    try {
-      notify("info", "Sedang menghapus foto dari server...");
-
-      await hardDeleteFile(form.umkmPict);
-      setForm((prev) => ({ ...prev, umkmPict: undefined }));
-      clearFile();
-      notify("success", "Foto berhasil dihapus secara permanen!");
-    } catch (err: any) {
-      notify("error", err.message || "Gagal menghapus foto.");
-    }
-  };
 
   // ==============================================
   // EVENT HANDLERS
@@ -196,19 +213,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     []
   );
 
-  const handleSelectFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      try {
-        selectFile(file);
-      } catch (error) {
-        notifyFromResult(notify, { error });
-      }
-    },
-    [selectFile, notify]
-  );
 
   const handleSubmit = useCallback(async () => {
     const validation = validateForm(form);
@@ -217,16 +221,18 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     }
 
     const extraData = new FormData();
-    if (photoFile) {
-      extraData.append("photo", photoFile);
-    }
+    fileList.forEach((file) => {
+      if (file.originFileObj) {
+        extraData.append("photos", file.originFileObj);
+      }
+    });
 
     const { success, error } = await submit(form, extraData);
 
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, photoFile, submit, notify]);
+  }, [form, fileList, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     router.back();
@@ -258,6 +264,7 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
   // ==============================================
   return (
     <div className="pb-10">
+      {contextHolder}
       <PageBreadcrumb pageTitle={pageTitle} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -379,51 +386,62 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
               <hr className="border-gray-100" />
 
               <FormField label="Foto UMKM">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
-                {mode === "edit" && form.umkmPict ? (
-                  <div className="flex flex-col gap-3 mt-2">
-                    <div className="relative inline-block">
-                      <Image
-                        src={form.umkmPict}
-                        alt="Foto UMKM"
-                        className="object-cover rounded-lg w-48 h-48 border shadow-sm"
-                      />
-                      <Popconfirm
-                        title="Hapus foto permanen?"
-                        description="Foto akan langsung dihapus dari server S3."
-                        onConfirm={handleDeletePhoto}
-                        okText="Hapus"
-                        cancelText="Batal"
-                        okButtonProps={{ danger: true }}
-                      >
-                        <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg">
-                          <DeleteOutlined />
-                        </button>
-                      </Popconfirm>
+                <div className="mt-2">
+                  {/* EXISTING PHOTOS (EDIT MODE) */}
+                  {mode === "edit" && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                      {[
+                        { key: 'umkmPict' as keyof Umkm, label: 'Foto 1' },
+                        { key: 'umkmPict2' as keyof Umkm, label: 'Foto 2' },
+                        { key: 'umkmPict3' as keyof Umkm, label: 'Foto 3' },
+                        { key: 'umkmPict4' as keyof Umkm, label: 'Foto 4' },
+                        { key: 'umkmPict5' as keyof Umkm, label: 'Foto 5' },
+                      ].map((photo) =>
+                        form[photo.key] ? (
+                          <div key={photo.key} className="relative group">
+                            <Image
+                              src={form[photo.key] as string}
+                              alt={photo.label}
+                              className="object-cover rounded-lg w-full h-32 border shadow-sm"
+                            />
+                            <Popconfirm
+                              title="Hapus foto permanen?"
+                              description="Foto akan langsung dihapus dari server S3."
+                              onConfirm={() => handleDeletePhoto(photo.key)}
+                              okText="Hapus"
+                              cancelText="Batal"
+                              okButtonProps={{ danger: true }}
+                            >
+                              <button className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DeleteOutlined className="text-xs" />
+                              </button>
+                            </Popconfirm>
+                          </div>
+                        ) : null
+                      )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
-                    {preview ? (
-                      <div className="relative inline-block">
-                        <Image
-                          src={preview}
-                          className="object-cover rounded-lg w-48 h-48 border border-primary-200"
-                          alt="Preview"
-                        />
-                        <button
-                          onClick={clearFile}
-                          className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-600 shadow-md"
-                        >
-                          <DeleteOutlined />
-                        </button>
+                  )}
+
+                  {/* UPLOAD NEW PHOTOS */}
+                  <Upload
+                    fileList={fileList}
+                    onChange={({ fileList }) => setFileList(fileList)}
+                    beforeUpload={beforeUpload}
+                    multiple
+                    listType="picture-card"
+                    accept="image/*"
+                  >
+                    {fileList.length < 5 && (
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>Upload</div>
                       </div>
-                    ) : (
-                      <FileInput onChange={handleSelectFile} />
                     )}
+                  </Upload>
+                  <div className="text-sm text-gray-500 mt-2">
+                    Anda dapat mengunggah hingga 5 foto (JPG, PNG, WEBP, dll.)
                   </div>
-                )}
+                </div>
               </FormField>
             </div>
 

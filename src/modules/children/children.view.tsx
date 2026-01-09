@@ -141,12 +141,16 @@ export default function ChildrenView() {
               value={!data?.isCondition ? "Ya" : "Tidak"}
             />
             <InfoItem
-              label="Ayah Masih Hidup"
-              value={data?.isFatherAlive ? "Ya" : "Tidak"}
-            />
-            <InfoItem
-              label="Ibu Masih Hidup"
-              value={data?.isMotherAlive ? "Ya" : "Tidak"}
+              label="Yatim/Piatu"
+              value={
+                !data?.isFatherAlive && data?.isMotherAlive
+                  ? "Yatim"
+                  : data?.isFatherAlive && !data?.isMotherAlive
+                  ? "Piatu"
+                  : !data?.isFatherAlive && !data?.isMotherAlive
+                  ? "Yatim Piatu"
+                  : "Tidak"
+              }
             />
             <InfoItem label="Nama Pegawai" value={data?.employeeName || "-"} />
             <InfoItem label="Nama Wali" value={data?.waliName || "-"} />

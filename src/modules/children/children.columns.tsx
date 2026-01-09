@@ -88,6 +88,84 @@ export const getChildrenColumns = (
     exportRender: (value: string) => value ?? "-",
   },
 
+  // ==========================
+  // ORANGTUA (employee - partner)
+  // ==========================
+  {
+    title: "Orangtua",
+    key: "orangtua",
+    dataIndex: "orangtua",
+    sorter: (a: Children, b: Children) => {
+      const x = `${a.employeeName ?? ""} ${a.partnerName ?? ""}`.toLowerCase();
+      const y = `${b.employeeName ?? ""} ${b.partnerName ?? ""}`.toLowerCase();
+      return x.localeCompare(y);
+    },
+    render: (_: any, row: Children) => {
+      const text = `${row.employeeName ?? "-"} - ${row.partnerName ?? "-"}`;
+      return text;
+    },
+    exportRender: (_: any, row: Children) => {
+      return `${row.employeeName ?? "-"} - ${row.partnerName ?? "-"}`;
+    },
+  },
+
+  // ==========================
+  // Yatim / Piatu
+  // ==========================
+  {
+    title: "Yatim/Piatu",
+    key: "yatimStatus",
+    filters: [
+      { text: "Yatim", value: "yatim" },
+      { text: "Piatu", value: "piatu" },
+      { text: "Yatim Piatu", value: "yatim-piatu" },
+    ],
+    onFilter: (value, record: Children) => {
+      const father = record.isFatherAlive;
+      const mother = record.isMotherAlive;
+
+      if (!father && mother && value === "yatim") return true;
+      if (father && !mother && value === "piatu") return true;
+      if (!father && !mother && value === "yatim-piatu") return true;
+
+      return false;
+    },
+    render: (_: any, record: Children) => {
+      const father = record.isFatherAlive;
+      const mother = record.isMotherAlive;
+
+      let label = "Tidak";
+      let color: "success" | "error" | "warning" = "success";
+
+      if (!father && mother) {
+        label = "Yatim";
+        color = "warning";
+      } else if (father && !mother) {
+        label = "Piatu";
+        color = "warning";
+      } else if (!father && !mother) {
+        label = "Yatim Piatu";
+        color = "error";
+      }
+
+      return (
+        <Badge size="sm" color={color}>
+          {label}
+        </Badge>
+      );
+    },
+    exportRender: (_: any, record: Children) => {
+      const father = record.isFatherAlive;
+      const mother = record.isMotherAlive;
+
+      if (!father && mother) return "Yatim";
+      if (father && !mother) return "Piatu";
+      if (!father && !mother) return "Yatim Piatu";
+
+      return "Tidak";
+    },
+  },
+
   {
     title: "Wilayah",
     dataIndex: "regionId",
@@ -108,6 +186,14 @@ export const getChildrenColumns = (
   },
 
   {
+    title: "Nama Wali",
+    dataIndex: "waliName",
+    key: "waliName",
+    render: (text) => text || "-",
+    exportRender: (value: string) => value ?? "-",
+  },
+
+  {
     title: "Status",
     dataIndex: "isActive",
     key: "isActive",
@@ -125,36 +211,35 @@ export const getChildrenColumns = (
   },
 
   {
-    title: "ABK",
+    title: "Jenis Kelamin",
+    dataIndex: "childrenGender",
+    key: "childrenGender",
+    filters: [
+      { text: "Laki-laki", value: "M" },
+      { text: "Perempuan", value: "F" },
+    ],
+    onFilter: (value, record) => record.childrenGender === value,
+    render: (gender: "M" | "F") =>
+      gender === "M" ? "Laki-laki" : "Perempuan",
+    exportRender: (value: "M" | "F") =>
+      value === "M" ? "Laki-laki" : "Perempuan",
+  },
+
+  {
+    title: "Kondisi",
     dataIndex: "isCondition",
     key: "isCondition",
     filters: [
-      { text: "Ya", value: false },
-      { text: "Tidak", value: true },
+      { text: "Normal", value: true },
+      { text: "ABK", value: false },
     ],
     onFilter: (value, record) => record.isCondition === value,
     render: (isCondition: boolean) => (
-      <Badge size="sm" color={!isCondition ? "warning" : "success"}>
-        {!isCondition ? "Ya" : "Tidak"}
+      <Badge size="sm" color={isCondition ? "primary" : "warning"}>
+        {isCondition ? "Normal" : "ABK"}
       </Badge>
     ),
-    exportRender: (value: boolean) => (!value ? "Ya" : "Tidak"),
-  },
-
-  {
-    title: "Nama Pegawai",
-    dataIndex: "employeeName",
-    key: "employeeName",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
-
-  {
-    title: "Nama Wali",
-    dataIndex: "waliName",
-    key: "waliName",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
+    exportRender: (value: boolean) => (value ? "Normal" : "ABK"),
   },
 
   {
