@@ -5,15 +5,13 @@ const nextConfig: NextConfig = {
 
   // Image remote pattern from S3
   images: {
-    remotePatterns: [
+    remotePatterns: process.env.NEXT_PUBLIC_S3_HOSTNAME ? [
       {
-        protocol: process.env.NEXT_PUBLIC_S3_PROTOCOL || "https",
-        // @ts-expect-error cause it was misbahaving
+        protocol: (process.env.NEXT_PUBLIC_S3_PROTOCOL || "https").replace(/:$/, ""),
         hostname: process.env.NEXT_PUBLIC_S3_HOSTNAME,
-        port: "",
         pathname: process.env.NEXT_PUBLIC_S3_PATHNAME || "/database/**",
       },
-    ],
+    ] as any : [],
     unoptimized: true,
   },
   
