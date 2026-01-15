@@ -44,3 +44,6 @@ export const API_UMKM_VISIT = `${baseUrl}/api/umkm-visits`;
 
 // UMKM Monitoring
 export const API_UMKM_MONITORING = `${baseUrl}/api/umkm-monitoring`;
+
+// Child Assistance
+export const API_CHILD_ASSISTANCE = `${baseUrl}/api/child-assistance`;
