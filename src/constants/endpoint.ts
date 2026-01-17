@@ -1,4 +1,4 @@
-const baseUrl = "https://api.yayasanpusakakai.org";
+const baseUrl = "http://localhost:9000";
 
 // Auth
 export const API_AUTH_LOGIN = `${baseUrl}/api/auth/login`;
