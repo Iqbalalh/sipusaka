@@ -95,17 +95,17 @@ export const getChildrenColumns = (
     title: "Orangtua",
     key: "orangtua",
     dataIndex: "orangtua",
-    sorter: (a: Children, b: Children) => {
-      const x = `${a.employeeName ?? ""} ${a.partnerName ?? ""}`.toLowerCase();
-      const y = `${b.employeeName ?? ""} ${b.partnerName ?? ""}`.toLowerCase();
+    sorter: (a: any, b: any) => {
+      const x = `${a.homes?.employees?.employeeName ?? ""} ${a.homes?.partners?.partnerName ?? ""}`.toLowerCase();
+      const y = `${b.homes?.employees?.employeeName ?? ""} ${b.homes?.partners?.partnerName ?? ""}`.toLowerCase();
       return x.localeCompare(y);
     },
-    render: (_: any, row: Children) => {
-      const text = `${row.employeeName ?? "-"} - ${row.partnerName ?? "-"}`;
+    render: (_: any, row: any) => {
+      const text = `${row.homes?.employees?.employeeName ?? "-"} - ${row.homes?.partners?.partnerName ?? "-"}`;
       return text;
     },
-    exportRender: (_: any, row: Children) => {
-      return `${row.employeeName ?? "-"} - ${row.partnerName ?? "-"}`;
+    exportRender: (_: any, row: any) => {
+      return `${row.homes?.employees?.employeeName ?? "-"} - ${row.homes?.partners?.partnerName ?? "-"}`;
     },
   },
 
@@ -174,13 +174,13 @@ export const getChildrenColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => record.regionId === value,
-    render: (_, child) => {
-      const region = regions.find((r) => r.regionId === child.regionId);
+    onFilter: (value, record) => record.homes?.employees?.regionId === value,
+    render: (_, child: any) => {
+      const region = regions.find((r) => r.regionId === child.homes?.employees?.regionId);
       return region ? region.regionName : "-";
     },
-    exportRender: (_: any, child: Children) => {
-      const region = regions.find((r) => r.regionId === child.regionId);
+    exportRender: (_: any, child: any) => {
+      const region = regions.find((r) => r.regionId === child.homes?.employees?.regionId);
       return region?.regionName ?? "-";
     },
   },
@@ -189,8 +189,8 @@ export const getChildrenColumns = (
     title: "Nama Wali",
     dataIndex: "waliName",
     key: "waliName",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
+    render: (_: any, row: any) => row.homes?.wali?.waliName || "-",
+    exportRender: (_: any, row: any) => row.homes?.wali?.waliName ?? "-",
   },
 
   {
