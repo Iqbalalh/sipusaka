@@ -335,8 +335,8 @@ export default function ChildrenView() {
                   : "Tidak"
               }
             />
-            <InfoItem label="Nama Pegawai" value={data?.employeeName || "-"} />
-            <InfoItem label="Nama Wali" value={data?.waliName || "-"} />
+            <InfoItem label="Nama Pegawai" value={data?.homes?.employees?.employeeName || "-"} />
+            <InfoItem label="Nama Wali" value={data?.homes?.wali?.waliName || "-"} />
             <InfoItem label="Catatan" value={data?.notes || "-"} />
             <InfoItem
               label="Dibuat Pada"
@@ -479,12 +479,12 @@ export default function ChildrenView() {
                         className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileTextOutlined className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          <FileTextOutlined className="text-gray-500 dark:text-gray-400 shrink-0" />
                           <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                             {doc.name}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           <a
                             href={doc.urlDoc}
                             target="_blank"
