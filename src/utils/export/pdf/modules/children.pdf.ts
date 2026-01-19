@@ -54,14 +54,14 @@ export const handlePrintChildren = async (
       },
       {
         label: "Nama Orangtua",
-        key: "employeeName",
+        key: "childrenName",
         format: (_, row) =>
-          `${row.employeeName ?? "-"} - ${row.partnerName ?? "-"}`,
+          `${row.homes?.employees?.employeeName ?? "-"} - ${row.homes?.partners?.partnerName ?? "-"}`,
       },
       {
         label: "Nama Wali",
-        key: "waliName",
-        format: (v) => String(v ?? "-"),
+        key: "childrenGender",
+        format: (_, row) => String(row.homes?.wali?.waliName ?? "-"),
       },
       {
         label: "Anak Ke",
