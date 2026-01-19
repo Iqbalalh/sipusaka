@@ -25,8 +25,50 @@ export interface BaseChildren {
 
 export interface Children extends BaseChildren {
   childrenPictFile?: File | null;
-  employeeName: string;
-  partnerName: string;
-  waliName: string;
-  regionId: number;
+  homes?: {
+    id: number;
+    partnerId: number;
+    employeeId: number;
+    waliId: number | null;
+    createdAt: string;
+    regionId: number | null;
+    postalCode: string | null;
+    employees?: {
+      id: number;
+      nipNipp: string;
+      employeeName: string;
+      deathCause: string | null;
+      lastPosition: string | null;
+      regionId: number;
+      notes: string | null;
+      employeeGender: "M" | "F";
+      isAccident: boolean;
+      employeePict: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    partners?: {
+      id: number;
+      employeeId: number;
+      partnerName: string;
+      partnerJob: string | null;
+      partnerNik: string | null;
+      regionId: number;
+      address: string;
+      subdistrictName: string;
+      postalCode: string;
+      homeCoordinate: string;
+      phoneNumber: string;
+      phoneNumberAlt: string | null;
+      isActive: boolean;
+      isAlive: boolean;
+      partnerPict: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    wali?: {
+      id: number;
+      waliName: string;
+    } | null;
+  };
 }
