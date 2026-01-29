@@ -5,12 +5,12 @@ import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Umkm } from "@/types/models/umkm";
 import { Region } from "@/types/models/region";
-import type { ColumnsType } from "antd/es/table";
+import type { TableColumn } from "@/types/generic/antd-table";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getUmkmColumns = (regions: Region[]): ColumnsType<Umkm> => [
+export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
   {
     title: "Nama Usaha",
     dataIndex: "businessName",

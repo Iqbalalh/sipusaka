@@ -4,12 +4,12 @@ import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Category } from "@/types/models/gallery";
-import type { ColumnsType } from "antd/es/table";
+import type { TableColumn } from "@/types/generic/antd-table";
 
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getCategoryColumns = (): ColumnsType<Category> => [
+export const getCategoryColumns = (): TableColumn<Category>[] => [
   {
     title: "ID",
     dataIndex: "id",
