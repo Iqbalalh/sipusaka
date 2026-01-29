@@ -209,8 +209,8 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.back();
-  }, [router]);
+    router.push(`/staff/view/${staffId}`);
+  }, [router, staffId]);
 
   // ==============================================
   // RENDER LOADING STATE

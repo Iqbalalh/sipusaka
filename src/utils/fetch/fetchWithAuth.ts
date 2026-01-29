@@ -44,6 +44,10 @@ export async function fetchWithAuth(
       body = JSON.stringify(snakecaseKeys(body, { deep: true }));
       headers.set("Content-Type", "application/json");
     }
+  } else if (body instanceof FormData) {
+    // FormData is already provided - let the browser set Content-Type with boundary
+    // Ensure Content-Type is not set so browser can set it correctly with boundary
+    headers.delete("Content-Type");
   }
 
   const res = await fetch(url, {

@@ -13,6 +13,7 @@ import {
   FaChartSimple,
   FaUserTie,
   FaAlignLeft,
+  FaImage,
 } from "react-icons/fa6";
 import { ChevronDownIcon, HorizontaLDots } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
@@ -28,7 +29,7 @@ const navItems: NavItem[] = [
   {
     icon: <FaChartSimple className="text-2xl" />,
     name: "Dashboard",
-    path: "/"
+    path: "/",
   },
   {
     name: "Keluarga Asuh",
@@ -43,12 +44,12 @@ const navItems: NavItem[] = [
   {
     icon: <FaChildReaching className="text-2xl" />,
     name: "Anak Asuh",
-    path: "/children"
+    path: "/children",
   },
   {
     icon: <FaShop className="text-2xl" />,
     name: "UMKM",
-    path: "/umkm"
+    path: "/umkm",
   },
 ];
 
@@ -56,7 +57,12 @@ const othersItems: NavItem[] = [
   {
     icon: <FaUserTie className="text-2xl" />,
     name: "Staff",
-    path: "/staff"
+    path: "/staff",
+  },
+  {
+    icon: <FaImage className="text-2xl" />,
+    name: "Galeri",
+    subItems: [{ name: "Dokumentasi", path: "/galleries", pro: false }, { name: "Kategori", path: "/categories", pro: false }],
   },
   {
     icon: <FaAlignLeft className="text-2xl" />,
@@ -71,7 +77,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "internals"
+    menuType: "main" | "internals",
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -200,13 +206,13 @@ const AppSidebar: React.FC = () => {
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
+    {},
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const isActive = useCallback(
     (path: string) => pathname === path || pathname.startsWith(`${path}/`),
-    [pathname]
+    [pathname],
   );
 
   useEffect(() => {
@@ -251,7 +257,7 @@ const AppSidebar: React.FC = () => {
 
   const handleSubmenuToggle = (
     index: number,
-    menuType: "main" | "internals"
+    menuType: "main" | "internals",
   ) => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
@@ -272,8 +278,8 @@ const AppSidebar: React.FC = () => {
           isExpanded || isMobileOpen
             ? "w-[290px]"
             : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
+              ? "w-[290px]"
+              : "w-[90px]"
         }
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0`}
@@ -327,7 +333,7 @@ const AppSidebar: React.FC = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
                   !isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"
@@ -344,7 +350,7 @@ const AppSidebar: React.FC = () => {
 
             <div className="">
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
                   !isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"

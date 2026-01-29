@@ -13,7 +13,7 @@ export const useFormSubmit = (
     try {
       const fd = buildFormData(data);
       if (extra) {
-        extra.forEach((v, k) => fd.append(k, v));
+        extra.forEach((value, key) => fd.append(key, value));
       }
 
       const res = await submitFn(fd);

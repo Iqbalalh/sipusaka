@@ -1,6 +1,5 @@
 "use client";
 
-import { Image } from "antd";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -11,78 +10,53 @@ import type { ColumnsType } from "antd/es/table";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getUmkmColumns = (
-  regions: Region[]
-): ColumnsType<Umkm> => [
-  {
-    title: "Foto",
-    dataIndex: "umkmPict",
-    key: "umkmPict",
-    render: (_: any, umkm: Umkm) =>
-      umkm.umkmPict ? (
-        <Image
-          src={umkm.umkmPict}
-          alt={umkm.businessName}
-          width={40}
-          height={40}
-          className="rounded-full object-cover w-10 h-10"
-        />
-      ) : (
-        <Image
-          src="/images/user/alt-user.png"
-          alt="N/A"
-          width={40}
-          height={40}
-        />
-      ),
-    exportRender: (_: any, umkm: Umkm) =>
-      umkm.umkmPict ? umkm.umkmPict : "-",
-  } as any,
-
+export const getUmkmColumns = (regions: Region[]): ColumnsType<Umkm> => [
   {
     title: "Nama Usaha",
     dataIndex: "businessName",
     key: "businessName",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.businessName ?? "-",
+  } as any,
 
   {
     title: "Nama Pemilik",
     dataIndex: "ownerName",
     key: "ownerName",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.ownerName ?? "-",
+  } as any,
 
   {
     title: "Jenis Usaha",
     dataIndex: "businessType",
     key: "businessType",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.businessType ?? "-",
+  } as any,
 
   {
     title: "Produk",
     dataIndex: "products",
     key: "products",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.products ?? "-",
+  } as any,
 
   {
     title: "Alamat Usaha",
     dataIndex: "businessAddress",
     key: "businessAddress",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.businessAddress ?? "-",
+  } as any,
   {
     title: "Kecamatan",
     dataIndex: "subdistrictName",
     key: "subdistrictName",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.subdistrictName ?? "-",
+  } as any,
 
   {
     title: "Wilayah",
@@ -92,8 +66,8 @@ export const getUmkmColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => record.regionId === value,
-    render: (_, umkm) => {
+    onFilter: (value: any, record: Umkm) => record.regionId === value,
+    render: (_: any, umkm: Umkm) => {
       const region = regions.find((r) => r.regionId === umkm.regionId);
       return region ? region.regionName : "-";
     },
@@ -101,45 +75,43 @@ export const getUmkmColumns = (
       const region = regions.find((r) => r.regionId === umkm.regionId);
       return region?.regionName ?? "-";
     },
-  },
+  } as any,
 
   {
     title: "Koordinat",
     dataIndex: "umkmCoordinate",
     key: "umkmCoordinate",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.umkmCoordinate ?? "-",
+  } as any,
 
   {
     title: "Kode Pos",
     dataIndex: "postalCode",
     key: "postalCode",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
+    render: (text: any) => text || "-",
+    exportRender: (_: any, record: Umkm) => record.postalCode ?? "-",
+  } as any,
 
   {
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
-    exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+    render: (text: any) => (text ? new Date(text).toLocaleDateString("id-ID") : "-"),
+    exportRender: (_: any, record: Umkm) =>
+      record.createdAt ? new Date(record.createdAt).toLocaleDateString("id-ID") : "-",
     hidden: true,
-  },
+  } as any,
 
   {
     title: "Diperbarui Pada",
     dataIndex: "updatedAt",
     key: "updatedAt",
-    render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
-    exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+    render: (text: any) => (text ? new Date(text).toLocaleDateString("id-ID") : "-"),
+    exportRender: (_: any, record: Umkm) =>
+      record.updatedAt ? new Date(record.updatedAt).toLocaleDateString("id-ID") : "-",
     hidden: true,
-  },
+  } as any,
 
   {
     title: "Aksi",
