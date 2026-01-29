@@ -235,8 +235,8 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
   }, [form, fileList, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.back();
-  }, [router]);
+    router.push(`/umkm/view/${umkmId}`);
+  }, [router, umkmId]);
 
   // ==============================================
   // RENDER LOADING STATE

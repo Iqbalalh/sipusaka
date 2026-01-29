@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback} from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Image, Popconfirm, Flex, Spin, DatePicker } from "antd";
+import { Image, Popconfirm, Flex, Spin, Checkbox } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
-import dayjs from "dayjs";
 
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -22,58 +21,33 @@ import { useFilePreview } from "@/hooks/useFilePreview";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
-import { API_STAFF } from "@/constants/endpoint";
-import { getStaff } from "@/utils/services/staff.service";
+import { API_GALLERIES } from "@/constants/endpoint";
+import { getCategories } from "@/utils/services/gallery.service";
+import { getGallery } from "@/utils/services/gallery.service";
+import { getRegionsList } from "@/utils/services/region.service";
+import { BaseGallery } from "@/types/models/gallery";
 import { hardDeleteFile } from "@/utils/fetch/deleteFile";
 import { Option } from "@/types/generic/select-option";
-import { GENDER_OPTIONS } from "@/constants/option";
+import { Category } from "@/types/models/gallery";
 
 // ==============================================
 // INITIAL FORM STATE
 // ==============================================
-interface BaseStaff {
-  staffName: string;
-  gender: "M" | "F";
-  birthplace: string | null;
-  birthdate: string | null;
-  address: string | null;
-  phoneNumber: string | null;
-  email: string | null;
-  nik: string;
-  roleId: number | null;
-  staffPict: string | null;
-}
-
-const INITIAL_FORM_STATE: BaseStaff = {
-  staffName: "",
-  gender: "M",
-  birthplace: null,
-  birthdate: null,
-  address: null,
-  phoneNumber: null,
-  email: null,
-  nik: "",
-  roleId: null,
-  staffPict: null,
+const INITIAL_FORM_STATE: BaseGallery = {
+  caption: "",
+  regionId: null,
 };
 
 // ==============================================
 // VALIDATION RULES
 // ==============================================
 const validateForm = (
-  form: BaseStaff
+  form: BaseGallery,
+  imageFile: File | null,
+  mode: "create" | "edit"
 ): { isValid: boolean; error?: string } => {
-  if (!form.staffName?.trim()) {
-    return { isValid: false, error: "Nama staf wajib diisi!" };
-  }
-  if (!form.nik?.trim()) {
-    return { isValid: false, error: "NIK wajib diisi!" };
-  }
-  if (!form.gender) {
-    return { isValid: false, error: "Jenis kelamin wajib diisi!" };
-  }
-  if (!form.roleId) {
-    return { isValid: false, error: "Role wajib diisi!" };
+  if (mode === "create" && !imageFile) {
+    return { isValid: false, error: "Gambar wajib diunggah!" };
   }
   return { isValid: true };
 };
@@ -81,40 +55,42 @@ const validateForm = (
 // ==============================================
 // PROPS INTERFACE
 // ==============================================
-interface StaffFormProps {
+interface GalleryFormProps {
   mode: "create" | "edit";
-  staffId?: string;
+  galleryId?: string;
 }
 
 // ==============================================
 // MAIN COMPONENT
 // ==============================================
-export default function StaffForm({ mode, staffId }: StaffFormProps) {
+export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
   const router = useRouter();
   const { notify } = useNotify();
 
-  const [roles, setRoles] = useState<Option[]>([]);
+  const [categories, setCategories] = useState<Option[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [regions, setRegions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<BaseStaff>(INITIAL_FORM_STATE);
+  const [form, setForm] = useState<BaseGallery>(INITIAL_FORM_STATE);
 
-  const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
+  const { file: imageFile, preview, selectFile, clearFile } = useFilePreview();
 
   // ==============================================
   // SUBMIT HOOK
   // ==============================================
   const { submit, loading: submitLoading } = useFormSubmit(
     (fd) => {
-      const url = mode === "edit" ? `${API_STAFF}/${staffId}` : API_STAFF;
+      const url = mode === "edit" ? `${API_GALLERIES}/${galleryId}` : API_GALLERIES;
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
     () => {
       const message =
         mode === "edit"
-          ? "Data staf berhasil diperbarui!"
-          : "Staf berhasil ditambahkan!";
+          ? "Data galeri berhasil diperbarui!"
+          : "Galeri berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/staff");
+      router.push("/galleries");
     }
   );
 
@@ -125,17 +101,28 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     const init = async () => {
       try {
         setLoading(true);
-        
-        // Mock roles - in real app, fetch from API
-        setRoles([
-          { value: 1, label: "Admin" },
-          { value: 2, label: "Staff" },
-          { value: 3, label: "Super Admin" },
-        ]);
+        const categoryList = await getCategories();
+        setCategories(
+          categoryList.map((c: Category) => ({
+            value: c.id,
+            label: c.name,
+          }))
+        );
 
-        if (mode === "edit" && staffId) {
-          const staffData = await getStaff(staffId);
-          setForm(staffData);
+        const regionList = await getRegionsList();
+        setRegions(
+          regionList.map((r: any) => ({
+            value: r.regionId,
+            label: r.regionName,
+          }))
+        );
+
+        if (mode === "edit" && galleryId) {
+          const galleryData = await getGallery(galleryId);
+          setForm(galleryData);
+          if (galleryData.categories && galleryData.categories.length > 0) {
+            setSelectedCategories(galleryData.categories.map((c: Category) => c.id));
+          }
         }
       } catch (err) {
         notifyFromResult(notify, { error: err });
@@ -145,24 +132,24 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     };
 
     init();
-  }, [mode, staffId, notify]);
+  }, [mode, galleryId, notify]);
 
   // ==============================================
-  // DELETE PHOTO (EDIT MODE ONLY)
+  // DELETE IMAGE (EDIT MODE ONLY)
   // ==============================================
-  const handleDeletePhoto = async () => {
-    if (!form?.staffPict)
-      return notify("warning", "Tidak ada foto untuk dihapus.");
+  const handleDeleteImage = async () => {
+    if (!form?.s3Path)
+      return notify("warning", "Tidak ada gambar untuk dihapus.");
 
     try {
-      notify("info", "Sedang menghapus foto dari server...");
+      notify("info", "Sedang menghapus gambar dari server...");
 
-      await hardDeleteFile(form.staffPict);
-      setForm((prev) => ({ ...prev, staffPict: null }));
+      await hardDeleteFile(form.s3Path);
+      setForm((prev) => ({ ...prev, s3Path: null }));
       clearFile();
-      notify("success", "Foto berhasil dihapus secara permanen!");
+      notify("success", "Gambar berhasil dihapus secara permanen!");
     } catch (err: any) {
-      notify("error", err.message || "Gagal menghapus foto.");
+      notify("error", err.message || "Gagal menghapus gambar.");
     }
   };
 
@@ -170,7 +157,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
   // EVENT HANDLERS
   // ==============================================
   const handleFieldChange = useCallback(
-    <K extends keyof BaseStaff>(field: K, value: BaseStaff[K]) => {
+    <K extends keyof BaseGallery>(field: K, value: BaseGallery[K]) => {
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     []
@@ -190,27 +177,43 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     [selectFile, notify]
   );
 
+  const handleCategoryChange = useCallback((categoryId: number) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  }, []);
+
   const handleSubmit = useCallback(async () => {
-    const validation = validateForm(form);
+    const validation = validateForm(form, imageFile, mode);
     if (!validation.isValid) {
       return notify("warning", validation.error!);
     }
 
     const extraData = new FormData();
-    if (photoFile) {
-      extraData.append("picture", photoFile);
+    if (imageFile) {
+      extraData.append("image", imageFile);
     }
+    if (selectedCategories.length > 0) {
+      selectedCategories.forEach((catId) => {
+        extraData.append("categoryIds", catId.toString());
+      });
+    }
+    // Note: regionId is already in the form object and will be added by buildFormData
 
     const { success, error } = await submit(form, extraData);
 
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, photoFile, submit, notify]);
+  }, [form, imageFile, selectedCategories, submit, notify, mode]);
 
   const handleGoBack = useCallback(() => {
-    router.push(`/staff/view/${staffId}`);
-  }, [router, staffId]);
+    router.back();
+  }, [router]);
 
   // ==============================================
   // RENDER LOADING STATE
@@ -228,10 +231,10 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
   // ==============================================
   const pageTitle =
     mode === "edit"
-      ? `Edit Staf: ${form.staffName}`
-      : "Tambah Data Staf";
+      ? `Edit Galeri`
+      : "Tambah Data Galeri";
 
-  const submitButtonText = mode === "edit" ? "Update Data Staf" : "Simpan";
+  const submitButtonText = mode === "edit" ? "Update Data Galeri" : "Simpan";
 
   // ==============================================
   // RENDER FORM
@@ -242,115 +245,61 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="space-y-6">
-          <ComponentCard title="Data Utama Staf">
+          <ComponentCard title="Data Utama Galeri">
             <div className="space-y-5">
-              <FormField label="Nama Staf" required>
-                <TextInput
-                  value={form.staffName}
-                  onChange={(value) => handleFieldChange("staffName", value)}
-                  placeholder="Masukkan nama staf"
-                  required
+              <FormField label="Keterangan" required>
+                <TextArea
+                  size="large"
+                  rows={4}
+                  value={form.caption ?? ""}
+                  onChange={(e) => handleFieldChange("caption", e.target.value)}
+                  placeholder="Masukkan keterangan gambar"
                 />
               </FormField>
 
-              <FormField label="NIK" required>
-                <TextInput
-                  type="text"
-                  value={form.nik}
-                  onChange={(value) => handleFieldChange("nik", value)}
-                  placeholder="Masukkan NIK"
-                  required
-                />
-              </FormField>
-
-              <FormField label="Jenis Kelamin" required>
+              <FormField label="Wilayah">
                 <SelectInput
-                  value={form.gender}
-                  onChange={(value) => handleFieldChange("gender", value)}
-                  options={GENDER_OPTIONS}
-                  placeholder="Pilih jenis kelamin"
+                  placeholder="Pilih wilayah"
+                  value={form.regionId}
+                  onChange={(value) => handleFieldChange("regionId", value)}
+                  options={regions}
                 />
               </FormField>
 
-              <FormField label="Role" required>
-                <SelectInput
-                  value={form.roleId}
-                  onChange={(value) => handleFieldChange("roleId", value)}
-                  options={roles}
-                  placeholder="Pilih role"
-                />
-              </FormField>
-
-              <FormField label="Nomor Telepon">
-                <TextInput
-                  type="tel"
-                  value={form.phoneNumber ?? ""}
-                  onChange={(value) => handleFieldChange("phoneNumber", value)}
-                  placeholder="Masukkan nomor telepon"
-                />
-              </FormField>
-
-              <FormField label="Email">
-                <TextInput
-                  type="email"
-                  value={form.email ?? ""}
-                  onChange={(value) => handleFieldChange("email", value)}
-                  placeholder="Masukkan email"
-                />
+              <FormField label="Kategori">
+                <div className="space-y-2 mt-2">
+                  {categories.map((category) => (
+                    <Checkbox
+                      key={String(category.value)}
+                      checked={selectedCategories.includes(Number(category.value))}
+                      onChange={() => handleCategoryChange(Number(category.value))}
+                    >
+                      {category.label}
+                    </Checkbox>
+                  ))}
+                </div>
               </FormField>
             </div>
           </ComponentCard>
         </div>
 
         <div className="space-y-6">
-          <ComponentCard title="Informasi Tambahan">
+          <ComponentCard title="Gambar">
             <div className="space-y-5">
-              <FormField label="Tempat Lahir">
-                <TextInput
-                  value={form.birthplace ?? ""}
-                  onChange={(value) => handleFieldChange("birthplace", value)}
-                  placeholder="Masukkan tempat lahir"
-                />
-              </FormField>
-
-              <FormField label="Tanggal Lahir">
-                <DatePicker
-                  style={{ width: "100%" }}
-                  format="DD/MM/YYYY"
-                  placeholder="Pilih tanggal lahir"
-                  value={form.birthdate ? dayjs(form.birthdate) : null}
-                  onChange={(date) => 
-                    handleFieldChange("birthdate", date ? date.format("YYYY-MM-DD") : null)
-                  }
-                />
-              </FormField>
-
-              <FormField label="Alamat">
-                <TextArea
-                  size="large"
-                  rows={4}
-                  value={form.address ?? ""}
-                  onChange={(e) => handleFieldChange("address", e.target.value)}
-                  placeholder="Masukkan alamat lengkap"
-                />
-              </FormField>
-
-              <hr className="border-gray-100" />
-
-              <FormField label="Foto Staf">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
-                {mode === "edit" && form.staffPict ? (
+              <FormField label="Unggah Gambar" required={mode === "create"}>
+                {/* LOGIKA GAMBAR SERVER (EDIT MODE) */}
+                {mode === "edit" && form.s3Path ? (
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="relative inline-block">
                       <Image
-                        src={form.staffPict}
-                        alt="Foto Staf"
-                        className="object-cover rounded-lg w-48 h-48 border shadow-sm"
+                        src={form.s3Path}
+                        alt="Gambar Galeri"
+                        className="object-cover rounded-lg w-full max-w-md border shadow-sm"
                       />
                       <Popconfirm
-                        title="Hapus foto permanen?"
-                        description="Foto akan langsung dihapus dari server S3."
-                        onConfirm={handleDeletePhoto}
+                        title="Hapus gambar permanen?"
+                        description="Gambar akan langsung dihapus dari server S3."
+                        onConfirm={handleDeleteImage}
                         okText="Hapus"
                         cancelText="Batal"
                         okButtonProps={{ danger: true }}
@@ -368,7 +317,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                       <div className="relative inline-block">
                         <Image
                           src={preview}
-                          className="object-cover rounded-lg w-48 h-48 border border-primary-200"
+                          className="object-cover rounded-lg w-full max-w-md border border-primary-200"
                           alt="Preview"
                         />
                         <button

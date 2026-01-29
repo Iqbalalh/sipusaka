@@ -69,56 +69,94 @@ export default function StaffView() {
   return (
     <>
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-            <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 mb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
               <Image
-                width={80}
-                height={80}
+                width={64}
+                height={64}
                 src={data?.staffPict || "/images/user/alt-user.png"}
                 alt={"Profile"}
               />
             </div>
 
-            <div>
-              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
+            <div className="min-w-0">
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 truncate">
                 {data?.staffName}
               </h4>
-              <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
-                <p className="text-md text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   {data?.gender === "M" ? "Laki-laki" : "Perempuan"}
-                </p>
-                <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  <Badge>{data?.roleName || "-"}</Badge>
-                </p>
+                </span>
+                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <Badge variant="light" color="info">
+                  {data?.roleName || "-"}
+                </Badge>
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-              <Link href={`/staff/edit/${data?.id}`}>
-                <Button variant="outline">Edit</Button>
-              </Link>
-            </div>
+          <div className="flex items-center gap-2 sm:justify-end">
+            <Link href={`/staff/edit/${data?.id}`}>
+              <Button variant="outline" size="sm">
+                Edit
+              </Button>
+            </Link>
           </div>
         </div>
 
-        {/* ====== Detail Info ====== */}
-        <div className="mt-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-            <InfoItem label="NIK" value={data?.nik || "-"} />
-            <InfoItem label="Email" value={data?.email || "-"} />
-            <InfoItem label="Nomor Telepon" value={data?.phoneNumber || "-"} />
-            <InfoItem label="Tempat Lahir" value={data?.birthplace || "-"} />
-            <InfoItem
-              label="Tanggal Lahir"
-              value={
-                data?.birthdate
-                  ? new Date(data.birthdate).toLocaleDateString("id-ID")
-                  : "-"
-              }
-            />
-            <InfoItem label="Alamat" value={data?.address || "-"} />
+        {/* Detail Info Grid - Block Design */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              NIK
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.nik || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Email
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.email || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Nomor Telepon
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.phoneNumber || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Tempat Lahir
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.birthplace || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Tanggal Lahir
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.birthdate
+                ? new Date(data.birthdate).toLocaleDateString("id-ID")
+                : "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Alamat
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.address || "-"}
+            </span>
           </div>
         </div>
       </div>

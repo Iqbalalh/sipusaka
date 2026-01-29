@@ -70,120 +70,178 @@ export default function PartnerView() {
   return (
     <>
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-            <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 mb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
               <Image
-                width={80}
-                height={80}
+                width={64}
+                height={64}
                 src={data?.partnerPict || "/images/user/alt-user.png"}
                 alt={"Profile"}
               />
             </div>
 
-            <div>
-              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
+            <div className="min-w-0">
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 truncate">
                 {data?.partnerName}
               </h4>
-              <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
-                <p className="text-md text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   {data?.partnerNik || "-"}
-                </p>
-                <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  <Badge>{data?.partnerJob || "-"}</Badge>
-                </p>
+                </span>
+                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {data?.partnerJob || "-"}
+                </span>
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  handlePrintPartner(
-                    data,
-                    `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
-                      data?.partnerPict
-                    )}`
-                  )
-                }
-              >
-                Print
+          <div className="flex items-center gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                handlePrintPartner(
+                  data,
+                  `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
+                    data?.partnerPict
+                  )}`
+                )
+              }
+            >
+              Print
+            </Button>
+            <Link href={`/partner/edit/${data?.id}`}>
+              <Button variant="outline" size="sm">
+                Edit
               </Button>
-              <Link href={`/partner/edit/${data?.id}`}>
-                <Button variant="outline">Edit</Button>
-              </Link>
-            </div>
+            </Link>
           </div>
         </div>
 
-        {/* ====== Detail Info ====== */}
-        <div className="mt-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-            <InfoItem
-              label="Nama Pasangan"
-              value={data?.partnerName || "-"}
-            />
-            <InfoItem
-              label="NIK"
-              value={data?.partnerNik || "-"}
-            />
-            <InfoItem
-              label="Pekerjaan"
-              value={data?.partnerJob || "-"}
-            />
-            <InfoItem
-              label="Kecamatan"
-              value={data?.subdistrictName?.toString() || "-"}
-            />
-            <InfoItem
-              label="Wilayah"
-              value={data?.regionName?.toString() || "-"}
-            />
-            <InfoItem
-              label="Nomor Telepon"
-              value={data?.phoneNumber || "-"}
-            />
-            <InfoItem
-              label="Nomor Telepon Alternatif"
-              value={data?.phoneNumberAlt || "-"}
-            />
-            <InfoItem
-              label="Alamat"
-              value={data?.address || "-"}
-            />
-            <InfoItem
-              label="Kode Pos"
-              value={data?.postalCode || "-"}
-            />
-            <InfoItem
-              label="Koordinat Rumah"
-              value={data?.homeCoordinate || "-"}
-            />
-            <InfoItem
-              label="Status Aktif"
-              value={<Badge color={data?.isActive ? "success" : "error"}>{data?.isActive ? "Aktif" : "Tidak Aktif"}</Badge>}
-            />
-            <InfoItem
-              label="Status Hidup"
-              value={<Badge color={data?.isAlive ? "success" : "error"}>{data?.isAlive ? "Hidup" : "Meninggal"}</Badge>}
-            />
-            <InfoItem
-              label="Dibuat Pada"
-              value={
-                data?.createdAt
-                  ? new Date(data.createdAt).toLocaleString()
-                  : "-"
-              }
-            />
-            <InfoItem
-              label="Diperbarui Pada"
-              value={
-                data?.updatedAt
-                  ? new Date(data.updatedAt).toLocaleString()
-                  : "-"
-              }
-            />
+        {/* Detail Info Grid - Block Design */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Nama Pasangan
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.partnerName || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              NIK
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.partnerNik || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Pekerjaan
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.partnerJob || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Kecamatan
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.subdistrictName?.toString() || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Wilayah
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.regionName?.toString() || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Nomor Telepon
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.phoneNumber || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Nomor Telepon Alternatif
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.phoneNumberAlt || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Alamat
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.address || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Kode Pos
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.postalCode || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Koordinat Rumah
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.homeCoordinate || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Status Aktif
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              <Badge variant={data?.isActive ? "solid" : "light"} color={data?.isActive ? "success" : "error"}>
+                {data?.isActive ? "Aktif" : "Tidak Aktif"}
+              </Badge>
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Status Hidup
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              <Badge variant={data?.isAlive ? "solid" : "light"} color={data?.isAlive ? "success" : "error"}>
+                {data?.isAlive ? "Hidup" : "Meninggal"}
+              </Badge>
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Dibuat Pada
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.createdAt
+                ? new Date(data.createdAt).toLocaleString()
+                : "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Diperbarui Pada
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.updatedAt
+                ? new Date(data.updatedAt).toLocaleString()
+                : "-"}
+            </span>
           </div>
         </div>
       </div>

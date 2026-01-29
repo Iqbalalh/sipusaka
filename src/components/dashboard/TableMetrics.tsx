@@ -71,7 +71,7 @@ export const TableMetrics = () => {
   return (
     <div className="space-y-8">
       {contextHolder}
-      
+
       {/* Section Title */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -85,14 +85,19 @@ export const TableMetrics = () => {
       {/* Main Metrics Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {/* Family Card */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
           <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/30">
+            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/30">
               <GroupIcon className="text-white size-7" />
             </div>
-            <Badge color="success" size="sm">
-              {getCount(dashboardData?.family?.active)} Aktif
-            </Badge>
+            <div className="flex flex-col gap-2">
+              <Badge color="success" size="md">
+                {getCount(dashboardData?.family?.active)} Aktif
+              </Badge>
+              <Badge color="error" size="md">
+                {getCount(dashboardData?.family?.inactive)} Non-aktif
+              </Badge>
+            </div>
           </div>
 
           <div className="mt-5">
@@ -102,15 +107,11 @@ export const TableMetrics = () => {
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {getCount(dashboardData?.family?.total)}
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4">
               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Non-Aktif</p>
-                <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-                  {getCount(dashboardData?.family?.inactive)}
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  GEOPUSAKA
                 </p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Di Peta</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.family?.onMap)}
                 </p>
@@ -120,14 +121,25 @@ export const TableMetrics = () => {
         </div>
 
         {/* Children Card */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
           <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/30">
+            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/30">
               <UserIcon className="text-white size-7" />
             </div>
-            <Badge color="success" size="sm">
-              {getCount(dashboardData?.children?.active)} Aktif
-            </Badge>
+            <div className="flex flex-col gap-2">
+              <div className="flex">
+                <Badge color="success" size="md">
+                  {getCount(dashboardData?.children?.active)} Aktif
+                </Badge>
+                <Badge color="error" size="md">
+                  {getCount(dashboardData?.children?.inactive)} Non-Aktif
+                </Badge>
+              </div>
+
+              <Badge color="warning" size="md">
+                {getCount(dashboardData?.children?.abk)} ABK
+              </Badge>
+            </div>
           </div>
 
           <div className="mt-5">
@@ -137,50 +149,49 @@ export const TableMetrics = () => {
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {getCount(dashboardData?.children?.total)}
             </p>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Non-Aktif</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {getCount(dashboardData?.children?.inactive)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
-                <span className="text-xs text-gray-500 dark:text-gray-400">ABK</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {getCount(dashboardData?.children?.abk)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Yatim</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+            <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-2">
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Yatim
+                </p>
+                <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.children?.yatim)}
-                </span>
+                </p>
               </div>
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Piatu</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Piatu
+                </p>
+                <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.children?.piatu)}
-                </span>
+                </p>
               </div>
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Yatim Piatu</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Yatim Piatu
+                </p>
+                <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.children?.yatimPiatu)}
-                </span>
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         {/* UMKM Card */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
           <div className="flex items-start justify-between">
-            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg shadow-amber-500/30">
+            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg shadow-amber-500/30">
               <DollarLineIcon className="text-white size-7" />
             </div>
-            <Badge color="success" size="sm">
-              {getCount(dashboardData?.umkm?.active)} Aktif
-            </Badge>
+            <div className="flex flex-col gap-2">
+              <Badge color="success" size="md">
+                {getCount(dashboardData?.umkm?.active)} Aktif
+              </Badge>
+              <Badge color="error" size="md">
+                {getCount(dashboardData?.umkm?.inactive)} Non-aktif
+              </Badge>
+            </div>
           </div>
 
           <div className="mt-5">
@@ -190,14 +201,6 @@ export const TableMetrics = () => {
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {getCount(dashboardData?.umkm?.total)}
             </p>
-            <div className="mt-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Non-Aktif</span>
-                <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {getCount(dashboardData?.umkm?.inactive)}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -209,8 +212,8 @@ export const TableMetrics = () => {
         </h3>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {/* Child Assistance Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg shadow-indigo-500/30">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
+            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg shadow-indigo-500/30">
               <DocsIcon className="text-white size-7" />
             </div>
 
@@ -228,8 +231,8 @@ export const TableMetrics = () => {
           </div>
 
           {/* UMKM Monitoring Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
+            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
               <PieChartIcon className="text-white size-7" />
             </div>
 
@@ -247,8 +250,8 @@ export const TableMetrics = () => {
           </div>
 
           {/* UMKM Visit Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg shadow-rose-500/30">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
+            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg shadow-rose-500/30">
               <TimeIcon className="text-white size-7" />
             </div>
 

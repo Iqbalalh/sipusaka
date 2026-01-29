@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Image, Popconfirm, Flex, Spin } from "antd";
+import { Image, Popconfirm, Flex, Spin, DatePicker } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import dayjs from "dayjs";
@@ -240,8 +240,8 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.back();
-  }, [router]);
+    router.push(`/children/view/${childrenId}`);
+  }, [router, childrenId]);
 
   // ==============================================
   // RENDER LOADING STATE
@@ -302,15 +302,18 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
               </FormField>
 
               <FormField label="Tanggal Lahir">
-                <TextInput
-                  type="date"
+                <DatePicker
+                  style={{ width: "100%" }}
                   value={
                     form.childrenBirthdate
-                      ? dayjs(form.childrenBirthdate).format("YYYY-MM-DD")
-                      : ""
+                      ? dayjs(form.childrenBirthdate)
+                      : null
                   }
-                  onChange={(value) =>
-                    handleFieldChange("childrenBirthdate", value)
+                  onChange={(date) =>
+                    handleFieldChange(
+                      "childrenBirthdate",
+                      date ? date.format("YYYY-MM-DD") : null
+                    )
                   }
                 />
               </FormField>

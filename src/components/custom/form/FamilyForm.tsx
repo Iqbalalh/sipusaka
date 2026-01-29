@@ -24,6 +24,7 @@ import { getRegionsList } from "@/utils/services/region.service";
 import { getEmployees } from "@/utils/services/employee.service";
 import { getPartners } from "@/utils/services/partner.service";
 import { getWaliList } from "@/utils/services/wali.service";
+import { getChildrens } from "@/utils/services/children.service";
 import { BaseHome } from "@/types/models/home";
 import { BaseEmployee } from "@/types/models/employee";
 import { BasePartner } from "@/types/models/partner";
@@ -71,6 +72,7 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
   const [employees, setEmployees] = useState<Option[]>([]);
   const [partners, setPartners] = useState<Option[]>([]);
   const [wali, setWali] = useState<Option[]>([]);
+  const [childrenOptions, setChildrenOptions] = useState<Option[]>([]);
 
   // Modes
   const [employeeMode, setEmployeeMode] = useState<"existing" | "new">(
@@ -80,6 +82,7 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
     "existing"
   );
   const [waliMode, setWaliMode] = useState<"none" | "existing" | "new">("none");
+  const [childrenMode, setChildrenMode] = useState<"new" | "existing">("new");
 
   // Form state
   const [form, setForm] = useState<BaseHome>(INITIAL_FORM_STATE);
@@ -113,6 +116,8 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
     waliAddress: null,
     addressCoordinate: null,
     waliPhone: null,
+    nik: null,
+    waliJob: null,
   });
   const [childrens, setChildrens] = useState<BaseChildren[]>([]);
 
@@ -133,11 +138,13 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
           employeeList,
           partnerList,
           waliList,
+          childrenList,
         ] = await Promise.all([
           getRegionsList(),
           getEmployees(),
           getPartners(),
           getWaliList(),
+          getChildrens(),
         ]);
 
         setRegions(
@@ -165,6 +172,13 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
           waliList.map((w: any) => ({
             value: w.id,
             label: `${w.waliName}`,
+          }))
+        );
+
+        setChildrenOptions(
+          childrenList.map((c: any) => ({
+            value: c.id,
+            label: `${c.childrenName} ${c.nik ? `(${c.nik})` : ""}`,
           }))
         );
       } catch (err) {
@@ -302,8 +316,9 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
         }
       }
 
-      // Children
-      childrens.forEach((child, index) => {
+      // Children - Send as JSON string
+      const childrenData = childrens.map((child, index) => {
+        const childData: any = {};
         Object.entries(child).forEach(([key, value]) => {
           if (key === "childrenPictFile") return;
           if (value !== null && value !== undefined) {
@@ -311,9 +326,16 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
               /[A-Z]/g,
               (letter) => `_${letter.toLowerCase()}`
             );
-            fd.append(`childrens[${index}][${snakeKey}]`, String(value));
+            childData[snakeKey] = value;
           }
         });
+        return childData;
+      });
+
+      fd.append("childrens", JSON.stringify(childrenData));
+
+      // Children photos
+      childrens.forEach((child, index) => {
         if ((child as any).childrenPictFile) {
           fd.append(
             `childrens[${index}][children_pict]`,
@@ -384,6 +406,26 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
         i === index ? { ...child, [field]: value } : child
       )
     );
+  };
+
+  const addExistingChild = (childId: number) => {
+    setChildrens([
+      ...childrens,
+      {
+        id: childId,
+        childrenName: "",
+        index: null,
+        childrenGender: "M",
+        childrenBirthdate: null,
+        childrenAddress: "",
+        childrenPhone: "",
+        isFatherAlive: true,
+        isMotherAlive: true,
+        isCondition: true,
+        isActive: true,
+        notes: "",
+      },
+    ]);
   };
 
   // ==============================================
@@ -748,6 +790,24 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
                   placeholder="Masukkan nama wali"
                 />
               </FormField>
+              <FormField label="NIK">
+                <TextInput
+                  value={waliForm.nik ?? ""}
+                  onChange={(value) =>
+                    setWaliForm({ ...waliForm, nik: value })
+                  }
+                  placeholder="Masukkan NIK wali"
+                />
+              </FormField>
+              <FormField label="Pekerjaan Wali">
+                <TextInput
+                  value={waliForm.waliJob ?? ""}
+                  onChange={(value) =>
+                    setWaliForm({ ...waliForm, waliJob: value })
+                  }
+                  placeholder="Masukkan pekerjaan wali"
+                />
+              </FormField>
               <FormField label="Hubungan">
                 <TextInput
                   value={waliForm.relation ?? ""}
@@ -800,169 +860,202 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
         </ComponentCard>
 
         {/* CHILDREN GROUP */}
-        <ComponentCard title="Anak Asuh">
+        <ComponentCard
+          title="Anak Asuh"
+          rightComponent={
+            <Switch
+              checked={childrenMode === "existing"}
+              onChange={(checked) =>
+                setChildrenMode(checked ? "existing" : "new")
+              }
+              checkedChildren="Sudah Ada"
+              unCheckedChildren="Buat Baru"
+            />
+          }
+        >
           <div className="space-y-4">
-            <Button onClick={addChild}>Tambah Anak</Button>
+            {childrenMode === "new" ? (
+              <Button onClick={addChild}>Tambah Anak</Button>
+            ) : (
+              <div className="flex gap-2">
+                <Select
+                  className="flex-1"
+                  placeholder="Pilih anak dari data yang sudah ada"
+                  options={childrenOptions}
+                  onChange={(value) => addExistingChild(value as number)}
+                />
+              </div>
+            )}
 
             {childrens.map((child, index) => (
               <div key={index} className="border p-4 rounded space-y-4">
                 <div className="flex justify-between items-center">
-                  <strong className="font-semibold">Anak #{index + 1}</strong>
+                  <strong className="font-semibold">
+                    Anak #{index + 1} {child.id ? "(Sudah Ada)" : "(Baru)"}
+                  </strong>
                   <Button size="xs" onClick={() => removeChild(index)}>
                     Hapus
                   </Button>
                 </div>
 
-                <FormField label="Nama Anak">
-                  <TextInput
-                    value={child.childrenName}
-                    onChange={(value) =>
-                      updateChild(index, "childrenName", value)
-                    }
-                    placeholder="Masukkan nama anak"
-                  />
-                </FormField>
+                {child.id ? (
+                  <div className="text-sm text-gray-600">
+                    Anak yang sudah ada akan ditautkan ke keluarga ini.
+                  </div>
+                ) : (
+                  <>
+                    <FormField label="Nama Anak">
+                      <TextInput
+                        value={child.childrenName}
+                        onChange={(value) =>
+                          updateChild(index, "childrenName", value)
+                        }
+                        placeholder="Masukkan nama anak"
+                      />
+                    </FormField>
 
-                <FormField label="Anak-ke">
-                  <TextInput
-                    type="number"
-                    value={child.index?.toString() ?? ""}
-                    onChange={(value) =>
-                      updateChild(
-                        index,
-                        "index",
-                        value ? parseInt(value, 10) : null
-                      )
-                    }
-                    placeholder="Masukkan urutan anak"
-                  />
-                </FormField>
+                    <FormField label="Anak-ke">
+                      <TextInput
+                        type="number"
+                        value={child.index?.toString() ?? ""}
+                        onChange={(value) =>
+                          updateChild(
+                            index,
+                            "index",
+                            value ? parseInt(value, 10) : null
+                          )
+                        }
+                        placeholder="Masukkan urutan anak"
+                      />
+                    </FormField>
 
-                <FormField label="Gender">
-                  <SelectInput
-                    value={child.childrenGender}
-                    onChange={(value) =>
-                      updateChild(index, "childrenGender", value)
-                    }
-                    options={GENDER_OPTIONS}
-                    placeholder="Pilih jenis kelamin"
-                  />
-                </FormField>
+                    <FormField label="Gender">
+                      <SelectInput
+                        value={child.childrenGender}
+                        onChange={(value) =>
+                          updateChild(index, "childrenGender", value)
+                        }
+                        options={GENDER_OPTIONS}
+                        placeholder="Pilih jenis kelamin"
+                      />
+                    </FormField>
 
-                <FormField label="Tanggal Lahir">
-                  <DatePicker
-                    size="large"
-                    className="w-full"
-                    value={
-                      child.childrenBirthdate
-                        ? dayjs(child.childrenBirthdate)
-                        : null
-                    }
-                    onChange={(date) =>
-                      updateChild(
-                        index,
-                        "childrenBirthdate",
-                        date ? date.format("YYYY-MM-DD") : null
-                      )
-                    }
-                  />
-                </FormField>
+                    <FormField label="Tanggal Lahir">
+                      <DatePicker
+                        size="large"
+                        className="w-full"
+                        value={
+                          child.childrenBirthdate
+                            ? dayjs(child.childrenBirthdate)
+                            : null
+                        }
+                        onChange={(date) =>
+                          updateChild(
+                            index,
+                            "childrenBirthdate",
+                            date ? date.format("YYYY-MM-DD") : null
+                          )
+                        }
+                      />
+                    </FormField>
 
-                <FormField label="Alamat Anak">
-                  <TextInput
-                    value={child.childrenAddress ?? ""}
-                    onChange={(value) =>
-                      updateChild(index, "childrenAddress", value)
-                    }
-                    placeholder="Masukkan alamat anak"
-                  />
-                </FormField>
+                    <FormField label="Alamat Anak">
+                      <TextInput
+                        value={child.childrenAddress ?? ""}
+                        onChange={(value) =>
+                          updateChild(index, "childrenAddress", value)
+                        }
+                        placeholder="Masukkan alamat anak"
+                      />
+                    </FormField>
 
-                <FormField label="No. HP Anak">
-                  <TextInput
-                    value={child.childrenPhone ?? ""}
-                    onChange={(value) =>
-                      updateChild(index, "childrenPhone", value)
-                    }
-                    placeholder="Masukkan nomor HP anak"
-                  />
-                </FormField>
+                    <FormField label="No. HP Anak">
+                      <TextInput
+                        value={child.childrenPhone ?? ""}
+                        onChange={(value) =>
+                          updateChild(index, "childrenPhone", value)
+                        }
+                        placeholder="Masukkan nomor HP anak"
+                      />
+                    </FormField>
 
-                <FormField label="Status Aktif">
-                  <SelectInput
-                    value={child.isActive}
-                    onChange={(value) => updateChild(index, "isActive", value)}
-                    options={[
-                      { value: true, label: "Ya" },
-                      { value: false, label: "Tidak" },
-                    ]}
-                    placeholder="Pilih status aktif"
-                  />
-                </FormField>
+                    <FormField label="Status Aktif">
+                      <SelectInput
+                        value={child.isActive}
+                        onChange={(value) => updateChild(index, "isActive", value)}
+                        options={[
+                          { value: true, label: "Ya" },
+                          { value: false, label: "Tidak" },
+                        ]}
+                        placeholder="Pilih status aktif"
+                      />
+                    </FormField>
 
-                <FormField label="Yatim">
-                  <SelectInput
-                    value={child.isFatherAlive}
-                    onChange={(value) =>
-                      updateChild(index, "isFatherAlive", value)
-                    }
-                    options={[
-                      { value: true, label: "Tidak" },
-                      { value: false, label: "Ya" },
-                    ]}
-                    placeholder="Pilih status yatim"
-                  />
-                </FormField>
+                    <FormField label="Yatim">
+                      <SelectInput
+                        value={child.isFatherAlive}
+                        onChange={(value) =>
+                          updateChild(index, "isFatherAlive", value)
+                        }
+                        options={[
+                          { value: true, label: "Tidak" },
+                          { value: false, label: "Ya" },
+                        ]}
+                        placeholder="Pilih status yatim"
+                      />
+                    </FormField>
 
-                <FormField label="Piatu">
-                  <SelectInput
-                    value={child.isMotherAlive}
-                    onChange={(value) =>
-                      updateChild(index, "isMotherAlive", value)
-                    }
-                    options={[
-                      { value: true, label: "Tidak" },
-                      { value: false, label: "Ya" },
-                    ]}
-                    placeholder="Pilih status piatu"
-                  />
-                </FormField>
+                    <FormField label="Piatu">
+                      <SelectInput
+                        value={child.isMotherAlive}
+                        onChange={(value) =>
+                          updateChild(index, "isMotherAlive", value)
+                        }
+                        options={[
+                          { value: true, label: "Tidak" },
+                          { value: false, label: "Ya" },
+                        ]}
+                        placeholder="Pilih status piatu"
+                      />
+                    </FormField>
 
-                <FormField label="Kondisi Khusus">
-                  <SelectInput
-                    value={child.isCondition}
-                    onChange={(value) =>
-                      updateChild(index, "isCondition", value)
-                    }
-                    options={[
-                      { value: true, label: "Normal" },
-                      { value: false, label: "ABK" },
-                    ]}
-                    placeholder="Pilih kondisi khusus"
-                  />
-                </FormField>
+                    <FormField label="Kondisi Khusus">
+                      <SelectInput
+                        value={child.isCondition}
+                        onChange={(value) =>
+                          updateChild(index, "isCondition", value)
+                        }
+                        options={[
+                          { value: true, label: "Normal" },
+                          { value: false, label: "ABK" },
+                        ]}
+                        placeholder="Pilih kondisi khusus"
+                      />
+                    </FormField>
 
-                <FormField label="Catatan">
-                  <TextArea
-                    rows={2}
-                    value={child.notes ?? ""}
-                    onChange={(e) =>
-                      updateChild(index, "notes", e.target.value)
-                    }
-                    placeholder="Tambahkan catatan (opsional)"
-                  />
-                </FormField>
+                    <FormField label="Catatan">
+                      <TextArea
+                        rows={2}
+                        value={child.notes ?? ""}
+                        onChange={(e) =>
+                          updateChild(index, "notes", e.target.value)
+                        }
+                        placeholder="Tambahkan catatan (opsional)"
+                      />
+                    </FormField>
 
-                <FormField label="Foto Anak">
-                  <FileInput
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file && validateFile(file)) {
-                        updateChild(index, "childrenPictFile" as any, file);
-                      }
-                    }}
-                  />
-                </FormField>
+                    <FormField label="Foto Anak">
+                      <FileInput
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && validateFile(file)) {
+                            updateChild(index, "childrenPictFile" as any, file);
+                          }
+                        }}
+                      />
+                    </FormField>
+                  </>
+                )}
               </div>
             ))}
           </div>
