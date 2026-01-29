@@ -6,12 +6,12 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Staff } from "@/utils/services/staff.service";
-import type { ColumnsType } from "antd/es/table";
+import type { TableColumn } from "@/types/generic/antd-table";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getStaffColumns = (): ColumnsType<Staff> => [
+export const getStaffColumns = (): TableColumn<Staff>[] => [
   {
     title: "Foto",
     dataIndex: "staffPict",

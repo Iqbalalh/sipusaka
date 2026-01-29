@@ -5,12 +5,12 @@ import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Wali } from "@/types/models/wali";
-import type { ColumnsType } from "antd/es/table";
+import type { TableColumn } from "@/types/generic/antd-table";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getWaliColumns = (): ColumnsType<Wali> => [
+export const getWaliColumns = (): TableColumn<Wali>[] => [
   {
     title: "Foto",
     dataIndex: "waliPict",
