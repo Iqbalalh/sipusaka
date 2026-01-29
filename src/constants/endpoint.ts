@@ -1,4 +1,5 @@
-const baseUrl = "https://api.yayasanpusakakai.org";
+// const baseUrl = "http://localhost:9000";
+const baseUrl = "https://api.yayasanpusakakai.org"
 
 // Auth
 export const API_AUTH_LOGIN = `${baseUrl}/api/auth/login`;
@@ -47,3 +48,6 @@ export const API_UMKM_MONITORING = `${baseUrl}/api/umkm-monitoring`;
 
 // Child Assistance
 export const API_CHILD_ASSISTANCE = `${baseUrl}/api/child-assistance`;
+
+// Galleries
+export const API_GALLERIES = `${baseUrl}/api/galleries`;
