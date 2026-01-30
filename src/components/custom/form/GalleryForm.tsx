@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Image, Popconfirm, Flex, Spin, Checkbox } from "antd";
+import { Image, Popconfirm, Flex, Spin, Checkbox, DatePicker } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
+import dayjs, { Dayjs } from "dayjs";
 
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -36,6 +37,7 @@ import { Category } from "@/types/models/gallery";
 const INITIAL_FORM_STATE: BaseGallery = {
   caption: "",
   regionId: null,
+  galleryDate: null,
 };
 
 // ==============================================
@@ -72,6 +74,7 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
   const [regions, setRegions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BaseGallery>(INITIAL_FORM_STATE);
+  const [galleryDate, setGalleryDate] = useState<Dayjs | null>(null);
 
   const { file: imageFile, preview, selectFile, clearFile } = useFilePreview();
 
@@ -84,13 +87,14 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data galeri berhasil diperbarui!"
           : "Galeri berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/galleries");
+      const id = mode === "edit" ? galleryId : data?.id;
+      router.push(`/galleries/view/${id}`);
     }
   );
 
@@ -120,6 +124,9 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
         if (mode === "edit" && galleryId) {
           const galleryData = await getGallery(galleryId);
           setForm(galleryData);
+          if (galleryData.galleryDate) {
+            setGalleryDate(dayjs(galleryData.galleryDate));
+          }
           if (galleryData.categories && galleryData.categories.length > 0) {
             setSelectedCategories(galleryData.categories.map((c: Category) => c.id));
           }
@@ -202,6 +209,9 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
         extraData.append("categoryIds", catId.toString());
       });
     }
+    if (galleryDate) {
+      extraData.append("galleryDate", galleryDate.format('YYYY-MM-DD'));
+    }
     // Note: regionId is already in the form object and will be added by buildFormData
 
     const { success, error } = await submit(form, extraData);
@@ -254,6 +264,20 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
                   value={form.caption ?? ""}
                   onChange={(e) => handleFieldChange("caption", e.target.value)}
                   placeholder="Masukkan keterangan gambar"
+                />
+              </FormField>
+
+              <FormField label="Tanggal Galeri">
+                <DatePicker
+                  size="large"
+                  style={{ width: '100%' }}
+                  value={galleryDate}
+                  onChange={(date) => {
+                    setGalleryDate(date);
+                    handleFieldChange("galleryDate", date ? date.format('YYYY-MM-DD') : null);
+                  }}
+                  placeholder="Pilih tanggal galeri"
+                  format="DD/MM/YYYY"
                 />
               </FormField>
 

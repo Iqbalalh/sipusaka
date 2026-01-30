@@ -44,6 +44,9 @@ const INITIAL_FORM_STATE: BaseChildren = {
   childrenAddress: "",
   childrenPhone: "",
   childrenJob: "",
+  educationLevel: "",
+  schoolName: "",
+  educationGrade: "",
   notes: "",
   childrenGender: "M",
   isActive: true,
@@ -55,6 +58,17 @@ const INITIAL_FORM_STATE: BaseChildren = {
   homeId: null,
   index: null,
 };
+
+const JENJANG_PENDIDIKAN_OPTIONS = [
+  { value: "TK", label: "TK" },
+  { value: "SD/Sederajat", label: "SD/Sederajat" },
+  { value: "SMP/Sederajat", label: "SMP/Sederajat" },
+  { value: "SMA/Sederajat", label: "SMA/Sederajat" },
+  { value: "Diploma", label: "Diploma" },
+  { value: "Sarjana", label: "Sarjana" },
+  { value: "Magister", label: "Magister" },
+  { value: "Doktor", label: "Doktor" },
+];
 
 // ==============================================
 // VALIDATION RULES
@@ -110,13 +124,14 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data anak asuh berhasil diperbarui!"
           : "Anak asuh berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/children");
+      const id = mode === "edit" ? childrenId : data?.id;
+      router.push(`/children/view/${id}`);
     }
   );
 
@@ -323,6 +338,31 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
                   value={form.childrenJob ?? ""}
                   onChange={(value) => handleFieldChange("childrenJob", value)}
                   placeholder="Masukkan pekerjaan"
+                />
+              </FormField>
+
+              <FormField label="Jenjang Pendidikan">
+                <SelectInput
+                  value={form.educationLevel ?? ""}
+                  onChange={(value) => handleFieldChange("educationLevel", value)}
+                  options={JENJANG_PENDIDIKAN_OPTIONS}
+                  placeholder="Pilih jenjang pendidikan"
+                />
+              </FormField>
+
+              <FormField label="Tingkat Pendidikan">
+                <TextInput
+                  value={form.educationGrade ?? ""}
+                  onChange={(value) => handleFieldChange("educationGrade", value)}
+                  placeholder="Masukkan tingkat pendidikan (mis: Kelas 1, Kelas 2, dll)"
+                />
+              </FormField>
+
+              <FormField label="Nama Sekolah">
+                <TextInput
+                  value={form.schoolName ?? ""}
+                  onChange={(value) => handleFieldChange("schoolName", value)}
+                  placeholder="Masukkan nama sekolah"
                 />
               </FormField>
 

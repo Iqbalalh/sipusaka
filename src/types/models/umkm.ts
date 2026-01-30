@@ -22,6 +22,7 @@ export interface Umkm {
   umkmPict3?: string | null;
   umkmPict4?: string | null;
   umkmPict5?: string | null;
+  isActive: boolean;
   regions: Region
 
   // Non-native Field

@@ -16,6 +16,7 @@ export interface BaseGallery {
   regionId?: number | null;
   regionName?: string | null;
   region?: Region | null;
+  galleryDate?: string | null;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
 }

@@ -61,6 +61,16 @@ export const getGalleryColumns = (regions: Region[] = []): ColumnsType<Gallery> 
   },
 
   {
+    title: "Tanggal Galeri",
+    dataIndex: "galleryDate",
+    key: "galleryDate",
+    render: (text) =>
+      text ? new Date(text).toLocaleDateString("id-ID") : "-",
+    exportRender: (value: string) =>
+      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+  },
+
+  {
     title: "Wilayah",
     dataIndex: "regionId",
     key: "regionId",

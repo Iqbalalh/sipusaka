@@ -81,6 +81,69 @@ export const getChildrenColumns = (
   },
 
   {
+    title: "Usia",
+    dataIndex: "childrenBirthdate",
+    key: "age",
+    render: (text) => {
+      if (!text) return "-";
+      const birth = new Date(text);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return `${age} Tahun`;
+    },
+    exportRender: (value: string) => {
+      if (!value) return "-";
+      const birth = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return `${age} Tahun`;
+    },
+  },
+
+  {
+    title: "Jenjang Pendidikan",
+    dataIndex: "educationLevel",
+    key: "educationLevel",
+    filters: [
+      { text: "TK", value: "TK" },
+      { text: "SD/Sederajat", value: "SD/Sederajat" },
+      { text: "SMP/Sederajat", value: "SMP/Sederajat" },
+      { text: "SMA/Sederajat", value: "SMA/Sederajat" },
+      { text: "Diploma", value: "Diploma" },
+      { text: "Sarjana", value: "Sarjana" },
+      { text: "Magister", value: "Magister" },
+      { text: "Doktor", value: "Doktor" },
+    ],
+    onFilter: (value, record) => record.educationLevel === value,
+    render: (text) => text || "-",
+    exportRender: (value: string) => value ?? "-",
+  },
+
+  {
+    title: "Tingkat Pendidikan",
+    dataIndex: "educationGrade",
+    key: "educationGrade",
+    render: (text) => text || "-",
+    exportRender: (value: string) => value ?? "-",
+  },
+
+  {
+    title: "Nama Sekolah",
+    dataIndex: "schoolName",
+    key: "schoolName",
+    render: (text) => text || "-",
+    exportRender: (value: string) => value ?? "-",
+  },
+
+  {
     title: "Pekerjaan",
     dataIndex: "childrenJob",
     key: "childrenJob",
@@ -208,21 +271,6 @@ export const getChildrenColumns = (
       </Badge>
     ),
     exportRender: (value: boolean) => (value ? "Aktif" : "Tidak Aktif"),
-  },
-
-  {
-    title: "Jenis Kelamin",
-    dataIndex: "childrenGender",
-    key: "childrenGender",
-    filters: [
-      { text: "Laki-laki", value: "M" },
-      { text: "Perempuan", value: "F" },
-    ],
-    onFilter: (value, record) => record.childrenGender === value,
-    render: (gender: "M" | "F") =>
-      gender === "M" ? "Laki-laki" : "Perempuan",
-    exportRender: (value: "M" | "F") =>
-      value === "M" ? "Laki-laki" : "Perempuan",
   },
 
   {

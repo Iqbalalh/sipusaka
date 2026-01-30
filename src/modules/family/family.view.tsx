@@ -52,6 +52,7 @@ import { getHomeDetail } from "@/utils/services/home.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
 import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPresignedUrl";
+import { calculateAge } from "@/utils/formatter/calculateAge";
 import { handlePrintFamily } from "@/utils/export/pdf/modules/family.pdf";
 import { API_IMAGE } from "@/constants/endpoint";
 
@@ -729,10 +730,44 @@ export default function FamilyView() {
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Usia
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                      {calculateAge(child?.childrenBirthdate) !== null
+                        ? `${calculateAge(child?.childrenBirthdate)} Tahun`
+                        : "-"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                       NIK
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
                       {child?.nik || "-"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Jenjang Pendidikan
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                      {child?.educationLevel || "-"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Tingkat Pendidikan
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                      {child?.educationGrade || "-"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Nama Sekolah
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                      {child?.schoolName || "-"}
                     </span>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">

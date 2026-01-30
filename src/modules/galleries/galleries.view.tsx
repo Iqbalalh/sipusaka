@@ -93,6 +93,14 @@ export default function GalleryView() {
             }
           />
           <InfoItem
+            label="Tanggal Galeri"
+            value={
+              data?.galleryDate
+                ? new Date(data.galleryDate).toLocaleDateString("id-ID")
+                : "-"
+            }
+          />
+          <InfoItem
             label="Wilayah"
             value={data?.regionName || "-"}
           />

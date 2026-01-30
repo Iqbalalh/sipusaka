@@ -1,5 +1,6 @@
 import { generatePdf } from "@/utils/export/pdf/generatePdf";
 import { Children } from "@/types/models/children";
+import { calculateAge } from "@/utils/formatter/calculateAge";
 
 export const handlePrintChildren = async (
   data: Children | null,
@@ -35,6 +36,29 @@ export const handlePrintChildren = async (
       {
         label: "Tanggal Lahir",
         key: "childrenBirthdate",
+        format: (v) => String(v ?? "-"),
+      },
+      {
+        label: "Usia",
+        key: "childrenBirthdate",
+        format: (v: any) => {
+          const age = calculateAge(v as string | null | undefined);
+          return age !== null ? `${age} Tahun` : "-";
+        },
+      },
+      {
+        label: "Jenjang Pendidikan",
+        key: "educationLevel",
+        format: (v) => String(v ?? "-"),
+      },
+      {
+        label: "Tingkat Pendidikan",
+        key: "educationGrade",
+        format: (v) => String(v ?? "-"),
+      },
+      {
+        label: "Nama Sekolah",
+        key: "schoolName",
         format: (v) => String(v ?? "-"),
       },
       {

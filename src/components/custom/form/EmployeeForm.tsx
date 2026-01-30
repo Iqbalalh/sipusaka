@@ -98,13 +98,14 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data pegawai berhasil diperbarui!"
           : "Pegawai berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/employee");
+      const id = mode === "edit" ? employeeId : data?.id;
+      router.push(`/employee/view/${id}`);
     }
   );
 
