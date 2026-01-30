@@ -25,6 +25,14 @@ export default function UmkmInfo({ data }: UmkmInfoProps) {
       label: "Diperbarui Pada",
       value: data?.updatedAt ? new Date(data.updatedAt).toLocaleString() : "-",
     },
+    {
+      label: "Dibuat Oleh",
+      value: data?.createdBy || "-",
+    },
+    {
+      label: "Diedit Oleh",
+      value: data?.editedBy || "-",
+    },
   ];
 
   return (

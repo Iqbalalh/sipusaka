@@ -18,6 +18,8 @@ export interface BasePartner {
   partnerPict?: string | null;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
+  createdBy?: number | null;
+  editedBy?: number | null;
 }
 
 export interface Partner extends BasePartner {

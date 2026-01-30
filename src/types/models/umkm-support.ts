@@ -16,4 +16,6 @@ export interface UmkmSupport {
 
   createdAt: string;
   updatedAt: string;
+  createdBy?: number | null;
+  editedBy?: number | null;
 }

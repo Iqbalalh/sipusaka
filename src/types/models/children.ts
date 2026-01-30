@@ -25,6 +25,8 @@ export interface BaseChildren {
   schoolName?: string | null;
   educationGrade?: string | null;
   age?: number | null;
+  createdBy?: number | null;
+  editedBy?: number | null;
 }
 
 export interface Children extends BaseChildren {

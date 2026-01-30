@@ -11,6 +11,8 @@ export interface BaseEmployee {
   employeePict?: string | null;
   createdAt?: string | null; // Timestamp ISO
   updatedAt?: string | null; // Timestamp ISO
+  createdBy?: number | null;
+  editedBy?: number | null;
 }
 
 export interface Employee extends BaseEmployee {

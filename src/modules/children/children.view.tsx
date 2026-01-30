@@ -196,6 +196,15 @@ export default function ChildrenView() {
       formData.append("assistanceType", values.assistanceType);
       formData.append("assistanceProvider", values.assistanceProvider);
       formData.append("assistanceAmount", values.assistanceAmount);
+      if (values.educationLevel) {
+        formData.append("educationLevel", values.educationLevel);
+      }
+      if (values.educationGrade) {
+        formData.append("educationGrade", values.educationGrade);
+      }
+      if (values.age) {
+        formData.append("age", values.age);
+      }
       if (values.notes) {
         formData.append("notes", values.notes);
       }
@@ -449,6 +458,22 @@ export default function ChildrenView() {
                 : "-"}
             </span>
           </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Dibuat Oleh
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.createdBy || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Diedit Oleh
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.editedBy || "-"}
+            </span>
+          </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
               Catatan
@@ -542,6 +567,18 @@ export default function ChildrenView() {
             ]}
           >
             <Input type="number" min={0} step={1000} />
+          </Form.Item>
+
+          <Form.Item name="educationLevel" label="Jenjang Pendidikan">
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="educationGrade" label="Tingkat Pendidikan">
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="age" label="Usia">
+            <Input type="number" min={0} />
           </Form.Item>
 
           <Form.Item name="notes" label="Catatan">

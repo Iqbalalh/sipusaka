@@ -7,6 +7,8 @@ export interface Category {
   slug: string;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
+  createdBy?: number | null;
+  editedBy?: number | null;
 }
 
 export interface BaseGallery {
@@ -19,6 +21,8 @@ export interface BaseGallery {
   galleryDate?: string | null;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
+  createdBy?: number | null;
+  editedBy?: number | null;
 }
 
 export interface Gallery extends BaseGallery {

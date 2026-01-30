@@ -117,6 +117,22 @@ export const getStaffColumns = (): TableColumn<Staff>[] => [
   },
 
   {
+    title: "Dibuat Oleh",
+    dataIndex: "createdBy",
+    key: "createdBy",
+    render: (value) => value || "-",
+    exportRender: (value: number) => value ?? "-",
+  },
+
+  {
+    title: "Diedit Oleh",
+    dataIndex: "editedBy",
+    key: "editedBy",
+    render: (value) => value || "-",
+    exportRender: (value: number) => value ?? "-",
+  },
+
+  {
     title: "Aksi",
     key: "actions",
     fixed: "right",

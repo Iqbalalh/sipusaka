@@ -401,6 +401,22 @@ export default function FamilyView() {
                   : "-"}
               </span>
             </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                Dibuat Oleh
+              </span>
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+                {data?.employee?.createdBy || "-"}
+              </span>
+            </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                Diedit Oleh
+              </span>
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+                {data?.employee?.editedBy || "-"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -551,6 +567,22 @@ export default function FamilyView() {
                   : "-"}
               </span>
             </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                Dibuat Oleh
+              </span>
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+                {data?.partner?.createdBy || "-"}
+              </span>
+            </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                Diedit Oleh
+              </span>
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+                {data?.partner?.editedBy || "-"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -649,6 +681,22 @@ export default function FamilyView() {
                   {data.wali?.updatedAt
                     ? new Date(data.wali.updatedAt).toLocaleString()
                     : "-"}
+                </span>
+              </div>
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                  Dibuat Oleh
+                </span>
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                  {data.wali?.createdBy || "-"}
+                </span>
+              </div>
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                  Diedit Oleh
+                </span>
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                  {data.wali?.editedBy || "-"}
                 </span>
               </div>
             </div>
@@ -820,6 +868,22 @@ export default function FamilyView() {
                       {child?.updatedAt
                         ? new Date(child.updatedAt).toLocaleString()
                         : "-"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Dibuat Oleh
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                      {child?.createdBy || "-"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Diedit Oleh
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
+                      {child?.editedBy || "-"}
                     </span>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">

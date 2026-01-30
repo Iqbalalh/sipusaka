@@ -110,6 +110,36 @@ export default function ChildAssistanceSection({
                       Rp{assist.assistanceAmount.toLocaleString("id-ID")}
                     </span>
                   </div>
+                  {assist.age && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        Usia
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                        {assist.age} Tahun
+                      </span>
+                    </div>
+                  )}
+                  {assist.educationLevel && (
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        Jenjang Pendidikan
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                        {assist.educationLevel}
+                      </span>
+                    </div>
+                  )}
+                  {assist.educationGrade && (
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        Tingkat Pendidikan
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                        {assist.educationGrade}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {assist.notes && (
