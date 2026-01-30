@@ -8,6 +8,7 @@ export interface ChildAssistance {
   assistanceAmount: number;
   educationLevel?: string | null;
   educationGrade?: string | null;
+  schoolName?: string | null;
   age?: number | null;
   notes: string | null;
   createdAt: string;
