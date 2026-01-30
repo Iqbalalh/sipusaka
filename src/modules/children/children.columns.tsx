@@ -321,6 +321,22 @@ export const getChildrenColumns = (
   },
 
   {
+    title: "Dibuat Oleh",
+    dataIndex: "createdBy",
+    key: "createdBy",
+    render: (text) => text || "-",
+    exportRender: (value: number) => value ?? "-",
+  },
+
+  {
+    title: "Diedit Oleh",
+    dataIndex: "editedBy",
+    key: "editedBy",
+    render: (text) => text || "-",
+    exportRender: (value: number) => value ?? "-",
+  },
+
+  {
     title: "Aksi",
     key: "actions",
     fixed: "right",

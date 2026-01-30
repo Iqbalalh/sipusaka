@@ -189,6 +189,22 @@ export default function WaliView() {
                 : "-"}
             </span>
           </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Dibuat Oleh
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+              {data?.createdBy || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Diedit Oleh
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+              {data?.editedBy || "-"}
+            </span>
+          </div>
         </div>
       </div>
     </>

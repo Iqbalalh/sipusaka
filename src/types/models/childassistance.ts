@@ -6,9 +6,14 @@ export interface ChildAssistance {
   assistanceType: string;
   assistanceProvider: string;
   assistanceAmount: number;
+  educationLevel?: string | null;
+  educationGrade?: string | null;
+  age?: number | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  createdBy?: number | null;
+  editedBy?: number | null;
   children?: {
     id: number;
     childrenName: string;

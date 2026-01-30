@@ -11,6 +11,8 @@ export interface BaseHome {
   createdAt?: string;
   regionId: number | null;
   postalCode: string | null;
+  createdBy?: number | null;
+  editedBy?: number | null;
 }
 
 export interface Home extends BaseHome {
@@ -38,6 +40,8 @@ export interface HomeTable {
   createdAt: string;
   regionId: number | null;
   postalCode: string | null;
+  createdBy?: number | null;
+  editedBy?: number | null;
   partners: {
     id: number;
     employeeId: number;
