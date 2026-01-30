@@ -108,13 +108,14 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data staf berhasil diperbarui!"
           : "Staf berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/staff");
+      const id = mode === "edit" ? staffId : data?.id;
+      router.push(`/staff/view/${id}`);
     }
   );
 

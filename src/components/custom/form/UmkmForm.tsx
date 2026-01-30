@@ -55,6 +55,7 @@ const INITIAL_FORM_STATE: Partial<Umkm> = {
   umkmPict3: undefined,
   umkmPict4: undefined,
   umkmPict5: undefined,
+  isActive: true,
 };
 
 // ==============================================
@@ -105,13 +106,14 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data UMKM berhasil diperbarui!"
           : "UMKM berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/umkm");
+      const id = mode === "edit" ? umkmId : data?.id;
+      router.push(`/umkm/view/${id}`);
     }
   );
 
@@ -380,6 +382,18 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
                   onChange={(value) => handleFieldChange("waliId", value)}
                   options={walis}
                   placeholder="Pilih anak asuh"
+                />
+              </FormField>
+
+              <FormField label="Status">
+                <SelectInput
+                  value={form.isActive}
+                  onChange={(value) => handleFieldChange("isActive", value)}
+                  options={[
+                    { value: true, label: "Aktif" },
+                    { value: false, label: "Tidak Aktif" },
+                  ]}
+                  placeholder="Pilih status"
                 />
               </FormField>
 

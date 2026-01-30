@@ -85,13 +85,14 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data wali berhasil diperbarui!"
           : "Wali berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/wali");
+      const id = mode === "edit" ? waliId : data?.id;
+      router.push(`/wali/view/${id}`);
     }
   );
 

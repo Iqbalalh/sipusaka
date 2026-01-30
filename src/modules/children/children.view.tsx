@@ -37,6 +37,7 @@ import dayjs from "dayjs";
 
 // Utils
 import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPresignedUrl";
+import { calculateAge } from "@/utils/formatter/calculateAge";
 import { getChildren } from "@/utils/services/children.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
@@ -322,6 +323,40 @@ export default function ChildrenView() {
               {data?.childrenBirthdate
                 ? new Date(data.childrenBirthdate).toLocaleDateString()
                 : "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Usia
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {calculateAge(data?.childrenBirthdate) !== null
+                ? `${calculateAge(data?.childrenBirthdate)} Tahun`
+                : "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Jenjang Pendidikan
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.educationLevel || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Tingkat Pendidikan
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.educationGrade || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Nama Sekolah
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.schoolName || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">

@@ -351,13 +351,15 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
 
       if (!res.ok) throw new Error("Gagal membuat data keluarga");
 
+      const result = await res.json();
+      
       messageApi.success({
         content: "Data keluarga berhasil dibuat!",
         key: "save",
         duration: 2,
       });
 
-      router.push("/family");
+      router.push(`/family/view/${result.id}`);
     } catch (err) {
       console.error(err);
       messageApi.error({

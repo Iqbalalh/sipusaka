@@ -93,13 +93,14 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
       const method = mode === "edit" ? "PATCH" : "POST";
       return fetchWithAuth(url, { method, body: fd });
     },
-    () => {
+    (data) => {
       const message =
         mode === "edit"
           ? "Data pasangan berhasil diperbarui!"
           : "Pasangan berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      router.push("/partner");
+      const id = mode === "edit" ? partnerId : data?.id;
+      router.push(`/partner/view/${id}`);
     }
   );
 
