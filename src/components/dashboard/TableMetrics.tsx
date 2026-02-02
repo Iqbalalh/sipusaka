@@ -2,13 +2,13 @@
 import { useEffect, useState } from "react";
 import Badge from "../ui/badge/Badge";
 import {
-  GroupIcon,
-  UserIcon,
-  DollarLineIcon,
-  DocsIcon,
-  PieChartIcon,
-  TimeIcon,
-} from "@/icons";
+  FaUsers,
+  FaChild,
+  FaDollarSign,
+  FaFileLines,
+  FaChartPie,
+  FaClock,
+} from "react-icons/fa6";
 import { API_DASHBOARD } from "@/constants/endpoint";
 import { ApiResponseSingle } from "@/types/generic/api-response";
 import camelcaseKeys from "camelcase-keys";
@@ -86,9 +86,9 @@ export const TableMetrics = () => {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {/* Family Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/30">
-              <GroupIcon className="text-white size-7" />
+              <FaUsers className="text-white text-2xl" />
             </div>
             <div className="flex flex-col gap-2">
               <Badge color="success" size="md">
@@ -122,9 +122,9 @@ export const TableMetrics = () => {
 
         {/* Children Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/30">
-              <UserIcon className="text-white size-7" />
+              <FaChild className="text-white text-2xl" />
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex">
@@ -180,9 +180,9 @@ export const TableMetrics = () => {
 
         {/* UMKM Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg shadow-amber-500/30">
-              <DollarLineIcon className="text-white size-7" />
+              <FaDollarSign className="text-white text-2xl" />
             </div>
             <div className="flex flex-col gap-2">
               <Badge color="success" size="md">
@@ -214,7 +214,7 @@ export const TableMetrics = () => {
           {/* Child Assistance Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg shadow-indigo-500/30">
-              <DocsIcon className="text-white size-7" />
+              <FaFileLines className="text-white text-2xl" />
             </div>
 
             <div className="mt-5">
@@ -233,7 +233,7 @@ export const TableMetrics = () => {
           {/* UMKM Monitoring Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
-              <PieChartIcon className="text-white size-7" />
+              <FaChartPie className="text-white text-2xl" />
             </div>
 
             <div className="mt-5">
@@ -252,7 +252,7 @@ export const TableMetrics = () => {
           {/* UMKM Visit Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg shadow-rose-500/30">
-              <TimeIcon className="text-white size-7" />
+              <FaClock className="text-white text-2xl" />
             </div>
 
             <div className="mt-5">

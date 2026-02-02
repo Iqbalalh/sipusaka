@@ -33,6 +33,9 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 
+// Action Buttons
+import { WhatsAppButton, GoogleMapsButton } from "@/components/ui/action-buttons/ActionButtons";
+
 // Type
 import { Home } from "@/types/models/home";
 import {
@@ -53,6 +56,7 @@ import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
 import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPresignedUrl";
 import { calculateAge } from "@/utils/formatter/calculateAge";
+import { formatDate } from "@/utils/formatter/formatDate";
 import { handlePrintFamily } from "@/utils/export/pdf/modules/family.pdf";
 import { API_IMAGE } from "@/constants/endpoint";
 
@@ -387,7 +391,7 @@ export default function FamilyView() {
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
                 {data?.employee?.createdAt
-                  ? new Date(data.employee.createdAt).toLocaleString()
+                  ? formatDate(data.employee.createdAt)
                   : "-"}
               </span>
             </div>
@@ -397,7 +401,7 @@ export default function FamilyView() {
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
                 {data?.employee?.updatedAt
-                  ? new Date(data.employee.updatedAt).toLocaleString()
+                  ? formatDate(data.employee.updatedAt)
                   : "-"}
               </span>
             </div>
@@ -489,38 +493,23 @@ export default function FamilyView() {
               <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                 Nomor Telp
               </span>
-              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                {data?.partner?.phoneNumber ? (
-                  <a
-                    href={`https://wa.me/${
-                      data?.partner?.phoneNumber
-                        ?.replace(/^\+?62/, "")
-                        ?.replace(/^0/, "")
-                        ?.replace(/\D/g, "")
-                        ? `62${data.partner.phoneNumber
-                            .replace(/^\+?62/, "")
-                            .replace(/^0/, "")
-                            .replace(/\D/g, "")}`
-                        : ""
-                    }`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {data?.partner?.phoneNumber}
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                  {data?.partner?.phoneNumber || "-"}
+                </span>
+                {data?.partner?.phoneNumber && <WhatsAppButton phoneNumber={data.partner.phoneNumber} />}
+              </div>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                 Nomor Telp Alt
               </span>
-              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                {data?.partner?.phoneNumberAlt || "-"}
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                  {data?.partner?.phoneNumberAlt || "-"}
+                </span>
+                {data?.partner?.phoneNumberAlt && <WhatsAppButton phoneNumber={data.partner.phoneNumberAlt} />}
+              </div>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -534,18 +523,12 @@ export default function FamilyView() {
               <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                 Koordinat Rumah
               </span>
-              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                <a
-                  href={`https://www.google.com/maps?q=${encodeURIComponent(
-                    String(data?.partner?.homeCoordinate || "-")
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
                   {data?.partner?.homeCoordinate || "-"}
-                </a>
-              </span>
+                </span>
+                {data?.partner?.homeCoordinate && <GoogleMapsButton coordinate={data.partner.homeCoordinate} />}
+              </div>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -553,7 +536,7 @@ export default function FamilyView() {
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
                 {data?.partner?.createdAt
-                  ? new Date(data.partner.createdAt).toLocaleString()
+                  ? formatDate(data.partner.createdAt)
                   : "-"}
               </span>
             </div>
@@ -563,7 +546,7 @@ export default function FamilyView() {
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
                 {data?.partner?.updatedAt
-                  ? new Date(data.partner.updatedAt).toLocaleString()
+                  ? formatDate(data.partner.updatedAt)
                   : "-"}
               </span>
             </div>
@@ -635,9 +618,12 @@ export default function FamilyView() {
                 <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                   Nomor Telp
                 </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                  {data.wali?.waliPhone || "-"}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                    {data.wali?.waliPhone || "-"}
+                  </span>
+                  {data.wali?.waliPhone && <WhatsAppButton phoneNumber={data.wali.waliPhone} />}
+                </div>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -659,9 +645,12 @@ export default function FamilyView() {
                 <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                   Koordinat Alamat
                 </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                  {data.wali?.addressCoordinate || "-"}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                    {data.wali?.addressCoordinate || "-"}
+                  </span>
+                  {data.wali?.addressCoordinate && <GoogleMapsButton coordinate={data.wali.addressCoordinate} />}
+                </div>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -669,7 +658,7 @@ export default function FamilyView() {
                 </span>
                 <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
                   {data.wali?.createdAt
-                    ? new Date(data.wali.createdAt).toLocaleString()
+                    ? formatDate(data.wali.createdAt)
                     : "-"}
                 </span>
               </div>
@@ -679,7 +668,7 @@ export default function FamilyView() {
                 </span>
                 <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
                   {data.wali?.updatedAt
-                    ? new Date(data.wali.updatedAt).toLocaleString()
+                    ? formatDate(data.wali.updatedAt)
                     : "-"}
                 </span>
               </div>
@@ -773,7 +762,9 @@ export default function FamilyView() {
                       Tanggal Lahir
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.childrenBirthdate || "-"}
+                      {child?.childrenBirthdate
+                        ? formatDate(child.childrenBirthdate)
+                        : "-"}
                     </span>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -838,9 +829,12 @@ export default function FamilyView() {
                     <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                       Nomor Telp
                     </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.childrenPhone || "-"}
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words flex-1">
+                        {child?.childrenPhone || "-"}
+                      </span>
+                      {child?.childrenPhone && <WhatsAppButton phoneNumber={child.childrenPhone} />}
+                    </div>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -856,7 +850,7 @@ export default function FamilyView() {
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
                       {child?.createdAt
-                        ? new Date(child.createdAt).toLocaleString()
+                        ? formatDate(child.createdAt)
                         : "-"}
                     </span>
                   </div>
@@ -866,7 +860,7 @@ export default function FamilyView() {
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
                       {child?.updatedAt
-                        ? new Date(child.updatedAt).toLocaleString()
+                        ? formatDate(child.updatedAt)
                         : "-"}
                     </span>
                   </div>
@@ -942,7 +936,7 @@ export default function FamilyView() {
                             {visit.officer}
                           </span>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            ({dayjs(visit.visitDate).format("DD-MM-YYYY")})
+                            ({dayjs(visit.visitDate).format("DD/MM/YYYY")})
                           </p>
                         </div>
                       </div>

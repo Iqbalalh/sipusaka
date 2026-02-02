@@ -15,13 +15,18 @@ import Link from "next/link";
 // Icons
 import { LoadingOutlined } from "@ant-design/icons";
 
+// Action Buttons
+import { WhatsAppButton, GoogleMapsButton } from "@/components/ui/action-buttons/ActionButtons";
+
 // Type
 import { Wali } from "@/types/models/wali";
+import { BaseChildren } from "@/types/models/children";
 
 // Utils
 import { getWali } from "@/utils/services/wali.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 export default function WaliView() {
   // Data state
@@ -141,9 +146,12 @@ export default function WaliView() {
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
               Nomor Telepon
             </span>
-            <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-              {data?.waliPhone || "-"}
-            </span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                {data?.waliPhone || "-"}
+              </span>
+              {data?.waliPhone && <WhatsAppButton phoneNumber={data.waliPhone} />}
+            </div>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -165,9 +173,12 @@ export default function WaliView() {
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
               Koordinat Alamat
             </span>
-            <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-              {data?.addressCoordinate || "-"}
-            </span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                {data?.addressCoordinate || "-"}
+              </span>
+              {data?.addressCoordinate && <GoogleMapsButton coordinate={data.addressCoordinate} />}
+            </div>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -175,7 +186,7 @@ export default function WaliView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
               {data?.createdAt
-                ? new Date(data.createdAt).toLocaleString()
+                ? formatDate(data.createdAt)
                 : "-"}
             </span>
           </div>
@@ -185,7 +196,7 @@ export default function WaliView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
               {data?.updatedAt
-                ? new Date(data.updatedAt).toLocaleString()
+                ? formatDate(data.updatedAt)
                 : "-"}
             </span>
           </div>
@@ -206,6 +217,219 @@ export default function WaliView() {
             </span>
           </div>
         </div>
+
+        {/* Home Data Section */}
+        {(data?.partner || data?.employee || data?.childrens) && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+              Data Keluarga
+            </h3>
+
+            {/* Employee Info */}
+            {data?.employee && (
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Nama Karyawan
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.employee.employeeName || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      NIP/NIPP
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.employee.nipNipp || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Jabatan Terakhir
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.employee.lastPosition || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Jenis Kelamin
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.employee.employeeGender === "M" ? "Laki-laki" : "Perempuan"}
+                    </span>
+                  </div>
+                  {data.employee.deathCause && (
+                    <div className="md:col-span-2 lg:col-span-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        Penyebab Kematian
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                        {data.employee.deathCause}
+                      </span>
+                    </div>
+                  )}
+                  {data.employee.notes && (
+                    <div className="md:col-span-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        Catatan
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                        {data.employee.notes}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Partner Info */}
+            {data?.partner && (
+              <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Nama Pasangan
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.partner.partnerName || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      NIK
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.partner.partnerNik || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Pekerjaan
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.partner.partnerJob || "-"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Nomor Telepon
+                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90 flex-1">
+                        {data.partner.phoneNumber || "-"}
+                      </span>
+                      {data.partner.phoneNumber && <WhatsAppButton phoneNumber={data.partner.phoneNumber} />}
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                      Alamat
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {data.partner.address || "-"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Children Info */}
+            {data?.childrens && data.childrens.length > 0 && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Anak ({data.childrens.length})
+                </h4>
+                <div className="space-y-3">
+                  {data.childrens.map((child: BaseChildren, index: number) => (
+                    <div
+                      key={child.id || index}
+                      className="p-3 bg-white dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                            Nama Anak
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                            {child.childrenName || "-"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                            NIK
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                            {child.nik || "-"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                            Jenis Kelamin
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                            {child.childrenGender === "M" ? "Laki-laki" : "Perempuan"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                            Umur
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                            {child.age ? `${child.age} tahun` : "-"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                            Pendidikan
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                            {child.educationLevel || "-"}
+                          </span>
+                        </div>
+                        {child.schoolName && (
+                          <div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                              Nama Sekolah
+                            </span>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                              {child.schoolName}
+                            </span>
+                          </div>
+                        )}
+                        {child.childrenPhone && (
+                          <div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                              Nomor Telepon
+                            </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-gray-800 dark:text-white/90 flex-1">
+                                {child.childrenPhone}
+                              </span>
+                              <WhatsAppButton phoneNumber={child.childrenPhone} />
+                            </div>
+                          </div>
+                        )}
+                        {child.childrenJob && (
+                          <div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                              Pekerjaan
+                            </span>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                              {child.childrenJob}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

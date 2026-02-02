@@ -41,3 +41,10 @@ export const deletePartner = async (id: number) => {
     throw error;
   }
 };
+
+export const createPartner = async (fd: FormData) => {
+  return await fetchWithAuth(API_PARTNER, {
+    method: "POST",
+    body: fd,
+  });
+};

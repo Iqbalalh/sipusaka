@@ -16,11 +16,15 @@ import Link from "next/link";
 // Icons
 import { LoadingOutlined } from "@ant-design/icons";
 
+// Action Buttons
+import { WhatsAppButton } from "@/components/ui/action-buttons/ActionButtons";
+
 // Type
 import { Staff } from "@/utils/services/staff.service";
 
 // Utils
 import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPresignedUrl";
+import { formatDate } from "@/utils/formatter/formatDate";
 import { getStaff } from "@/utils/services/staff.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
@@ -128,9 +132,12 @@ export default function StaffView() {
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
               Nomor Telepon
             </span>
-            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.phoneNumber || "-"}
-            </span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words flex-1">
+                {data?.phoneNumber || "-"}
+              </span>
+              {data?.phoneNumber && <WhatsAppButton phoneNumber={data.phoneNumber} />}
+            </div>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -146,7 +153,7 @@ export default function StaffView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
               {data?.birthdate
-                ? new Date(data.birthdate).toLocaleDateString("id-ID")
+                ? formatDate(data.birthdate)
                 : "-"}
             </span>
           </div>

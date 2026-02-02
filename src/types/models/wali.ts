@@ -1,4 +1,7 @@
 import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+import { BaseChildren } from "./children";
+import { BaseEmployee } from "./employee";
+import { BasePartner } from "./partner";
 
 export interface BaseWali {
   id?: number;
@@ -20,4 +23,8 @@ export interface BaseWali {
 export interface Wali extends BaseWali {
   employeeName?: string | null;
   waliPictFile?: File | null;
+  // Home data
+  partner?: BasePartner | null;
+  employee?: BaseEmployee | null;
+  childrens?: BaseChildren[];
 }

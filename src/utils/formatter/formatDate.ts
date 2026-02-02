@@ -1,4 +1,4 @@
-export const formatDate = (dateString?: string | undefined | null) => {
+export const formatDate = (dateString?: string | number | undefined | null) => {
   if (!dateString) return "";
 
   const date = new Date(dateString);
@@ -8,5 +8,5 @@ export const formatDate = (dateString?: string | undefined | null) => {
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const yy = String(date.getFullYear());
 
-  return `${dd}-${mm}-${yy}`;
+  return `${dd}/${mm}/${yy}`;
 };

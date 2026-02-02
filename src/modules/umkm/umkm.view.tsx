@@ -62,6 +62,7 @@ import dayjs from "dayjs";
 import { getUmkm } from "@/utils/services/umkm.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 export default function UmkmView() {
   // Data state
@@ -639,12 +640,12 @@ export default function UmkmView() {
                         className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileTextOutlined className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          <FileTextOutlined className="text-gray-500 dark:text-gray-400 shrink-0" />
                           <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                             {doc.name}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           <a
                             href={doc.urlDoc}
                             target="_blank"
@@ -815,12 +816,12 @@ export default function UmkmView() {
                           className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <FileTextOutlined className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                            <FileTextOutlined className="text-gray-500 dark:text-gray-400 shrink-0" />
                             <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                               {doc.name}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <a
                               href={doc.urlDoc}
                               target="_blank"

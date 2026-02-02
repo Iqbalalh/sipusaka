@@ -11,6 +11,7 @@ import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { getGallery } from "@/utils/services/gallery.service";
 import { Gallery } from "@/types/models/gallery";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 export default function GalleryView() {
   const [data, setData] = useState<Gallery | null>(null);
@@ -96,7 +97,7 @@ export default function GalleryView() {
             label="Tanggal Galeri"
             value={
               data?.galleryDate
-                ? new Date(data.galleryDate).toLocaleDateString("id-ID")
+                ? formatDate(data.galleryDate)
                 : "-"
             }
           />
@@ -108,7 +109,7 @@ export default function GalleryView() {
             label="Dibuat Pada"
             value={
               data?.createdAt
-                ? new Date(data.createdAt).toLocaleString()
+                ? formatDate(data.createdAt)
                 : "-"
             }
           />
@@ -116,7 +117,7 @@ export default function GalleryView() {
             label="Diperbarui Pada"
             value={
               data?.updatedAt
-                ? new Date(data.updatedAt).toLocaleString()
+                ? formatDate(data.updatedAt)
                 : "-"
             }
           />

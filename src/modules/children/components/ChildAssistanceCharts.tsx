@@ -35,7 +35,7 @@ export default function ChildAssistanceCharts({ assistance }: ChildAssistanceCha
 
   // Prepare data for assistance trend chart
   const trendData = sortedAssistance.map(a => ({
-    name: dayjs(a.assistanceDate).format("DD MMM YYYY"),
+    name: dayjs(a.assistanceDate).format("DD/MM/YYYY"),
     nominal: a.assistanceAmount,
     type: a.assistanceType,
   }));

@@ -63,7 +63,7 @@ export default function ChildAssistanceSection({
                       {assist.assistanceType}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {dayjs(assist.assistanceDate).format("DD MMMM YYYY")}
+                      {dayjs(assist.assistanceDate).format("DD/MM/YYYY")}
                     </span>
                   </div>
                   <Space size="small">

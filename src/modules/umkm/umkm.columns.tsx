@@ -6,6 +6,7 @@ import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Umkm } from "@/types/models/umkm";
 import { Region } from "@/types/models/region";
 import type { TableColumn } from "@/types/generic/antd-table";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
@@ -97,9 +98,9 @@ export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text: any) => (text ? new Date(text).toLocaleDateString("id-ID") : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (_: any, record: Umkm) =>
-      record.createdAt ? new Date(record.createdAt).toLocaleDateString("id-ID") : "-",
+      record.createdAt ? formatDate(record.createdAt) : "-",
     hidden: true,
   } as any,
 
@@ -107,9 +108,9 @@ export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
     title: "Diperbarui Pada",
     dataIndex: "updatedAt",
     key: "updatedAt",
-    render: (text: any) => (text ? new Date(text).toLocaleDateString("id-ID") : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (_: any, record: Umkm) =>
-      record.updatedAt ? new Date(record.updatedAt).toLocaleDateString("id-ID") : "-",
+      record.updatedAt ? formatDate(record.updatedAt) : "-",
     hidden: true,
   } as any,
 

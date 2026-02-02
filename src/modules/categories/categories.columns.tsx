@@ -5,6 +5,7 @@ import Button from "@/components/ui/button/Button";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Category } from "@/types/models/gallery";
 import type { TableColumn } from "@/types/generic/antd-table";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 // ==============================================
 // COLUMN CONFIGURATION
@@ -39,9 +40,9 @@ export const getCategoryColumns = (): TableColumn<Category>[] => [
     dataIndex: "createdAt",
     key: "createdAt",
     render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
+      text ? formatDate(text) : "-",
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
   },
 
   {
@@ -49,9 +50,9 @@ export const getCategoryColumns = (): TableColumn<Category>[] => [
     dataIndex: "updatedAt",
     key: "updatedAt",
     render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
+      text ? formatDate(text) : "-",
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
     hidden: true,
   },
 

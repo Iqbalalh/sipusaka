@@ -26,6 +26,7 @@ import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
 import { API_IMAGE } from "@/constants/endpoint";
 import { handlePrintEmployee } from "@/utils/export/pdf/modules/employee.pdf";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 export default function EmployeeView() {
   // Data state
@@ -164,7 +165,7 @@ export default function EmployeeView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
               {data?.createdAt
-                ? new Date(data.createdAt).toLocaleString()
+                ? formatDate(data.createdAt)
                 : "-"}
             </span>
           </div>
@@ -174,7 +175,7 @@ export default function EmployeeView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
               {data?.updatedAt
-                ? new Date(data.updatedAt).toLocaleString()
+                ? formatDate(data.updatedAt)
                 : "-"}
             </span>
           </div>

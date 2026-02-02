@@ -61,7 +61,7 @@ export default function UmkmMonitoringSection({
                     {record.surveyor}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {dayjs(record.monitoringDate).format("DD MMMM YYYY")}
+                    {dayjs(record.monitoringDate).format("DD/MM/YYYY")}
                   </span>
                 </div>
                 <Space size="small">

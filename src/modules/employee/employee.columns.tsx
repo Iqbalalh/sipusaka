@@ -8,6 +8,7 @@ import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Employee } from "@/types/models/employee";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
@@ -134,9 +135,9 @@ export const getEmployeeColumns = (
     dataIndex: "createdAt",
     key: "createdAt",
     render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
+      text ? formatDate(text) : "-",
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
     hidden: true,
   },
 
@@ -145,9 +146,9 @@ export const getEmployeeColumns = (
     dataIndex: "updatedAt",
     key: "updatedAt",
     render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
+      text ? formatDate(text) : "-",
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
     hidden: true,
   },
 

@@ -1,6 +1,8 @@
 import Button from "@/components/ui/button/Button";
 import { Umkm } from "@/types/models/umkm";
 import Link from "next/link";
+import { formatDate } from "@/utils/formatter/formatDate";
+import { GoogleMapsButton } from "@/components/ui/action-buttons/ActionButtons";
 
 interface UmkmInfoProps {
   data: Umkm | null;
@@ -19,11 +21,11 @@ export default function UmkmInfo({ data }: UmkmInfoProps) {
     { label: "Wilayah", value: data?.regions.regionName || "-" },
     {
       label: "Dibuat Pada",
-      value: data?.createdAt ? new Date(data.createdAt).toLocaleString() : "-",
+      value: data?.createdAt ? formatDate(data.createdAt) : "-",
     },
     {
       label: "Diperbarui Pada",
-      value: data?.updatedAt ? new Date(data.updatedAt).toLocaleString() : "-",
+      value: data?.updatedAt ? formatDate(data.updatedAt) : "-",
     },
     {
       label: "Dibuat Oleh",
@@ -54,9 +56,18 @@ export default function UmkmInfo({ data }: UmkmInfoProps) {
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
               {item.label}
             </span>
-            <span className="text-sm font-medium text-gray-800 dark:text-white/90 break-words">
-              {item.value}
-            </span>
+            {item.label === "Koordinat" && data?.umkmCoordinate ? (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
+                  {item.value}
+                </span>
+                <GoogleMapsButton coordinate={data.umkmCoordinate} />
+              </div>
+            ) : (
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+                {item.value}
+              </span>
+            )}
           </div>
         ))}
       </div>

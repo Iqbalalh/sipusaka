@@ -8,6 +8,7 @@ import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Partner } from "@/types/models/partner";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
@@ -143,9 +144,9 @@ export const getPartnerColumns = (
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text) => (text ? new Date(text).toLocaleDateString("id-ID") : "-"),
+    render: (text) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
     hidden: true,
   },
 
@@ -153,9 +154,9 @@ export const getPartnerColumns = (
     title: "Diperbarui Pada",
     dataIndex: "updatedAt",
     key: "updatedAt",
-    render: (text) => (text ? new Date(text).toLocaleDateString("id-ID") : "-"),
+    render: (text) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
     hidden: true,
   },
 

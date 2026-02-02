@@ -41,3 +41,10 @@ export const deleteEmployee = async (id: number) => {
     throw error;
   }
 };
+
+export const createEmployee = async (fd: FormData) => {
+  return await fetchWithAuth(API_EMPLOYEE, {
+    method: "POST",
+    body: fd,
+  });
+};

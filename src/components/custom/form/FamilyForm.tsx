@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { message, Switch, Select, DatePicker } from "antd";
-import dayjs from "dayjs";
+import { message, Select } from "antd";
 
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
-import FileInput from "@/components/form/input/FileInput";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
 import { TextInput } from "@/components/custom/TextInput";
-import TextArea from "antd/es/input/TextArea";
+
+// Modals
+import CreateEmployeeModal from "@/components/modals/CreateEmployeeModal";
+import CreatePartnerModal from "@/components/modals/CreatePartnerModal";
+import CreateWaliModal from "@/components/modals/CreateWaliModal";
+import CreateChildrenModal from "@/components/modals/CreateChildrenModal";
 
 // Hooks & Utils
 import { useNotify } from "@/context/NotificationContext";
@@ -26,16 +29,8 @@ import { getPartners } from "@/utils/services/partner.service";
 import { getWaliList } from "@/utils/services/wali.service";
 import { getChildrens } from "@/utils/services/children.service";
 import { BaseHome } from "@/types/models/home";
-import { BaseEmployee } from "@/types/models/employee";
-import { BasePartner } from "@/types/models/partner";
-import { BaseWali } from "@/types/models/wali";
-import { BaseChildren } from "@/types/models/children";
 import { Option } from "@/types/generic/select-option";
-import { GENDER_OPTIONS, PLH_OPTIONS } from "@/constants/option";
 import { Region } from "@/types/models/region";
-import { Employee } from "@/types/models/employee";
-import { Partner } from "@/types/models/partner";
-import { Wali } from "@/types/models/wali";
 
 // ==============================================
 // INITIAL FORM STATE
@@ -74,57 +69,18 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
   const [wali, setWali] = useState<Option[]>([]);
   const [childrenOptions, setChildrenOptions] = useState<Option[]>([]);
 
-  // Modes
-  const [employeeMode, setEmployeeMode] = useState<"existing" | "new">(
-    "existing"
-  );
-  const [partnerMode, setPartnerMode] = useState<"existing" | "new">(
-    "existing"
-  );
-  const [waliMode, setWaliMode] = useState<"none" | "existing" | "new">("none");
-  const [childrenMode, setChildrenMode] = useState<"new" | "existing">("new");
+  // Wali mode
+  const [waliMode, setWaliMode] = useState<"none" | "existing">("none");
 
   // Form state
   const [form, setForm] = useState<BaseHome>(INITIAL_FORM_STATE);
-  const [employeeForm, setEmployeeForm] = useState<BaseEmployee>({
-    nipNipp: "",
-    employeeName: "",
-    deathCause: "",
-    lastPosition: "",
-    notes: "",
-    regionId: null,
-    employeeGender: "M",
-    isAccident: false,
-  });
-  const [partnerForm, setPartnerForm] = useState<BasePartner>({
-    partnerName: "",
-    partnerJob: "",
-    partnerNik: "",
-    regionId: null,
-    address: null,
-    subdistrictName: null,
-    postalCode: "",
-    homeCoordinate: "",
-    phoneNumber: "",
-    phoneNumberAlt: "",
-    isActive: true,
-    isAlive: true,
-  });
-  const [waliForm, setWaliForm] = useState<BaseWali>({
-    waliName: "",
-    relation: null,
-    waliAddress: null,
-    addressCoordinate: null,
-    waliPhone: null,
-    nik: null,
-    waliJob: null,
-  });
-  const [childrens, setChildrens] = useState<BaseChildren[]>([]);
+  const [selectedChildrenIds, setSelectedChildrenIds] = useState<number[]>([]);
 
-  // File states
-  const [employeePhotoFile, setEmployeePhotoFile] = useState<File | null>(null);
-  const [partnerPhotoFile, setPartnerPhotoFile] = useState<File | null>(null);
-  const [waliPhotoFile, setWaliPhotoFile] = useState<File | null>(null);
+  // Modal states
+  const [employeeModalVisible, setEmployeeModalVisible] = useState(false);
+  const [partnerModalVisible, setPartnerModalVisible] = useState(false);
+  const [waliModalVisible, setWaliModalVisible] = useState(false);
+  const [childrenModalVisible, setChildrenModalVisible] = useState(false);
 
   // ==============================================
   // FETCH INITIAL DATA
@@ -195,48 +151,19 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
   // VALIDATION
   // ==============================================
   const validateForm = (): boolean => {
-    // Validate home
     if (!form.regionId) {
       messageApi.error("Wilayah wajib diisi!");
       return false;
     }
 
-    // Validate employee
-    if (employeeMode === "existing") {
-      if (!form.employeeId) {
-        messageApi.error("Pilih pegawai yang sudah ada!");
-        return false;
-      }
-    } else {
-      if (!employeeForm.nipNipp) {
-        messageApi.error("NIP/NIPP wajib diisi!");
-        return false;
-      }
-      if (!employeeForm.employeeName) {
-        messageApi.error("Nama pegawai wajib diisi!");
-        return false;
-      }
-      if (!employeeForm.regionId) {
-        messageApi.error("Wilayah pegawai wajib diisi!");
-        return false;
-      }
+    if (!form.employeeId) {
+      messageApi.error("Pilih pegawai!");
+      return false;
     }
 
-    // Validate partner
-    if (partnerMode === "existing") {
-      if (!form.partnerId) {
-        messageApi.error("Pilih pasangan yang sudah ada!");
-        return false;
-      }
-    } else {
-      if (!partnerForm.partnerName) {
-        messageApi.error("Nama pasangan wajib diisi!");
-        return false;
-      }
-      if (!partnerForm.regionId) {
-        messageApi.error("Wilayah pasangan wajib diisi!");
-        return false;
-      }
+    if (!form.partnerId) {
+      messageApi.error("Pilih pasangan!");
+      return false;
     }
 
     return true;
@@ -246,6 +173,7 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
   // SUBMIT HANDLER
   // ==============================================
   const handleSubmit = async () => {
+    if (submitting) return; // Prevent multiple submissions
     if (!validateForm()) return;
 
     setSubmitting(true);
@@ -258,91 +186,27 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
     try {
       const fd = new FormData();
 
-      // Home fields
+      // Home fields - snake_case
       fd.append("region_id", String(form.regionId));
       fd.append("postal_code", form.postalCode ?? "");
 
-      // Employee
-      if (employeeMode === "existing") {
-        fd.append("employee_id", String(form.employeeId));
-      } else {
-        Object.entries(employeeForm).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            const snakeKey = key.replace(
-              /[A-Z]/g,
-              (letter) => `_${letter.toLowerCase()}`
-            );
-            fd.append(`employee_${snakeKey}`, String(value));
-          }
-        });
-        if (employeePhotoFile) {
-          fd.append("employee_pict", employeePhotoFile);
-        }
+      // Employee ID - camelCase
+      if (form.employeeId) {
+        fd.append("employeeId", String(form.employeeId));
       }
 
-      // Partner
-      if (partnerMode === "existing") {
-        fd.append("partner_id", String(form.partnerId));
-      } else {
-        Object.entries(partnerForm).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            const snakeKey = key.replace(
-              /[A-Z]/g,
-              (letter) => `_${letter.toLowerCase()}`
-            );
-            fd.append(`partner_${snakeKey}`, String(value));
-          }
-        });
-        if (partnerPhotoFile) {
-          fd.append("partner_pict", partnerPhotoFile);
-        }
+      // Partner ID - camelCase
+      if (form.partnerId) {
+        fd.append("partnerId", String(form.partnerId));
       }
 
-      // Wali
-      if (waliMode === "existing") {
-        fd.append("wali_id", String(form.waliId));
-      } else if (waliMode === "new") {
-        Object.entries(waliForm).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            const snakeKey = key.replace(
-              /[A-Z]/g,
-              (letter) => `_${letter.toLowerCase()}`
-            );
-            fd.append(`wali_${snakeKey}`, String(value));
-          }
-        });
-        if (waliPhotoFile) {
-          fd.append("wali_pict", waliPhotoFile);
-        }
+      // Wali ID - camelCase
+      if (form.waliId) {
+        fd.append("waliId", String(form.waliId));
       }
 
-      // Children - Send as JSON string
-      const childrenData = childrens.map((child, index) => {
-        const childData: any = {};
-        Object.entries(child).forEach(([key, value]) => {
-          if (key === "childrenPictFile") return;
-          if (value !== null && value !== undefined) {
-            const snakeKey = key.replace(
-              /[A-Z]/g,
-              (letter) => `_${letter.toLowerCase()}`
-            );
-            childData[snakeKey] = value;
-          }
-        });
-        return childData;
-      });
-
-      fd.append("childrens", JSON.stringify(childrenData));
-
-      // Children photos
-      childrens.forEach((child, index) => {
-        if ((child as any).childrenPictFile) {
-          fd.append(
-            `childrens[${index}][children_pict]`,
-            (child as any).childrenPictFile
-          );
-        }
-      });
+      // Children IDs - Send as JSON string
+      fd.append("childrens", JSON.stringify(selectedChildrenIds.map(id => ({ id }))));
 
       const res = await fetchWithAuth(API_HOME, {
         method: "POST",
@@ -352,14 +216,14 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
       if (!res.ok) throw new Error("Gagal membuat data keluarga");
 
       const result = await res.json();
-      
+
       messageApi.success({
         content: "Data keluarga berhasil dibuat!",
         key: "save",
         duration: 2,
       });
 
-      router.push(`/family/view/${result.id}`);
+      router.push(`/family/view/${result.data.home.id}`);
     } catch (err) {
       console.error(err);
       messageApi.error({
@@ -373,81 +237,30 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
   };
 
   // ==============================================
-  // CHILDREN HANDLERS
+  // SUCCESS HANDLERS FOR MODALS
   // ==============================================
-  const addChild = () => {
-    setChildrens([
-      ...childrens,
-      {
-        childrenName: "",
-        index: null,
-        childrenGender: "M",
-        childrenBirthdate: null,
-        childrenAddress: "",
-        childrenPhone: "",
-        isFatherAlive: true,
-        isMotherAlive: true,
-        isCondition: true,
-        isActive: true,
-        notes: "",
-      },
-    ]);
+  const handleEmployeeCreated = (employeeId: number, employeeName: string) => {
+    setEmployees([...employees, { value: employeeId, label: employeeName }]);
+    setForm({ ...form, employeeId });
+    setEmployeeModalVisible(false);
   };
 
-  const removeChild = (index: number) => {
-    setChildrens(childrens.filter((_, i) => i !== index));
+  const handlePartnerCreated = (partnerId: number, partnerName: string) => {
+    setPartners([...partners, { value: partnerId, label: partnerName }]);
+    setForm({ ...form, partnerId });
+    setPartnerModalVisible(false);
   };
 
-  const updateChild = (
-    index: number,
-    field: keyof BaseChildren,
-    value: any
-  ) => {
-    setChildrens(
-      childrens.map((child, i) =>
-        i === index ? { ...child, [field]: value } : child
-      )
-    );
+  const handleWaliCreated = (waliId: number, waliName: string) => {
+    setWali([...wali, { value: waliId, label: waliName }]);
+    setForm({ ...form, waliId });
+    setWaliModalVisible(false);
   };
 
-  const addExistingChild = (childId: number) => {
-    setChildrens([
-      ...childrens,
-      {
-        id: childId,
-        childrenName: "",
-        index: null,
-        childrenGender: "M",
-        childrenBirthdate: null,
-        childrenAddress: "",
-        childrenPhone: "",
-        isFatherAlive: true,
-        isMotherAlive: true,
-        isCondition: true,
-        isActive: true,
-        notes: "",
-      },
-    ]);
-  };
-
-  // ==============================================
-  // FILE VALIDATION
-  // ==============================================
-  const validateFile = (file: File): boolean => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    const maxSize = 1 * 1024 * 1024;
-
-    if (!allowedTypes.includes(file.type)) {
-      messageApi.error("Format tidak valid. Hanya JPG, PNG, atau WEBP.");
-      return false;
-    }
-
-    if (file.size > maxSize) {
-      messageApi.error("Ukuran file maksimal 1MB.");
-      return false;
-    }
-
-    return true;
+  const handleChildrenCreated = (childrenId: number, childrenName: string) => {
+    setChildrenOptions([...childrenOptions, { value: childrenId, label: childrenName }]);
+    setSelectedChildrenIds([...selectedChildrenIds, childrenId]);
+    setChildrenModalVisible(false);
   };
 
   // ==============================================
@@ -492,591 +305,172 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
         </ComponentCard>
 
         {/* EMPLOYEE GROUP */}
-        <ComponentCard
-          title="Pegawai (Wajib)"
-          rightComponent={
-            <Switch
-              checked={employeeMode === "new"}
-              onChange={(checked) =>
-                setEmployeeMode(checked ? "new" : "existing")
-              }
-              checkedChildren="Buat Baru"
-              unCheckedChildren="Sudah Ada"
-            />
-          }
-        >
-          {employeeMode === "existing" ? (
+        <ComponentCard title="Pegawai (Wajib)">
+          <div className="space-y-4">
             <FormField label="Pilih Pegawai" required>
-              <SelectInput
-                value={form.employeeId ?? undefined}
-                onChange={(value) => setForm({ ...form, employeeId: value })}
-                options={employees}
-                placeholder="Pilih pegawai"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <SelectInput
+                    value={form.employeeId ?? undefined}
+                    onChange={(value) => setForm({ ...form, employeeId: value })}
+                    options={employees}
+                    placeholder="Pilih pegawai"
+                  />
+                </div>
+                <Button
+                  onClick={() => setEmployeeModalVisible(true)}
+                  disabled={submitting}
+                  size="sm"
+                >
+                  Buat Baru
+                </Button>
+              </div>
             </FormField>
-          ) : (
-            <div className="space-y-5">
-              <FormField label="NIP / NIPP" required>
-                <TextInput
-                  value={employeeForm.nipNipp}
-                  onChange={(value) =>
-                    setEmployeeForm({ ...employeeForm, nipNipp: value })
-                  }
-                  placeholder="Masukkan NIP / NIPP"
-                />
-              </FormField>
-              <FormField label="Nama Pegawai" required>
-                <TextInput
-                  value={employeeForm.employeeName}
-                  onChange={(value) =>
-                    setEmployeeForm({ ...employeeForm, employeeName: value })
-                  }
-                  placeholder="Masukkan nama pegawai"
-                />
-              </FormField>
-              <FormField label="PLH / Non-PLH" required>
-                <SelectInput
-                  value={employeeForm.isAccident}
-                  onChange={(value) =>
-                    setEmployeeForm({ ...employeeForm, isAccident: value })
-                  }
-                  options={PLH_OPTIONS}
-                  placeholder="Pilih status PLH"
-                />
-              </FormField>
-              <FormField label="Posisi Terakhir">
-                <TextInput
-                  value={employeeForm.lastPosition ?? ""}
-                  onChange={(value) =>
-                    setEmployeeForm({ ...employeeForm, lastPosition: value })
-                  }
-                  placeholder="Masukkan posisi terakhir"
-                />
-              </FormField>
-              <FormField label="Wilayah" required>
-                <SelectInput
-                  value={employeeForm.regionId}
-                  onChange={(value) =>
-                    setEmployeeForm({ ...employeeForm, regionId: value })
-                  }
-                  options={regions}
-                  placeholder="Pilih wilayah"
-                />
-              </FormField>
-              <FormField label="Jenis Kelamin" required>
-                <SelectInput
-                  value={employeeForm.employeeGender}
-                  onChange={(value) =>
-                    setEmployeeForm({ ...employeeForm, employeeGender: value })
-                  }
-                  options={GENDER_OPTIONS}
-                  placeholder="Pilih jenis kelamin"
-                />
-              </FormField>
-              <FormField label="Catatan">
-                <TextArea
-                  rows={4}
-                  value={employeeForm.notes ?? ""}
-                  onChange={(e) =>
-                    setEmployeeForm({ ...employeeForm, notes: e.target.value })
-                  }
-                  placeholder="Tambahkan catatan (opsional)"
-                />
-              </FormField>
-              <FormField label="Foto Pegawai">
-                <FileInput
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && validateFile(file)) {
-                      setEmployeePhotoFile(file);
-                    }
-                  }}
-                />
-              </FormField>
-            </div>
-          )}
+          </div>
         </ComponentCard>
 
         {/* PARTNER GROUP */}
-        <ComponentCard
-          title="Pasangan (Wajib)"
-          rightComponent={
-            <Switch
-              checked={partnerMode === "new"}
-              onChange={(checked) =>
-                setPartnerMode(checked ? "new" : "existing")
-              }
-              checkedChildren="Buat Baru"
-              unCheckedChildren="Sudah Ada"
-            />
-          }
-        >
-          {partnerMode === "existing" ? (
+        <ComponentCard title="Pasangan (Wajib)">
+          <div className="space-y-4">
             <FormField label="Pilih Pasangan" required>
-              <SelectInput
-                value={form.partnerId ?? undefined}
-                onChange={(value) => setForm({ ...form, partnerId: value })}
-                options={partners}
-                placeholder="Pilih pasangan"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <SelectInput
+                    value={form.partnerId ?? undefined}
+                    onChange={(value) => setForm({ ...form, partnerId: value })}
+                    options={partners}
+                    placeholder="Pilih pasangan"
+                  />
+                </div>
+                <Button
+                  onClick={() => setPartnerModalVisible(true)}
+                  disabled={submitting}
+                  size="sm"
+                >
+                  Buat Baru
+                </Button>
+              </div>
             </FormField>
-          ) : (
-            <div className="space-y-5">
-              <FormField label="Nama Pasangan" required>
-                <TextInput
-                  value={partnerForm.partnerName ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, partnerName: value })
-                  }
-                  placeholder="Masukkan nama pasangan"
-                />
-              </FormField>
-              <FormField label="NIK">
-                <TextInput
-                  value={partnerForm.partnerNik ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, partnerNik: value })
-                  }
-                  placeholder="Masukkan NIK"
-                />
-              </FormField>
-              <FormField label="Pekerjaan">
-                <TextInput
-                  value={partnerForm.partnerJob ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, partnerJob: value })
-                  }
-                  placeholder="Masukkan pekerjaan"
-                />
-              </FormField>
-              <FormField label="Alamat">
-                <TextArea
-                  rows={4}
-                  value={partnerForm.address ?? ""}
-                  onChange={(e) =>
-                    setPartnerForm({ ...partnerForm, address: e.target.value })
-                  }
-                  placeholder="Masukkan alamat lengkap"
-                />
-              </FormField>
-              <FormField label="Nomor Telepon">
-                <TextInput
-                  value={partnerForm.phoneNumber ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, phoneNumber: value })
-                  }
-                  placeholder="Masukkan nomor telepon"
-                />
-              </FormField>
-              <FormField label="Nomor Telepon Alternatif">
-                <TextInput
-                  value={partnerForm.phoneNumberAlt ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, phoneNumberAlt: value })
-                  }
-                  placeholder="Masukkan nomor telepon alternatif"
-                />
-              </FormField>
-              <FormField label="Wilayah" required>
-                <SelectInput
-                  value={partnerForm.regionId}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, regionId: value })
-                  }
-                  options={regions}
-                  placeholder="Pilih wilayah"
-                />
-              </FormField>
-              <FormField label="Kecamatan">
-                <TextInput
-                  value={partnerForm.subdistrictName ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, subdistrictName: value })
-                  }
-                  placeholder="Masukkan nama kecamatan"
-                />
-              </FormField>
-              <FormField label="Kode Pos">
-                <TextInput
-                  value={partnerForm.postalCode ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, postalCode: value })
-                  }
-                  placeholder="Masukkan kode pos"
-                />
-              </FormField>
-              <FormField label="Koordinat Rumah">
-                <TextInput
-                  value={partnerForm.homeCoordinate ?? ""}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, homeCoordinate: value })
-                  }
-                  placeholder="Masukkan koordinat rumah"
-                />
-              </FormField>
-              <FormField label="Status Aktif" required>
-                <SelectInput
-                  value={partnerForm.isActive}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, isActive: value })
-                  }
-                  options={[
-                    { value: true, label: "Aktif" },
-                    { value: false, label: "Tidak Aktif" },
-                  ]}
-                  placeholder="Pilih status aktif"
-                />
-              </FormField>
-              <FormField label="Status Hidup" required>
-                <SelectInput
-                  value={partnerForm.isAlive}
-                  onChange={(value) =>
-                    setPartnerForm({ ...partnerForm, isAlive: value })
-                  }
-                  options={[
-                    { value: true, label: "Hidup" },
-                    { value: false, label: "Meninggal" },
-                  ]}
-                  placeholder="Pilih status hidup"
-                />
-              </FormField>
-              <FormField label="Foto Pasangan">
-                <FileInput
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && validateFile(file)) {
-                      setPartnerPhotoFile(file);
-                    }
-                  }}
-                />
-              </FormField>
-            </div>
-          )}
+          </div>
         </ComponentCard>
 
         {/* WALI GROUP */}
-        <ComponentCard
-          title="Wali (Opsional)"
-          rightComponent={
+        <ComponentCard title="Wali (Opsional)">
+          <div className="space-y-4">
             <Select
-              className="w-40"
+              className="w-max"
               value={waliMode}
               onChange={(value) => setWaliMode(value as any)}
               options={[
                 { label: "Tidak Ada", value: "none" },
-                { label: "Sudah Ada", value: "existing" },
-                { label: "Buat Baru", value: "new" },
+                { label: "Sudah Ada/Buat Baru", value: "existing" },
               ]}
+              disabled={submitting}
+              size="large"
             />
-          }
-        >
-          {waliMode === "existing" && (
-            <FormField label="Pilih Wali">
-              <SelectInput
-                value={form.waliId ?? undefined}
-                onChange={(value) => setForm({ ...form, waliId: value })}
-                options={wali}
-                placeholder="Pilih wali"
-              />
-            </FormField>
-          )}
 
-          {waliMode === "new" && (
-            <div className="space-y-5">
-              <FormField label="Nama Wali">
-                <TextInput
-                  value={waliForm.waliName}
-                  onChange={(value) =>
-                    setWaliForm({ ...waliForm, waliName: value })
-                  }
-                  placeholder="Masukkan nama wali"
-                />
-              </FormField>
-              <FormField label="NIK">
-                <TextInput
-                  value={waliForm.nik ?? ""}
-                  onChange={(value) =>
-                    setWaliForm({ ...waliForm, nik: value })
-                  }
-                  placeholder="Masukkan NIK wali"
-                />
-              </FormField>
-              <FormField label="Pekerjaan Wali">
-                <TextInput
-                  value={waliForm.waliJob ?? ""}
-                  onChange={(value) =>
-                    setWaliForm({ ...waliForm, waliJob: value })
-                  }
-                  placeholder="Masukkan pekerjaan wali"
-                />
-              </FormField>
-              <FormField label="Hubungan">
-                <TextInput
-                  value={waliForm.relation ?? ""}
-                  onChange={(value) =>
-                    setWaliForm({ ...waliForm, relation: value })
-                  }
-                  placeholder="Masukkan hubungan"
-                />
-              </FormField>
-              <FormField label="Alamat Wali">
-                <TextArea
-                  rows={3}
-                  value={waliForm.waliAddress ?? ""}
-                  onChange={(e) =>
-                    setWaliForm({ ...waliForm, waliAddress: e.target.value })
-                  }
-                  placeholder="Masukkan alamat wali"
-                />
-              </FormField>
-              <FormField label="No. Telepon Wali">
-                <TextInput
-                  value={waliForm.waliPhone ?? ""}
-                  onChange={(value) =>
-                    setWaliForm({ ...waliForm, waliPhone: value })
-                  }
-                  placeholder="Masukkan nomor telepon wali"
-                />
-              </FormField>
-              <FormField label="Koordinat Alamat">
-                <TextInput
-                  value={waliForm.addressCoordinate ?? ""}
-                  onChange={(value) =>
-                    setWaliForm({ ...waliForm, addressCoordinate: value })
-                  }
-                  placeholder="Masukkan koordinat alamat"
-                />
-              </FormField>
-              <FormField label="Foto Wali">
-                <FileInput
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && validateFile(file)) {
-                      setWaliPhotoFile(file);
-                    }
-                  }}
-                />
-              </FormField>
-            </div>
-          )}
+            {waliMode === "existing" && (
+              <div className="mt-4">
+                <FormField label="Pilih Wali">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <SelectInput
+                        value={form.waliId ?? undefined}
+                        onChange={(value) => setForm({ ...form, waliId: value })}
+                        options={wali}
+                        placeholder="Pilih wali"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => setWaliModalVisible(true)}
+                      disabled={submitting}
+                      size="sm"
+                    >
+                      Buat Baru
+                    </Button>
+                  </div>
+                </FormField>
+              </div>
+            )}
+          </div>
         </ComponentCard>
 
         {/* CHILDREN GROUP */}
-        <ComponentCard
-          title="Anak Asuh"
-          rightComponent={
-            <Switch
-              checked={childrenMode === "existing"}
-              onChange={(checked) =>
-                setChildrenMode(checked ? "existing" : "new")
-              }
-              checkedChildren="Sudah Ada"
-              unCheckedChildren="Buat Baru"
-            />
-          }
-        >
+        <ComponentCard title="Anak Asuh">
           <div className="space-y-4">
-            {childrenMode === "new" ? (
-              <Button onClick={addChild}>Tambah Anak</Button>
-            ) : (
-              <div className="flex gap-2">
-                <Select
-                  className="flex-1"
-                  placeholder="Pilih anak dari data yang sudah ada"
-                  options={childrenOptions}
-                  onChange={(value) => addExistingChild(value as number)}
-                />
+            <div className="flex gap-2">
+              <Select
+                className="flex-1"
+                size="large"
+                mode="multiple"
+                placeholder="Pilih anak dari data yang sudah ada"
+                options={childrenOptions}
+                value={selectedChildrenIds}
+                onChange={(values) => setSelectedChildrenIds(values as number[])}
+                disabled={submitting}
+              />
+              <Button
+                onClick={() => setChildrenModalVisible(true)}
+                disabled={submitting}
+                size="sm"
+              >
+                Buat Baru
+              </Button>
+            </div>
+
+            {selectedChildrenIds.length > 0 && (
+              <div className="text-sm text-gray-600">
+                {selectedChildrenIds.length} anak akan ditautkan ke keluarga ini.
               </div>
             )}
-
-            {childrens.map((child, index) => (
-              <div key={index} className="border p-4 rounded space-y-4">
-                <div className="flex justify-between items-center">
-                  <strong className="font-semibold">
-                    Anak #{index + 1} {child.id ? "(Sudah Ada)" : "(Baru)"}
-                  </strong>
-                  <Button size="xs" onClick={() => removeChild(index)}>
-                    Hapus
-                  </Button>
-                </div>
-
-                {child.id ? (
-                  <div className="text-sm text-gray-600">
-                    Anak yang sudah ada akan ditautkan ke keluarga ini.
-                  </div>
-                ) : (
-                  <>
-                    <FormField label="Nama Anak">
-                      <TextInput
-                        value={child.childrenName}
-                        onChange={(value) =>
-                          updateChild(index, "childrenName", value)
-                        }
-                        placeholder="Masukkan nama anak"
-                      />
-                    </FormField>
-
-                    <FormField label="Anak-ke">
-                      <TextInput
-                        type="number"
-                        value={child.index?.toString() ?? ""}
-                        onChange={(value) =>
-                          updateChild(
-                            index,
-                            "index",
-                            value ? parseInt(value, 10) : null
-                          )
-                        }
-                        placeholder="Masukkan urutan anak"
-                      />
-                    </FormField>
-
-                    <FormField label="Gender">
-                      <SelectInput
-                        value={child.childrenGender}
-                        onChange={(value) =>
-                          updateChild(index, "childrenGender", value)
-                        }
-                        options={GENDER_OPTIONS}
-                        placeholder="Pilih jenis kelamin"
-                      />
-                    </FormField>
-
-                    <FormField label="Tanggal Lahir">
-                      <DatePicker
-                        size="large"
-                        className="w-full"
-                        value={
-                          child.childrenBirthdate
-                            ? dayjs(child.childrenBirthdate)
-                            : null
-                        }
-                        onChange={(date) =>
-                          updateChild(
-                            index,
-                            "childrenBirthdate",
-                            date ? date.format("YYYY-MM-DD") : null
-                          )
-                        }
-                      />
-                    </FormField>
-
-                    <FormField label="Alamat Anak">
-                      <TextInput
-                        value={child.childrenAddress ?? ""}
-                        onChange={(value) =>
-                          updateChild(index, "childrenAddress", value)
-                        }
-                        placeholder="Masukkan alamat anak"
-                      />
-                    </FormField>
-
-                    <FormField label="No. HP Anak">
-                      <TextInput
-                        value={child.childrenPhone ?? ""}
-                        onChange={(value) =>
-                          updateChild(index, "childrenPhone", value)
-                        }
-                        placeholder="Masukkan nomor HP anak"
-                      />
-                    </FormField>
-
-                    <FormField label="Status Aktif">
-                      <SelectInput
-                        value={child.isActive}
-                        onChange={(value) => updateChild(index, "isActive", value)}
-                        options={[
-                          { value: true, label: "Ya" },
-                          { value: false, label: "Tidak" },
-                        ]}
-                        placeholder="Pilih status aktif"
-                      />
-                    </FormField>
-
-                    <FormField label="Yatim">
-                      <SelectInput
-                        value={child.isFatherAlive}
-                        onChange={(value) =>
-                          updateChild(index, "isFatherAlive", value)
-                        }
-                        options={[
-                          { value: true, label: "Tidak" },
-                          { value: false, label: "Ya" },
-                        ]}
-                        placeholder="Pilih status yatim"
-                      />
-                    </FormField>
-
-                    <FormField label="Piatu">
-                      <SelectInput
-                        value={child.isMotherAlive}
-                        onChange={(value) =>
-                          updateChild(index, "isMotherAlive", value)
-                        }
-                        options={[
-                          { value: true, label: "Tidak" },
-                          { value: false, label: "Ya" },
-                        ]}
-                        placeholder="Pilih status piatu"
-                      />
-                    </FormField>
-
-                    <FormField label="Kondisi Khusus">
-                      <SelectInput
-                        value={child.isCondition}
-                        onChange={(value) =>
-                          updateChild(index, "isCondition", value)
-                        }
-                        options={[
-                          { value: true, label: "Normal" },
-                          { value: false, label: "ABK" },
-                        ]}
-                        placeholder="Pilih kondisi khusus"
-                      />
-                    </FormField>
-
-                    <FormField label="Catatan">
-                      <TextArea
-                        rows={2}
-                        value={child.notes ?? ""}
-                        onChange={(e) =>
-                          updateChild(index, "notes", e.target.value)
-                        }
-                        placeholder="Tambahkan catatan (opsional)"
-                      />
-                    </FormField>
-
-                    <FormField label="Foto Anak">
-                      <FileInput
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file && validateFile(file)) {
-                            updateChild(index, "childrenPictFile" as any, file);
-                          }
-                        }}
-                      />
-                    </FormField>
-                  </>
-                )}
-              </div>
-            ))}
           </div>
         </ComponentCard>
 
         <div className="grid grid-cols-2 gap-8">
-          <Button onClick={() => router.back()} variant="outline">
+          <Button 
+            onClick={() => router.back()} 
+            variant="outline"
+            disabled={submitting}
+          >
             Kembali
           </Button>
 
           <Button
             disabled={submitting}
             onClick={handleSubmit}
-            className="bg-primary-600 text-white"
+            className="bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Menyimpan..." : "Simpan Keluarga"}
           </Button>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateEmployeeModal
+        visible={employeeModalVisible}
+        onCancel={() => setEmployeeModalVisible(false)}
+        onSuccess={handleEmployeeCreated}
+        regions={regions}
+      />
+
+      <CreatePartnerModal
+        visible={partnerModalVisible}
+        onCancel={() => setPartnerModalVisible(false)}
+        onSuccess={handlePartnerCreated}
+        regions={regions}
+      />
+
+      <CreateWaliModal
+        visible={waliModalVisible}
+        onCancel={() => setWaliModalVisible(false)}
+        onSuccess={handleWaliCreated}
+      />
+
+      <CreateChildrenModal
+        visible={childrenModalVisible}
+        onCancel={() => setChildrenModalVisible(false)}
+        onSuccess={handleChildrenCreated}
+      />
     </div>
   );
 }

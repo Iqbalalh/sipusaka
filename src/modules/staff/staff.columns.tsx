@@ -7,6 +7,7 @@ import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Staff } from "@/utils/services/staff.service";
 import type { TableColumn } from "@/types/generic/antd-table";
+import { formatDate } from "@/utils/formatter/formatDate";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
@@ -87,9 +88,9 @@ export const getStaffColumns = (): TableColumn<Staff>[] => [
     dataIndex: "birthdate",
     key: "birthdate",
     render: (text) =>
-      text ? new Date(text).toLocaleDateString("id-ID") : "-",
+      text ? formatDate(text) : "-",
     exportRender: (value: string) =>
-      value ? new Date(value).toLocaleDateString("id-ID") : "-",
+      value ? formatDate(value) : "-",
   },
 
   {

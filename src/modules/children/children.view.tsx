@@ -13,6 +13,9 @@ import { InfoItem } from "@/components/ui/field/InfoItem";
 // Icons
 import { LoadingOutlined, PlusOutlined, UploadOutlined, FileTextOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
+// Action Buttons
+import { WhatsAppButton } from "@/components/ui/action-buttons/ActionButtons";
+
 // Modular Components
 import ChildAssistanceStatistics from "./components/ChildAssistanceStatistics";
 import ChildAssistanceSection from "./components/ChildAssistanceSection";
@@ -38,6 +41,7 @@ import dayjs from "dayjs";
 // Utils
 import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPresignedUrl";
 import { calculateAge } from "@/utils/formatter/calculateAge";
+import { formatDate } from "@/utils/formatter/formatDate";
 import { getChildren } from "@/utils/services/children.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
@@ -330,7 +334,7 @@ export default function ChildrenView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
               {data?.childrenBirthdate
-                ? new Date(data.childrenBirthdate).toLocaleDateString()
+                ? formatDate(data.childrenBirthdate)
                 : "-"}
             </span>
           </div>
@@ -388,9 +392,12 @@ export default function ChildrenView() {
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
               Nomor Telepon
             </span>
-            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.childrenPhone || "-"}
-            </span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words flex-1">
+                {data?.childrenPhone || "-"}
+              </span>
+              {data?.childrenPhone && <WhatsAppButton phoneNumber={data.childrenPhone} />}
+            </div>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
@@ -444,7 +451,7 @@ export default function ChildrenView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
               {data?.createdAt
-                ? new Date(data.createdAt).toLocaleString()
+                ? formatDate(data.createdAt)
                 : "-"}
             </span>
           </div>
@@ -454,7 +461,7 @@ export default function ChildrenView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
               {data?.updatedAt
-                ? new Date(data.updatedAt).toLocaleString()
+                ? formatDate(data.updatedAt)
                 : "-"}
             </span>
           </div>

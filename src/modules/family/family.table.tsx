@@ -18,6 +18,7 @@ import {
 import { getRegionsList } from "@/utils/services/region.service";
 import { getChildrens } from "@/utils/services/children.service";
 import { getFamilyColumns } from "./family.columns";
+import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
@@ -106,7 +107,7 @@ const exportFamilyToExcel = async (filteredData: HomeTable[]) => {
         homeCoordinate: home.partners?.homeCoordinate || "-",
         childrenCount: home._count?.children || 0,
         isUmkm: home.isUmkm ? "Ya" : "Tidak",
-        createdAt: home.createdAt ? new Date(home.createdAt).toLocaleDateString("id-ID") : "-",
+        createdAt: home.createdAt ? formatDate(home.createdAt) : "-",
       });
     } else {
       // Add rows for each child
@@ -122,7 +123,7 @@ const exportFamilyToExcel = async (filteredData: HomeTable[]) => {
           childrenName: child.childrenName || "-",
           childrenGender: child.childrenGender === "M" ? "Laki-laki" : "Perempuan",
           childrenBirthdate: child.childrenBirthdate
-            ? new Date(child.childrenBirthdate).toLocaleDateString("id-ID")
+            ? formatDate(child.childrenBirthdate)
             : "-",
           address: home.partners?.address || child.childrenAddress || "-",
           postalCode: home.postalCode || home.partners?.postalCode || child.childrenAddress || "-",
@@ -130,7 +131,7 @@ const exportFamilyToExcel = async (filteredData: HomeTable[]) => {
           homeCoordinate: home.partners?.homeCoordinate || "-",
           childrenCount: home._count?.children || 0,
           isUmkm: home.isUmkm ? "Ya" : "Tidak",
-          createdAt: home.createdAt ? new Date(home.createdAt).toLocaleDateString("id-ID") : "-",
+          createdAt: home.createdAt ? formatDate(home.createdAt) : "-",
         });
       });
     }

@@ -63,7 +63,7 @@ export default function UmkmVisitsSection({
                       {visit.assistanceType}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {dayjs(visit.assistanceDate).format("DD MMMM YYYY")}
+                      {dayjs(visit.assistanceDate).format("DD/MM/YYYY")}
                     </span>
                   </div>
                   <Space size="small">

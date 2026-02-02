@@ -50,3 +50,10 @@ export const getWaliList = async () => {
     throw error;
   }
 };
+
+export const createWali = async (fd: FormData) => {
+  return await fetchWithAuth(API_WALI, {
+    method: "POST",
+    body: fd,
+  });
+};
