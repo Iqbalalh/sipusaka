@@ -200,8 +200,12 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.push(`/employee/view/${employeeId}`);
-  }, [router, employeeId]);
+    if (mode === "create") {
+      router.push("/employee");
+    } else {
+      router.push(`/employee/view/${employeeId}`);
+    }
+  }, [router, mode, employeeId]);
 
   // ==============================================
   // RENDER LOADING STATE

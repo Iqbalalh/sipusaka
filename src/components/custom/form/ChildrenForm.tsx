@@ -255,8 +255,12 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.push(`/children/view/${childrenId}`);
-  }, [router, childrenId]);
+    if (mode === "create") {
+      router.push("/children");
+    } else {
+      router.push(`/children/view/${childrenId}`);
+    }
+  }, [router, mode, childrenId]);
 
   // ==============================================
   // RENDER LOADING STATE

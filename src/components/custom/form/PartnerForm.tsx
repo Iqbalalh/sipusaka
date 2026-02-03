@@ -195,8 +195,12 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.push(`/partner/view/${partnerId}`);
-  }, [router, partnerId]);
+    if (mode === "create") {
+      router.push("/partner");
+    } else {
+      router.push(`/partner/view/${partnerId}`);
+    }
+  }, [router, mode, partnerId]);
 
   // ==============================================
   // RENDER LOADING STATE

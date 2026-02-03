@@ -222,8 +222,12 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
   }, [form, imageFile, selectedCategories, submit, notify, mode]);
 
   const handleGoBack = useCallback(() => {
-    router.back();
-  }, [router]);
+    if (mode === "create") {
+      router.push("/galleries");
+    } else {
+      router.push(`/galleries/view/${galleryId}`);
+    }
+  }, [router, mode, galleryId]);
 
   // ==============================================
   // RENDER LOADING STATE

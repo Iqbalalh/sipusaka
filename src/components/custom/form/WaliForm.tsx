@@ -189,8 +189,12 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    router.push(`/wali/view/${waliId}`);
-  }, [router, waliId]);
+    if (mode === "create") {
+      router.push("/wali");
+    } else {
+      router.push(`/wali/view/${waliId}`);
+    }
+  }, [router, mode, waliId]);
 
   // ==============================================
   // RENDER LOADING STATE

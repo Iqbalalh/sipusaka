@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
+import Badge from "@/components/ui/badge/Badge";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Umkm } from "@/types/models/umkm";
 import { Region } from "@/types/models/region";
@@ -75,6 +76,30 @@ export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
     exportRender: (_: any, umkm: Umkm) => {
       const region = regions.find((r) => r.regionId === umkm.regionId);
       return region?.regionName ?? "-";
+    },
+  } as any,
+
+  {
+    title: "Status",
+    dataIndex: "isActive",
+    key: "isActive",
+    filters: [
+      { text: "Aktif", value: true },
+      { text: "Tidak Aktif", value: false },
+    ],
+    onFilter: (value: any, record: Umkm) => record.isActive === value,
+    render: (isActive: boolean) => {
+      if (isActive === true) {
+        return <Badge color="success">Aktif</Badge>;
+      } else if (isActive === false) {
+        return <Badge color="error">Tidak Aktif</Badge>;
+      }
+      return "-";
+    },
+    exportRender: (_: any, record: Umkm) => {
+      if (record.isActive === true) return "Aktif";
+      if (record.isActive === false) return "Tidak Aktif";
+      return "-";
     },
   } as any,
 

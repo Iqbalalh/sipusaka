@@ -408,6 +408,10 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
                 value={selectedChildrenIds}
                 onChange={(values) => setSelectedChildrenIds(values as number[])}
                 disabled={submitting}
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
               />
               <Button
                 onClick={() => setChildrenModalVisible(true)}
@@ -427,8 +431,8 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
         </ComponentCard>
 
         <div className="grid grid-cols-2 gap-8">
-          <Button 
-            onClick={() => router.back()} 
+          <Button
+            onClick={() => router.push("/family")}
             variant="outline"
             disabled={submitting}
           >

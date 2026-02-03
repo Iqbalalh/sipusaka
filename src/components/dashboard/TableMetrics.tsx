@@ -8,6 +8,8 @@ import {
   FaFileLines,
   FaChartPie,
   FaClock,
+  FaStore,
+  FaDesktop,
 } from "react-icons/fa6";
 import { API_DASHBOARD } from "@/constants/endpoint";
 import { ApiResponseSingle } from "@/types/generic/api-response";
@@ -36,12 +38,43 @@ interface Dashboard {
     active?: { count: number };
     inactive?: { count: number };
   };
-  childAssistance?: { count: number };
-  umkmMonitoring?: { count: number };
-  umkmVisit?: { count: number };
+  childAssistance?: {
+    count: number;
+    totalAmount?: number;
+    averageAmount?: number;
+    minAmount?: number;
+    maxAmount?: number;
+  };
+  umkmMonitoring?: {
+    count: number;
+    totalAmount?: number;
+    averageAmount?: number;
+    minAmount?: number;
+    maxAmount?: number;
+  };
+  umkmVisit?: {
+    count: number;
+    totalAmount?: number;
+    averageAmount?: number;
+    minAmount?: number;
+    maxAmount?: number;
+  };
 }
 
 const getCount = (value?: { count: number }) => value?.count ?? 0;
+const getAmount = (value?: { totalAmount?: number }) => value?.totalAmount ?? 0;
+const getAverage = (value?: { averageAmount?: number }) => value?.averageAmount ?? 0;
+const getMin = (value?: { minAmount?: number }) => value?.minAmount ?? 0;
+const getMax = (value?: { maxAmount?: number }) => value?.maxAmount ?? 0;
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 export const TableMetrics = () => {
   const [messageApi, contextHolder] = message.useMessage();
@@ -182,7 +215,7 @@ export const TableMetrics = () => {
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg shadow-amber-500/30">
-              <FaDollarSign className="text-white text-2xl" />
+              <FaStore className="text-white text-2xl" />
             </div>
             <div className="flex flex-col gap-2">
               <Badge color="success" size="md">
@@ -213,58 +246,148 @@ export const TableMetrics = () => {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {/* Child Assistance Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg shadow-indigo-500/30">
-              <FaFileLines className="text-white text-2xl" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg shadow-indigo-500/30">
+                <FaDollarSign className="text-white text-2xl" />
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                {getCount(dashboardData?.childAssistance)}
+              </p>
             </div>
 
             <div className="mt-5">
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Bantuan Anak
               </h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {getCount(dashboardData?.childAssistance)}
-              </p>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {/* <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Total bantuan yang diberikan
-              </p>
+              </p> */}
+              <div className="mt-4">
+                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Total Dana
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                    {formatCurrency(getAmount(dashboardData?.childAssistance))}
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Rata-rata
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(getAverage(dashboardData?.childAssistance))}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Tertinggi
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(getMax(dashboardData?.childAssistance))}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* UMKM Monitoring Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
-              <FaChartPie className="text-white text-2xl" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
+                <FaDesktop className="text-white text-2xl" />
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                {getCount(dashboardData?.umkmMonitoring)}
+              </p>
             </div>
 
             <div className="mt-5">
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Monitoring UMKM
               </h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {getCount(dashboardData?.umkmMonitoring)}
-              </p>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {/* <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Total monitoring yang dilakukan
-              </p>
+              </p> */}
+              <div className="mt-4">
+                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Total Dana
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                    {formatCurrency(getAmount(dashboardData?.umkmMonitoring))}
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Rata-rata
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(getAverage(dashboardData?.umkmMonitoring))}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Tertinggi
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(getMax(dashboardData?.umkmMonitoring))}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* UMKM Visit Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-            <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg shadow-rose-500/30">
-              <FaClock className="text-white text-2xl" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg shadow-rose-500/30">
+                <FaDollarSign className="text-white text-2xl" />
+              </div>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                {getCount(dashboardData?.umkmVisit)}
+              </p>
             </div>
 
             <div className="mt-5">
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Kunjungan UMKM
               </h3>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {getCount(dashboardData?.umkmVisit)}
-              </p>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {/* <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Total kunjungan yang dilakukan
-              </p>
+              </p> */}
+              <div className="mt-4">
+                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Total Dana
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                    {formatCurrency(getAmount(dashboardData?.umkmVisit))}
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Rata-rata
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(getAverage(dashboardData?.umkmVisit))}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Tertinggi
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(getMax(dashboardData?.umkmVisit))}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
