@@ -51,7 +51,30 @@ export const getUmkmVisits = async (
   try {
     const url = umkmId ? `${API_UMKM_VISIT}?umkmId=${umkmId}` : API_UMKM_VISIT;
     const json = await apiClient<ApiResponseList<UmkmVisit>>(url);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as UmkmVisit[];
+    // Handle different response structures
+    let data = json.data || [];
+    // If json itself is an array, use it directly
+    if (Array.isArray(json)) {
+      data = json;
+    }
+    return camelcaseKeys(data, { deep: true }) as unknown as UmkmVisit[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAllUmkmVisits = async (): Promise<UmkmVisit[]> => {
+  try {
+    const json = await apiClient<ApiResponseList<UmkmVisit>>(
+      `${API_UMKM_VISIT}?limit=10000`
+    );
+    // Handle different response structures
+    let data = json.data || [];
+    // If json itself is an array, use it directly
+    if (Array.isArray(json)) {
+      data = json;
+    }
+    return camelcaseKeys(data, { deep: true }) as unknown as UmkmVisit[];
   } catch (error) {
     throw error;
   }

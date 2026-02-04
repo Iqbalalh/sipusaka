@@ -9,6 +9,7 @@ export interface Staff {
   email?: string | null;
   nik?: string | null;
   roleId?: number | null;
+  position?: string | null;
   staffPict?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;

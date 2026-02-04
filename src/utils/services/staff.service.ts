@@ -19,6 +19,7 @@ export interface Staff {
   email: string | null;
   nik: string;
   roleId: number;
+  position: string | null;
   staffPict: string | null;
   roleName?: string;
 }

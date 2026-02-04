@@ -14,6 +14,7 @@ import {
   FaUserTie,
   FaAlignLeft,
   FaImage,
+  FaHandHoldingHeart,
 } from "react-icons/fa6";
 import { ChevronDownIcon, HorizontaLDots } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
@@ -50,6 +51,14 @@ const navItems: NavItem[] = [
     icon: <FaShop className="text-2xl" />,
     name: "UMKM",
     path: "/umkm",
+  },
+  {
+    name: "Bantuan",
+    icon: <FaHandHoldingHeart className="text-2xl" />,
+    subItems: [
+      { name: "Bantuan Anak", path: "/childassistance", pro: false },
+      { name: "Bantuan UMKM", path: "/umkmvisit", pro: false },
+    ],
   },
 ];
 

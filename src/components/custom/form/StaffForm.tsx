@@ -41,6 +41,7 @@ interface BaseStaff {
   email: string | null;
   nik: string;
   roleId: number | null;
+  position: string | null;
   staffPict: string | null;
 }
 
@@ -54,6 +55,7 @@ const INITIAL_FORM_STATE: BaseStaff = {
   email: null,
   nik: "",
   roleId: null,
+  position: null,
   staffPict: null,
 };
 
@@ -283,6 +285,15 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                   onChange={(value) => handleFieldChange("roleId", value)}
                   options={roles}
                   placeholder="Pilih role"
+                />
+              </FormField>
+
+              <FormField label="Position">
+                <TextInput
+                  type="text"
+                  value={form.position ?? ""}
+                  onChange={(value) => handleFieldChange("position", value)}
+                  placeholder="Masukkan position"
                 />
               </FormField>
 

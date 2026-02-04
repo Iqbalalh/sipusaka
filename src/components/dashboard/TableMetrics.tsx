@@ -10,6 +10,8 @@ import {
   FaClock,
   FaStore,
   FaDesktop,
+  FaArrowTrendDown,
+  FaArrowTrendUp,
 } from "react-icons/fa6";
 import { API_DASHBOARD } from "@/constants/endpoint";
 import { ApiResponseSingle } from "@/types/generic/api-response";
@@ -45,6 +47,14 @@ interface Dashboard {
     minAmount?: number;
     maxAmount?: number;
   };
+  childAssistanceYearlyBreakdown?: Array<{
+    year: number;
+    count: number;
+    totalAmount: number;
+    averageAmount: number;
+    minAmount: number;
+    maxAmount: number;
+  }>;
   umkmMonitoring?: {
     count: number;
     totalAmount?: number;
@@ -106,13 +116,16 @@ export const TableMetrics = () => {
       {contextHolder}
 
       {/* Section Title */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Ringkasan Statistik
-        </h2>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Overview data keluarga, anak, UMKM, dan aktivitas
-        </p>
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full"></div>
+        <div className="pl-4">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Ringkasan Statistik
+          </h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Overview data keseluruhan
+          </p>
+        </div>
       </div>
 
       {/* Main Metrics Cards */}
@@ -240,10 +253,13 @@ export const TableMetrics = () => {
 
       {/* Activity Summary Section */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Aktivitas & Monitoring
-        </h3>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Aktivitas & Monitoring
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {/* Child Assistance Card */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
             <div className="flex items-center justify-between">
@@ -271,70 +287,29 @@ export const TableMetrics = () => {
                     {formatCurrency(getAmount(dashboardData?.childAssistance))}
                   </p>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                       Rata-rata
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="mt-1 text-sm font-semibold text-blue-700 dark:text-blue-300">
                       {formatCurrency(getAverage(dashboardData?.childAssistance))}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
+                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                      Terendah
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-orange-700 dark:text-orange-300">
+                      {formatCurrency(getMin(dashboardData?.childAssistance))}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-green-50 p-3 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30">
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                       Tertinggi
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="mt-1 text-sm font-semibold text-green-700 dark:text-green-300">
                       {formatCurrency(getMax(dashboardData?.childAssistance))}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* UMKM Monitoring Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow dark:border-gray-800 dark:bg-white/3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30">
-                <FaDesktop className="text-white text-2xl" />
-              </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                {getCount(dashboardData?.umkmMonitoring)}
-              </p>
-            </div>
-
-            <div className="mt-5">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Monitoring UMKM
-              </h3>
-              {/* <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                Total monitoring yang dilakukan
-              </p> */}
-              <div className="mt-4">
-                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Total Dana
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-                    {formatCurrency(getAmount(dashboardData?.umkmMonitoring))}
-                  </p>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Rata-rata
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(getAverage(dashboardData?.umkmMonitoring))}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Tertinggi
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(getMax(dashboardData?.umkmMonitoring))}
                     </p>
                   </div>
                 </div>
@@ -369,20 +344,28 @@ export const TableMetrics = () => {
                     {formatCurrency(getAmount(dashboardData?.umkmVisit))}
                   </p>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                       Rata-rata
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="mt-1 text-sm font-semibold text-blue-700 dark:text-blue-300">
                       {formatCurrency(getAverage(dashboardData?.umkmVisit))}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
+                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                      Terendah
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-orange-700 dark:text-orange-300">
+                      {formatCurrency(getMin(dashboardData?.umkmVisit))}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-green-50 p-3 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30">
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                       Tertinggi
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="mt-1 text-sm font-semibold text-green-700 dark:text-green-300">
                       {formatCurrency(getMax(dashboardData?.umkmVisit))}
                     </p>
                   </div>
@@ -392,6 +375,87 @@ export const TableMetrics = () => {
           </div>
         </div>
       </div>
+
+      {/* Yearly Breakdown Section */}
+      {dashboardData?.childAssistanceYearlyBreakdown && dashboardData.childAssistanceYearlyBreakdown.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Rincian Bantuan Anak per Tahun
+            </h3>
+          </div>
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-indigo-600">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Tahun
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Jumlah Bantuan
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Total Dana
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Rata-rata
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Terendah
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Tertinggi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                {dashboardData.childAssistanceYearlyBreakdown.map((yearData, index) => (
+                  <tr
+                    key={yearData.year}
+                    className={`transition-colors duration-200 ${
+                      index % 2 === 0
+                        ? 'bg-white dark:bg-white/3 hover:bg-blue-50/50 dark:hover:bg-blue-950/30'
+                        : 'bg-gray-50 dark:bg-gray-800/30 hover:bg-blue-100/50 dark:hover:bg-blue-900/30'
+                    }`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-indigo-600 text-white shadow-md">
+                        {yearData.year}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {yearData.count}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(yearData.totalAmount)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        {formatCurrency(yearData.averageAmount)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                        {formatCurrency(yearData.minAmount)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                        {formatCurrency(yearData.maxAmount)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
