@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
@@ -68,6 +68,7 @@ interface WaliFormProps {
 // ==============================================
 export default function WaliForm({ mode, waliId }: WaliFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { notify } = useNotify();
 
   const [employees, setEmployees] = useState<Option[]>([]);
@@ -92,7 +93,12 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
           : "Wali berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
       const id = mode === "edit" ? waliId : data?.data?.id;
-      router.push(`/wali/view/${id}`);
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push(`/wali/view/${id}`);
+      }
     }
   );
 
@@ -189,12 +195,15 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    if (mode === "create") {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      router.push(redirect);
+    } else if (mode === "create") {
       router.push("/wali");
     } else {
       router.push(`/wali/view/${waliId}`);
     }
-  }, [router, mode, waliId]);
+  }, [router, mode, waliId, searchParams]);
 
   // ==============================================
   // RENDER LOADING STATE

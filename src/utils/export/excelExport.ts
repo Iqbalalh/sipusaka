@@ -71,9 +71,7 @@ export const exportChildAssistanceToExcel = async (
       assistanceDate: item.assistanceDate
         ? new Date(item.assistanceDate).toLocaleDateString("id-ID")
         : "",
-      assistanceAmount: item.assistanceAmount
-        ? `Rp ${item.assistanceAmount.toLocaleString("id-ID")}`
-        : "",
+      assistanceAmount: item.assistanceAmount || "",
       assistanceProvider: item.assistanceProvider || "",
       educationLevel: item.educationLevel || "",
       educationGrade: item.educationGrade || "",

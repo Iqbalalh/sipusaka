@@ -343,7 +343,7 @@ export default function FamilyView() {
             </div>
 
             <div className="flex items-center gap-2 sm:justify-end">
-              <Link href={`/employee/edit/${data?.employeeId}`}>
+              <Link href={`/employee/edit/${data?.employeeId}?redirect=/family/view/${id}`}>
                 <Button variant="outline" size="sm">
                   Edit
                 </Button>
@@ -463,7 +463,7 @@ export default function FamilyView() {
             </div>
 
             <div className="flex items-center gap-2 sm:justify-end">
-              <Link href={`/partner/edit/${data?.partnerId}`}>
+              <Link href={`/partner/edit/${data?.partnerId}?redirect=/family/view/${id}`}>
                 <Button variant="outline" size="sm">
                   Edit
                 </Button>
@@ -604,7 +604,7 @@ export default function FamilyView() {
               </div>
 
               <div className="flex items-center gap-2 sm:justify-end">
-                <Link href={`/wali/edit/${data?.waliId}`}>
+                <Link href={`/wali/edit/${data?.waliId}?redirect=/family/view/${id}`}>
                   <Button variant="outline" size="sm">
                     Edit
                   </Button>
@@ -747,7 +747,7 @@ export default function FamilyView() {
                   </div>
 
                   <div className="flex items-center gap-2 sm:justify-end">
-                    <Link href={`/children/edit/${child.id}`}>
+                    <Link href={`/children/edit/${child.id}?redirect=/family/view/${id}`}>
                       <Button variant="outline" size="sm">
                         Edit
                       </Button>

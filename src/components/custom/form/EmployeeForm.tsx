@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback} from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
@@ -81,6 +81,7 @@ interface EmployeeFormProps {
 // ==============================================
 export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { notify } = useNotify();
 
   const [regions, setRegions] = useState<Option[]>([]);
@@ -105,7 +106,12 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
           : "Pegawai berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
       const id = mode === "edit" ? employeeId : data?.data?.id;
-      router.push(`/employee/view/${id}`);
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push(`/employee/view/${id}`);
+      }
     }
   );
 
@@ -200,12 +206,15 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    if (mode === "create") {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      router.push(redirect);
+    } else if (mode === "create") {
       router.push("/employee");
     } else {
       router.push(`/employee/view/${employeeId}`);
     }
-  }, [router, mode, employeeId]);
+  }, [router, mode, employeeId, searchParams]);
 
   // ==============================================
   // RENDER LOADING STATE

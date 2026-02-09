@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { message, Select } from "antd";
 
 // Components
@@ -48,14 +48,16 @@ const INITIAL_FORM_STATE: BaseHome = {
 // PROPS INTERFACE
 // ==============================================
 interface FamilyFormProps {
-  mode: "create";
+  mode: "create" | "edit";
+  familyId?: string;
 }
 
 // ==============================================
 // MAIN COMPONENT
 // ==============================================
-export default function FamilyForm({ mode }: FamilyFormProps) {
+export default function FamilyForm({ mode, familyId }: FamilyFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { notify } = useNotify();
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -137,6 +139,38 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
             label: `${c.childrenName} ${c.nik ? `(${c.nik})` : ""}`,
           }))
         );
+
+        // If edit mode, fetch existing family data
+        if (mode === "edit" && familyId) {
+          const { getHomeDetail } = await import("@/utils/services/home.service");
+          const homeData = await getHomeDetail(familyId);
+          
+          console.log("Home data fetched:", homeData);
+          
+          const employeeId = homeData.employeeId;
+          const partnerId = homeData.partnerId;
+          const waliId = homeData.waliId;
+          
+          console.log("Setting form with:", {
+            id: homeData.id,
+            regionId: homeData.regionId,
+            postalCode: homeData.postalCode,
+            employeeId,
+            partnerId,
+            waliId,
+          });
+          
+          setForm({
+            id: homeData.id,
+            regionId: homeData.regionId,
+            postalCode: homeData.postalCode,
+            employeeId,
+            partnerId,
+            waliId,
+          });
+          setSelectedChildrenIds(homeData.childrens?.map((c: any) => c.id) || []);
+          setWaliMode(waliId ? "existing" : "none");
+        }
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -145,7 +179,7 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
     };
 
     init();
-  }, [notify]);
+  }, [mode, familyId, notify]);
 
   // ==============================================
   // VALIDATION
@@ -177,8 +211,9 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
     if (!validateForm()) return;
 
     setSubmitting(true);
+    const messageText = mode === "edit" ? "Memperbarui data keluarga..." : "Membuat data keluarga...";
     messageApi.loading({
-      content: "Membuat data keluarga...",
+      content: messageText,
       key: "save",
       duration: 0,
     });
@@ -208,26 +243,35 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
       // Children IDs - Send as JSON string
       fd.append("childrens", JSON.stringify(selectedChildrenIds.map(id => ({ id }))));
 
-      const res = await fetchWithAuth(API_HOME, {
-        method: "POST",
+      const url = mode === "edit" ? `${API_HOME}/${familyId}` : API_HOME;
+      const method = mode === "edit" ? "PATCH" : "POST";
+
+      const res = await fetchWithAuth(url, {
+        method,
         body: fd,
       });
 
-      if (!res.ok) throw new Error("Gagal membuat data keluarga");
+      if (!res.ok) throw new Error(mode === "edit" ? "Gagal memperbarui data keluarga" : "Gagal membuat data keluarga");
 
       const result = await res.json();
 
+      const successMessage = mode === "edit" ? "Data keluarga berhasil diperbarui!" : "Data keluarga berhasil dibuat!";
       messageApi.success({
-        content: "Data keluarga berhasil dibuat!",
+        content: successMessage,
         key: "save",
         duration: 2,
       });
 
-      router.push(`/family/view/${result.data.home.id}`);
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push(`/family/view/${result.data.home.id}`);
+      }
     } catch (err) {
       console.error(err);
       messageApi.error({
-        content: "Gagal membuat data keluarga.",
+        content: mode === "edit" ? "Gagal memperbarui data keluarga." : "Gagal membuat data keluarga.",
         key: "save",
         duration: 2,
       });
@@ -277,10 +321,13 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
   // ==============================================
   // RENDER FORM
   // ==============================================
+  const pageTitle = mode === "edit" ? "Edit Data Keluarga Asuh" : "Tambah Data Keluarga Asuh";
+  const submitButtonText = mode === "edit" ? "Update Keluarga" : "Simpan Keluarga";
+
   return (
     <div className="pb-10">
       {contextHolder}
-      <PageBreadcrumb pageTitle="Tambah Data Keluarga Asuh" />
+      <PageBreadcrumb pageTitle={pageTitle} />
 
       <div className="space-y-6">
         {/* HOME GROUP */}
@@ -444,7 +491,7 @@ export default function FamilyForm({ mode }: FamilyFormProps) {
             onClick={handleSubmit}
             className="bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? "Menyimpan..." : "Simpan Keluarga"}
+            {submitting ? "Menyimpan..." : submitButtonText}
           </Button>
         </div>
       </div>

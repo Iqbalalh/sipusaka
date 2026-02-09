@@ -422,7 +422,7 @@ export default function ChildAssistanceTable() {
                       {record.assistanceDate ? formatDate(record.assistanceDate) : "-"}
                     </td>
                     <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 truncate">
-                      {record.assistanceAmount ? `Rp ${record.assistanceAmount.toLocaleString("id-ID")}` : "-"}
+                      {record.assistanceAmount || "-"}
                     </td>
                     <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 truncate">
                       <span className="inline-block px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">
@@ -453,8 +453,9 @@ export default function ChildAssistanceTable() {
                           size="small"
                           icon={<EditOutlined />}
                           onClick={() => {
-                            // TODO: Implement edit functionality
-                            console.log("Edit record:", record.id);
+                            if (record.childrenId) {
+                              router.push(`/children/view/${record.childrenId}`);
+                            }
                           }}
                         />
                         <Button

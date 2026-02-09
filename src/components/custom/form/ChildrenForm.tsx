@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin, DatePicker } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
@@ -101,6 +101,7 @@ interface ChildrenFormProps {
 // ==============================================
 export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { notify } = useNotify();
 
   const [regions, setRegions] = useState<Option[]>([]);
@@ -127,7 +128,12 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
           : "Anak asuh berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
       const id = mode === "edit" ? childrenId : data?.data?.id;
-      router.push(`/children/view/${id}`);
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push(`/children/view/${id}`);
+      }
     }
   );
 
@@ -242,12 +248,15 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    if (mode === "create") {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      router.push(redirect);
+    } else if (mode === "create") {
       router.push("/children");
     } else {
       router.push(`/children/view/${childrenId}`);
     }
-  }, [router, mode, childrenId]);
+  }, [router, mode, childrenId, searchParams]);
 
   // ==============================================
   // RENDER LOADING STATE

@@ -36,6 +36,15 @@ export const getHomeDetail = async (id: number | string): Promise<Home> => {
   }
 };
 
+export const getHomeWithIds = async (id: number | string): Promise<Home> => {
+  try {
+    const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/detail/${id}`);
+    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const updateHome = async (id: string | number, fd: FormData) => {
   return await fetchWithAuth(`${API_HOME}/${id}`, {
     method: "PATCH",

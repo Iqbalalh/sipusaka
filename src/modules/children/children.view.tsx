@@ -19,7 +19,6 @@ import { WhatsAppButton } from "@/components/ui/action-buttons/ActionButtons";
 // Modular Components
 import ChildAssistanceStatistics from "./components/ChildAssistanceStatistics";
 import ChildAssistanceSection from "./components/ChildAssistanceSection";
-import ChildAssistanceCharts from "./components/ChildAssistanceCharts";
 
 // Libs
 import Link from "next/link";
@@ -513,8 +512,6 @@ export default function ChildrenView() {
         onDeleteAssistanceDocument={handleDeleteDocument}
         deletingAssistanceId={deletingAssistanceId}
       />
-
-      <ChildAssistanceCharts assistance={assistance} />
 
       {/* Modal for Create/Edit Assistance */}
       <Modal

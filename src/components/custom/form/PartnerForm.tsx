@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback} from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
@@ -76,6 +76,7 @@ interface PartnerFormProps {
 // ==============================================
 export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { notify } = useNotify();
 
   const [regions, setRegions] = useState<Option[]>([]);
@@ -100,7 +101,12 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
           : "Pasangan berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
       const id = mode === "edit" ? partnerId : data?.data?.id;
-      router.push(`/partner/view/${id}`);
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push(`/partner/view/${id}`);
+      }
     }
   );
 
@@ -195,12 +201,15 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
-    if (mode === "create") {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      router.push(redirect);
+    } else if (mode === "create") {
       router.push("/partner");
     } else {
       router.push(`/partner/view/${partnerId}`);
     }
-  }, [router, mode, partnerId]);
+  }, [router, mode, partnerId, searchParams]);
 
   // ==============================================
   // RENDER LOADING STATE
@@ -321,6 +330,18 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
                   value={form.homeCoordinate ?? ""}
                   onChange={(value) => handleFieldChange("homeCoordinate", value)}
                   placeholder="Masukkan koordinat rumah"
+                />
+              </FormField>
+
+              <FormField label="Status Aktif">
+                <SelectInput
+                  value={form.isActive}
+                  onChange={(value) => handleFieldChange("isActive", value)}
+                  options={[
+                    { value: true, label: "Aktif" },
+                    { value: false, label: "Tidak Aktif" }
+                  ]}
+                  placeholder="Pilih status"
                 />
               </FormField>
 
