@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spin, Modal, Input, Button, Select, Progress } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, LeftOutlined, RightOutlined, DoubleLeftOutlined, DoubleRightOutlined, DownloadOutlined } from "@ant-design/icons";
@@ -58,7 +58,7 @@ export default function ChildAssistanceTable() {
   // ==========================
   // FETCH DATA WITH PAGINATION
   // ==========================
-  const fetchData = async (page: number = currentPage, search: string = searchQuery) => {
+  const fetchData = useCallback(async (page: number = currentPage, search: string = searchQuery) => {
     try {
       setLoading(true);
       
@@ -77,7 +77,7 @@ export default function ChildAssistanceTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notify, currentPage, searchQuery, pageSize]);
 
   // ==========================
   // INITIAL FETCH FROM URL
@@ -89,7 +89,7 @@ export default function ChildAssistanceTable() {
     setCurrentPage(initialPage);
     setSearchQuery(searchParam);
     fetchData(initialPage, searchParam);
-  }, [searchParams]);
+  }, [fetchData, searchParams]);
 
   // ==========================
   // SEARCH WITH DEBOUNCE
@@ -110,7 +110,7 @@ export default function ChildAssistanceTable() {
         clearTimeout(timer);
       }
     };
-  }, [searchQuery]);
+  }, [fetchData, searchQuery, searchTimer]);
 
   // ==========================
   // UPDATE URL WITH PAGE AND SEARCH PARAMETERS
