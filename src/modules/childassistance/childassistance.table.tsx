@@ -58,7 +58,7 @@ export default function ChildAssistanceTable() {
   // ==========================
   // FETCH DATA WITH PAGINATION
   // ==========================
-  const fetchData = useCallback(async (page: number = currentPage, search: string = searchQuery) => {
+  const fetchData = useCallback(async (page: number, search: string) => {
     try {
       setLoading(true);
       
@@ -77,7 +77,7 @@ export default function ChildAssistanceTable() {
     } finally {
       setLoading(false);
     }
-  }, [notify, currentPage, searchQuery, pageSize]);
+  }, [notify, pageSize]);
 
   // ==========================
   // INITIAL FETCH FROM URL
