@@ -110,7 +110,7 @@ export default function ChildAssistanceTable() {
         clearTimeout(timer);
       }
     };
-  }, [fetchData, searchQuery, searchTimer]);
+  }, [fetchData, searchQuery]);
 
   // ==========================
   // UPDATE URL WITH PAGE AND SEARCH PARAMETERS
@@ -118,7 +118,7 @@ export default function ChildAssistanceTable() {
   const updatePageUrl = (page: number, search: string = searchQuery) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', page.toString());
-    if (search.trim()) {
+    if (search && search.trim()) {
       params.set('search', search);
     } else {
       params.delete('search');
