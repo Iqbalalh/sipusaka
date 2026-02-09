@@ -25,9 +25,8 @@ import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
 import { API_CHILDREN } from "@/constants/endpoint";
 import { getRegionsList } from "@/utils/services/region.service";
 import { getChildren } from "@/utils/services/children.service";
-import { getEmployees } from "@/utils/services/employee.service";
-import { getPartners } from "@/utils/services/partner.service";
 import { getWaliList } from "@/utils/services/wali.service";
+import { getHomesList } from "@/utils/services/home.service";
 import { BaseChildren } from "@/types/models/children";
 import { hardDeleteFile } from "@/utils/fetch/deleteFile";
 import { Option } from "@/types/generic/select-option";
@@ -53,8 +52,6 @@ const INITIAL_FORM_STATE: BaseChildren = {
   isFatherAlive: true,
   isMotherAlive: true,
   isCondition: true,
-  employeeId: undefined,
-  partnerId: undefined,
   homeId: null,
   index: null,
 };
@@ -107,9 +104,8 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
   const { notify } = useNotify();
 
   const [regions, setRegions] = useState<Option[]>([]);
-  const [employees, setEmployees] = useState<Option[]>([]);
-  const [partners, setPartners] = useState<Option[]>([]);
   const [walis, setWalis] = useState<Option[]>([]);
+  const [homes, setHomes] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BaseChildren>(INITIAL_FORM_STATE);
 
@@ -130,7 +126,7 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
           ? "Data anak asuh berhasil diperbarui!"
           : "Anak asuh berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? childrenId : data?.id;
+      const id = mode === "edit" ? childrenId : data?.data?.id;
       router.push(`/children/view/${id}`);
     }
   );
@@ -152,30 +148,21 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
           }))
         );
 
-        // Fetch employees
-        const empList = await getEmployees();
-        setEmployees(
-          empList.map((e: any) => ({
-            value: e.id,
-            label: `${e.employeeName} (${e.nipNipp})`,
-          }))
-        );
-
-        // Fetch partners
-        const partnerList = await getPartners();
-        setPartners(
-          partnerList.map((p: any) => ({
-            value: p.id,
-            label: p.partnerName,
-          }))
-        );
-
         // Fetch walis
         const waliList = await getWaliList();
         setWalis(
           waliList.map((w: any) => ({
             value: w.id,
             label: w.waliName,
+          }))
+        );
+
+        // Fetch homes
+        const homeList = await getHomesList();
+        setHomes(
+          homeList.map((h: any) => ({
+            value: h.id,
+            label: `${h.employees?.employeeName ?? "-"} - ${h.partners?.partnerName ?? "-"}`,
           }))
         );
 
@@ -442,22 +429,21 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
                 />
               </FormField>
 
-
-              <FormField label="Pegawai">
+              <FormField label="Keluarga">
                 <SelectInput
-                  value={form.employeeId}
-                  onChange={(value) => handleFieldChange("employeeId", value)}
-                  options={employees}
-                  placeholder="Pilih pegawai"
+                  value={form.homeId}
+                  onChange={(value) => handleFieldChange("homeId", value)}
+                  options={homes}
+                  placeholder="Pilih rumah"
                 />
               </FormField>
 
-              <FormField label="Wali">
-                <SelectInput
-                  value={form.partnerId}
-                  onChange={(value) => handleFieldChange("partnerId", value)}
-                  options={partners}
-                  placeholder="Pilih wali"
+              <FormField label="Anak ke-">
+                <TextInput
+                  value={form.index !== null && form.index !== undefined ? String(form.index) : ""}
+                  onChange={(value) => handleFieldChange("index", value ? Number(value) : null)}
+                  placeholder="Masukkan urutan anak (contoh: 1, 2, 3)"
+                  type="number"
                 />
               </FormField>
 

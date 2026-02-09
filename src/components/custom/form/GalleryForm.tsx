@@ -93,7 +93,7 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
           ? "Data galeri berhasil diperbarui!"
           : "Galeri berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? galleryId : data?.id;
+      const id = mode === "edit" ? galleryId : data?.data?.id;
       router.push(`/galleries/view/${id}`);
     }
   );
@@ -219,7 +219,7 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, imageFile, selectedCategories, submit, notify, mode]);
+  }, [form, imageFile, mode, selectedCategories, galleryDate, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     if (mode === "create") {

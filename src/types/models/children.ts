@@ -2,8 +2,6 @@ import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
 
 export interface BaseChildren {
   id?: number;
-  employeeId?: number;
-  partnerId?: number;
   homeId?: number | null;
   childrenName: string;
   isActive: boolean;

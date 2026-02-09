@@ -91,7 +91,7 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
           ? "Data wali berhasil diperbarui!"
           : "Wali berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? waliId : data?.id;
+      const id = mode === "edit" ? waliId : data?.data?.id;
       router.push(`/wali/view/${id}`);
     }
   );

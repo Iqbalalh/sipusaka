@@ -431,10 +431,20 @@ export default function ChildrenView() {
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-              Nama Pegawai
+              Anak ke-
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.homes?.employees?.employeeName || "-"}
+              {data?.index ? `${data.index}` : "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Orangtua
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
+              {data?.homes?.employees?.employeeName && data?.homes?.partners?.partnerName
+                ? `${data.homes.employees.employeeName} - ${data.homes.partners.partnerName}`
+                : "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">

@@ -104,7 +104,7 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
           ? "Data pegawai berhasil diperbarui!"
           : "Pegawai berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? employeeId : data?.id;
+      const id = mode === "edit" ? employeeId : data?.data?.id;
       router.push(`/employee/view/${id}`);
     }
   );

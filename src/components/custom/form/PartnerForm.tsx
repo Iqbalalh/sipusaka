@@ -99,7 +99,7 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
           ? "Data pasangan berhasil diperbarui!"
           : "Pasangan berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? partnerId : data?.id;
+      const id = mode === "edit" ? partnerId : data?.data?.id;
       router.push(`/partner/view/${id}`);
     }
   );

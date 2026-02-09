@@ -50,3 +50,12 @@ export const deleteHome = async (id: number) => {
     throw error;
   }
 };
+
+export const getHomesList = async (): Promise<HomeTable[]> => {
+  try {
+    const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
+    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
+  } catch (error) {
+    throw error;
+  }
+};

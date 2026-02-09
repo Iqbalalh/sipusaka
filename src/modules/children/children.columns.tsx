@@ -57,6 +57,14 @@ export const getChildrenColumns = (
   },
 
   {
+    title: "Anak ke-",
+    dataIndex: "index",
+    key: "index",
+    render: (index: number | null) => index ? `${index}` : "-",
+    exportRender: (index: number | null) => index ? `${index}` : "-",
+  },
+
+  {
     title: "Jenis Kelamin",
     dataIndex: "childrenGender",
     key: "childrenGender",
@@ -77,8 +85,10 @@ export const getChildrenColumns = (
     key: "childrenBirthdate",
     render: (text) =>
       text ? formatDate(text) : "-",
-    exportRender: (value: string) =>
-      value ? formatDate(value) : "-",
+    exportRender: (_: any, row: any) => {
+      const formatted = formatDate(row.childrenBirthdate);
+      return formatted ? formatted : "-";
+    },
   },
 
   {
@@ -96,9 +106,9 @@ export const getChildrenColumns = (
       }
       return `${age} Tahun`;
     },
-    exportRender: (value: string) => {
-      if (!value) return "-";
-      const birth = new Date(value);
+    exportRender: (_: any, row: any) => {
+      if (!row.childrenBirthdate) return "-";
+      const birth = new Date(row.childrenBirthdate);
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const monthDiff = today.getMonth() - birth.getMonth();
@@ -305,8 +315,10 @@ export const getChildrenColumns = (
     key: "createdAt",
     render: (text) =>
       text ? formatDate(text) : "-",
-    exportRender: (value: string) =>
-      value ? formatDate(value) : "-",
+    exportRender: (value: string) => {
+      const formatted = formatDate(value);
+      return formatted ? formatted : "-";
+    },
     hidden: true,
   },
 
@@ -316,8 +328,10 @@ export const getChildrenColumns = (
     key: "updatedAt",
     render: (text) =>
       text ? formatDate(text) : "-",
-    exportRender: (value: string) =>
-      value ? formatDate(value) : "-",
+    exportRender: (value: string) => {
+      const formatted = formatDate(value);
+      return formatted ? formatted : "-";
+    },
     hidden: true,
   },
 

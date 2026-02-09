@@ -112,7 +112,7 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
           ? "Data UMKM berhasil diperbarui!"
           : "UMKM berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? umkmId : data?.id;
+      const id = mode === "edit" ? umkmId : data?.data?.id;
       router.push(`/umkm/view/${id}`);
     }
   );

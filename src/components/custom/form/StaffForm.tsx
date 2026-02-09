@@ -116,7 +116,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
           ? "Data staf berhasil diperbarui!"
           : "Staf berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? staffId : data?.id;
+      const id = mode === "edit" ? staffId : data?.data?.id;
       router.push(`/staff/view/${id}`);
     }
   );

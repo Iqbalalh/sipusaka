@@ -1,5 +1,5 @@
 import { apiClient } from "../fetch/apiClient";
-import { API_CHILD_ASSISTANCE } from "@/constants/endpoint";
+import { API_CHILD_ASSISTANCE, API_CHILD_ASSISTANCE_OPTIMIZED } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
 import {
   ApiResponseList,
@@ -38,6 +38,18 @@ export interface ChildAssistanceDoc {
   createdAt: string;
 }
 
+export interface PaginationResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ChildAssistancePaginatedResponse {
+  data: ChildAssistance[];
+  pagination: PaginationResponse;
+}
+
 export const getChildAssistance = async (
   childrenId?: number
 ): Promise<ChildAssistance[]> => {
@@ -47,6 +59,41 @@ export const getChildAssistance = async (
       : API_CHILD_ASSISTANCE;
     const json = await apiClient<ApiResponseList<ChildAssistance>>(url);
     return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAllChildAssistanceOptimized = async (
+  page: number = 1,
+  pageSize: number = 20,
+  search: string = ""
+): Promise<ChildAssistancePaginatedResponse> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    
+    if (search.trim()) {
+      params.append('search', search);
+    }
+    
+    const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
+    const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
+    
+    const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
+    const pagination = json.pagination;
+    
+    return {
+      data: Array.isArray(data) ? data : [],
+      pagination: pagination || {
+        page: 1,
+        pageSize: pageSize,
+        total: 0,
+        totalPages: 1,
+      },
+    };
   } catch (error) {
     throw error;
   }
@@ -93,6 +140,38 @@ export const deleteChildAssistanceDocument = async (
     return await deleteResource(
       `${API_CHILD_ASSISTANCE}/${assistanceId}/documents/${docId}`
     );
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAllChildAssistanceByYear = async (
+  year: number
+): Promise<ChildAssistance[]> => {
+  try {
+    // Get all records without date filter from API
+    const params = new URLSearchParams({
+      pageSize: '9999', // Get all records
+      page: '1'
+    });
+    
+    const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
+    const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
+    
+    const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
+    const allData = Array.isArray(data) ? data : [];
+    
+    // Filter by assistance date on client side
+    const startDate = new Date(year, 0, 1); // January 1st
+    const endDate = new Date(year, 11, 31, 23, 59, 59, 999); // December 31st end of day
+    
+    const filteredData = allData.filter((item) => {
+      if (!item.assistanceDate) return false;
+      const assistanceDate = new Date(item.assistanceDate);
+      return assistanceDate >= startDate && assistanceDate <= endDate;
+    });
+    
+    return filteredData;
   } catch (error) {
     throw error;
   }
