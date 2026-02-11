@@ -6,6 +6,8 @@ export const API_AUTH_LOGIN = `${baseUrl}/api/auth/login`;
 
 // Homes
 export const API_HOME = `${baseUrl}/api/homes`;
+export const API_HOME_EXPORT = `${baseUrl}/api/homes/export`;
+export const API_HOME_OPTIMIZED = `${baseUrl}/api/homes/optimized`;
 
 // Regions
 export const API_REGION = `${baseUrl}/api/regions`;
