@@ -2,11 +2,12 @@
 
 import { Input, Tag, DatePicker, Button, Select } from "antd";
 import ButtonUI from "@/components/ui/button/Button";
-import { DeleteOutlined, SearchOutlined, FilterOutlined } from "@ant-design/icons";
+import { DeleteOutlined, SearchOutlined, FilterOutlined, EditOutlined } from "@ant-design/icons";
 import { ChildAssistance } from "@/utils/services/childassistance.service";
 import type { ColumnsType } from "antd/es/table";
 import { formatDate } from "@/utils/formatter/formatDate";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -168,7 +169,7 @@ const DateFilter = ({
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getChildAssistanceColumns = (): ColumnsType<ChildAssistance> => [
+export const getChildAssistanceColumns = (router: any): ColumnsType<ChildAssistance> => [
   {
     title: "Bantuan Ke-",
     dataIndex: "assistanceNumber",
@@ -189,7 +190,7 @@ export const getChildAssistanceColumns = (): ColumnsType<ChildAssistance> => [
     dataIndex: "assistanceDate",
     key: "assistanceDate",
     width: 150,
-    sorter: (a, b) => new Date(a.assistanceDate).getTime() - new Date(b.assistanceDate).getTime(),
+    sorter: (a, b) => new Date(b.assistanceDate).getTime() - new Date(a.assistanceDate).getTime(),
     filterDropdown: DateFilter,
     filterIcon: (filtered: boolean) => (
       <FilterOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
@@ -265,9 +266,19 @@ export const getChildAssistanceColumns = (): ColumnsType<ChildAssistance> => [
     title: "Aksi",
     key: "actions",
     fixed: "right",
-    width: 80,
+    width: 100,
     render: (_, record) => (
       <div className="flex gap-2 text-xs">
+        <Button
+          type="default"
+          size="small"
+          icon={<EditOutlined />}
+          onClick={() => {
+            if (record.childrenId) {
+              router.push(`/children/view/${record.childrenId}`);
+            }
+          }}
+        />
         <ButtonUI
           size="xs"
           onClick={() => {

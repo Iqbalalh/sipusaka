@@ -1,6 +1,6 @@
 import { Home, HomeTable } from "@/types/models/home";
 import { apiClient } from "../fetch/apiClient";
-import { API_HOME } from "@/constants/endpoint";
+import { API_HOME, API_HOME_EXPORT, API_HOME_OPTIMIZED } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
 import {
   ApiResponseList,
@@ -9,10 +9,57 @@ import {
 import { deleteResource } from "../fetch/deleteResource";
 import { fetchWithAuth } from "../fetch/fetchWithAuth";
 
+export interface PaginationResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface HomePaginatedResponse {
+  data: HomeTable[];
+  pagination: PaginationResponse;
+}
+
 export const getHomes = async (): Promise<HomeTable[]> => {
   try {
     const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
     return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getHomesOptimized = async (
+  page: number = 1,
+  pageSize: number = 50,
+  search: string = ""
+): Promise<HomePaginatedResponse> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (search.trim()) {
+      params.append("search", search);
+    }
+
+    const url = `${API_HOME_OPTIMIZED}?${params.toString()}`;
+    const json = await apiClient<ApiResponseList<HomeTable> & { pagination: PaginationResponse }>(url);
+
+    const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
+    const pagination = json.pagination;
+
+    return {
+      data: Array.isArray(data) ? data : [],
+      pagination: pagination || {
+        page: 1,
+        pageSize: pageSize,
+        total: 0,
+        totalPages: 1,
+      },
+    };
   } catch (error) {
     throw error;
   }
@@ -63,6 +110,15 @@ export const deleteHome = async (id: number) => {
 export const getHomesList = async (): Promise<HomeTable[]> => {
   try {
     const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
+    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getHomesForExport = async (): Promise<HomeTable[]> => {
+  try {
+    const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME_EXPORT);
     return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
   } catch (error) {
     throw error;

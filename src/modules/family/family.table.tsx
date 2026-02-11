@@ -1,23 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-// Components
-import DataTable from "@/components/custom/table/DataTable";
-import { Progress } from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Table, Spin, Modal, Input, Button, Progress } from "antd";
+import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined } from "@ant-design/icons";
+import { useNotify } from "@/context/NotificationContext";
+import { notifyFromResult } from "@/utils/fetch/notify";
+import Link from "next/link";
 
 // Types
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
-import { Children } from "@/types/models/children";
 
 // Utils
 import {
   deleteHome,
-  getHomes,
+  getHomesOptimized,
+  getHomesForExport,
 } from "@/utils/services/home.service";
 import { getRegionsList } from "@/utils/services/region.service";
-import { getChildrens } from "@/utils/services/children.service";
 import { getFamilyColumns } from "./family.columns";
 import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
@@ -27,7 +28,6 @@ import { saveAs } from "file-saver";
 // EXCEL EXPORT FUNCTION WITH PROGRESS
 // ==============================================
 const exportFamilyToExcel = async (
-  filteredData: HomeTable[],
   setShowProgress: (show: boolean) => void,
   setProgress: (progress: number) => void
 ) => {
@@ -35,18 +35,20 @@ const exportFamilyToExcel = async (
     setShowProgress(true);
     setProgress(10);
 
-    if (!filteredData || filteredData.length === 0) {
+    // Fetch data from export API (includes children and regions)
+    let exportData: HomeTable[] = [];
+    try {
+      exportData = await getHomesForExport();
+      setProgress(30);
+    } catch (error) {
+      console.error("Failed to fetch export data:", error);
       setShowProgress(false);
       return;
     }
 
-    // Fetch all children data
-    let allChildren: Children[] = [];
-    try {
-      allChildren = await getChildrens();
-      setProgress(30);
-    } catch (error) {
-      console.error("Failed to fetch children:", error);
+    if (!exportData || exportData.length === 0) {
+      setShowProgress(false);
+      return;
     }
 
     // Create workbook
@@ -62,6 +64,7 @@ const exportFamilyToExcel = async (
       { header: "NIP/NIPP Pegawai", key: "nipNipp", width: 20 },
       { header: "Nama Pegawai", key: "employeeName", width: 25 },
       { header: "Jenis Kelamin Pegawai", key: "employeeGender", width: 20 },
+      { header: "Wilayah", key: "regionName", width: 20 },
       { header: "Nama Pasangan", key: "partnerName", width: 25 },
       { header: "Status Pasangan", key: "partnerStatus", width: 15 },
       { header: "Nama Wali", key: "waliName", width: 25 },
@@ -100,9 +103,9 @@ const exportFamilyToExcel = async (
 
     // Prepare data rows - expand each family with their children
     const dataRows: any[] = [];
-    filteredData.forEach((home) => {
-      // Get children for this home
-      const children = allChildren.filter((c) => c.homeId === home.id);
+    exportData.forEach((home) => {
+      // Get children for this home (already included in exportData)
+      const children = (home as any).children || [];
 
       if (children.length === 0) {
         // Add row without children
@@ -111,6 +114,7 @@ const exportFamilyToExcel = async (
           nipNipp: home.employees?.nipNipp || "-",
           employeeName: home.employees?.employeeName || "-",
           employeeGender: home.employees?.employeeGender === "M" ? "Laki-laki" : "Perempuan",
+          regionName: home.regions?.regionName || home.employees?.regions?.regionName || "-",
           partnerName: home.partners?.partnerName || "-",
           partnerStatus: home.partners?.isActive ? "Aktif" : "Tidak Aktif",
           waliName: home.wali?.waliName || "-",
@@ -122,17 +126,18 @@ const exportFamilyToExcel = async (
           phoneNumber: home.partners?.phoneNumber || "-",
           homeCoordinate: home.partners?.homeCoordinate || "-",
           childrenCount: home._count?.children || 0,
-          isUmkm: home.isUmkm ? "Ya" : "Tidak",
+          isUmkm: (home as any).isUmkm ? "Ya" : "Tidak",
           createdAt: home.createdAt ? formatDate(home.createdAt) : "-",
         });
       } else {
         // Add rows for each child
-        children.forEach((child) => {
+        children.forEach((child: any) => {
           dataRows.push({
             id: home.id,
             nipNipp: home.employees?.nipNipp || "-",
             employeeName: home.employees?.employeeName || "-",
             employeeGender: home.employees?.employeeGender === "M" ? "Laki-laki" : "Perempuan",
+            regionName: home.regions?.regionName || home.employees?.regions?.regionName || "-",
             partnerName: home.partners?.partnerName || "-",
             partnerStatus: home.partners?.isActive ? "Aktif" : "Tidak Aktif",
             waliName: home.wali?.waliName || "-",
@@ -146,7 +151,7 @@ const exportFamilyToExcel = async (
             phoneNumber: home.partners?.phoneNumber || child.childrenPhone || "-",
             homeCoordinate: home.partners?.homeCoordinate || "-",
             childrenCount: home._count?.children || 0,
-            isUmkm: home.isUmkm ? "Ya" : "Tidak",
+            isUmkm: (home as any).isUmkm ? "Ya" : "Tidak",
             createdAt: home.createdAt ? formatDate(home.createdAt) : "-",
           });
         });
@@ -193,6 +198,7 @@ const exportFamilyToExcel = async (
       "nipNipp",
       "employeeName",
       "employeeGender",
+      "regionName",
       "partnerName",
       "partnerStatus",
       "waliName",
@@ -287,10 +293,35 @@ const exportFamilyToExcel = async (
 };
 
 export default function FamilyTable() {
-  // State for regions (needed for column filters)
-  const [regions, setRegions] = useState<Region[]>([]);
+  const { notify } = useNotify();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Data State
+  const [data, setData] = useState<HomeTable[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  // Delete State
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Export State
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Regions State
+  const [regions, setRegions] = useState<Region[]>([]);
 
   // Fetch regions for column filters
   useEffect(() => {
@@ -306,16 +337,142 @@ export default function FamilyTable() {
     init();
   }, []);
 
+  // ==========================
+  // FETCH DATA WITH PAGINATION
+  // ==========================
+  const fetchData = async (page: number, search: string) => {
+    try {
+      setLoading(true);
+      
+      const response = await getHomesOptimized(page, pageSize, search);
+      
+      setData(response.data);
+      setTotal(response.pagination.total);
+      setTotalPages(response.pagination.totalPages);
+      setCurrentPage(response.pagination.page);
+    } catch (err) {
+      console.error("Error fetching family data:", err);
+      notifyFromResult(notify, { error: err });
+      setData([]);
+      setTotal(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================
+  // INITIAL FETCH FROM URL
+  // ==========================
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    const searchParam = searchParams.get('search') || '';
+    const initialPage = pageParam ? parseInt(pageParam, 10) : 1;
+    setCurrentPage(initialPage);
+    setSearchQuery(searchParam);
+    fetchData(initialPage, searchParam);
+  }, []); // Only run once on mount
+
+  // ==========================
+  // SEARCH WITH DEBOUNCE
+  // ==========================
+  useEffect(() => {
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      fetchData(1, searchQuery);
+    }, 500);
+    
+    setSearchTimer(timer);
+    
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [searchQuery]);
+
+  // ==========================
+  // UPDATE URL WITH PAGE AND SEARCH PARAMETERS
+  // ==========================
+  const updatePageUrl = (page: number, search: string = searchQuery) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', page.toString());
+    if (search && search.trim()) {
+      params.set('search', search);
+    } else {
+      params.delete('search');
+    }
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  // ==========================
+  // DELETE HANDLER
+  // ==========================
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    setDeleteLoading(true);
+    try {
+      await deleteHome(deleteId);
+      
+      // Refresh current page
+      await fetchData(currentPage, searchQuery);
+
+      setIsDeleteModalOpen(false);
+      notifyFromResult(notify, {
+        successMessage: "Keluarga berhasil dihapus",
+      });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // ==========================
+  // EXPORT HANDLER
+  // ==========================
+  const handleExportWithProgress = async () => {
+    await exportFamilyToExcel(setShowProgress, setProgress);
+  };
+
   // Generate columns with regions
   const columns = getFamilyColumns(regions);
 
-  // Custom export function with progress
-  const handleExportWithProgress = async (filteredData: HomeTable[]) => {
-    await exportFamilyToExcel(filteredData, setShowProgress, setProgress);
-  };
+  // ==========================
+  // LOADING STATE
+  // ==========================
+  if (loading && data.length === 0) {
+    return (
+      <div className="flex justify-center items-center gap-4 h-40 text-gray-500">
+        <Spin indicator={<LoadingOutlined spin />} size="large" />
+        Memuat data...
+      </div>
+    );
+  }
 
+  // ==========================
+  // RENDER
+  // ==========================
   return (
-    <div>
+    <div className="overflow-x-auto">
+      {/* DELETE MODAL */}
+      <Modal
+        title="Konfirmasi Hapus"
+        open={isDeleteModalOpen}
+        onOk={handleDelete}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        cancelText="Batal"
+        okText={deleteLoading ? "Menghapus..." : "Hapus"}
+        okButtonProps={{ danger: true, loading: deleteLoading }}
+      >
+        <p>Apakah Anda yakin ingin menghapus keluarga ini?</p>
+      </Modal>
+
+      {/* EXPORT PROGRESS */}
       {showProgress && (
         <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="flex items-center justify-between mb-2">
@@ -330,23 +487,58 @@ export default function FamilyTable() {
         </div>
       )}
 
-      <DataTable<HomeTable>
-        fetchData={getHomes}
-        deleteItem={deleteHome}
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="block w-full">
+          <h3 className="text-base mb-2 font-medium text-gray-800 dark:text-white/90">
+            Jumlah Data Keluarga: {total}
+          </h3>
+          <div className="w-full">
+            <Input
+              placeholder="Cari data..."
+              prefix={<SearchOutlined />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              allowClear
+              className="w-full"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handleExportWithProgress}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Export Excel
+          </Button>
+          <Link href="/family/create">
+            <Button type="primary" className="bg-blue-600 hover:bg-blue-700">
+              +
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <Table
         columns={columns}
+        dataSource={data}
         rowKey="id"
-        exportConfig={{
-          filename: "data-keluarga",
-          sheetName: "Keluarga",
+        bordered
+        pagination={{
+          pageSize,
+          current: currentPage,
+          total,
+          showSizeChanger: false,
+          onChange: (page) => {
+            updatePageUrl(page, searchQuery);
+            fetchData(page, searchQuery);
+          },
         }}
-        title="Jumlah Data"
-        createPath="/family/create"
-        pageSize={50}
-        scrollY={500}
-        deleteConfirmTitle="Konfirmasi Hapus"
-        deleteConfirmMessage="Apakah Anda yakin ingin menghapus keluarga ini?"
-        deleteSuccessMessage="Keluarga berhasil dihapus"
-        onExport={handleExportWithProgress}
+        scroll={{ x: "max-content", y: 500 }}
+        loading={loading}
       />
     </div>
   );

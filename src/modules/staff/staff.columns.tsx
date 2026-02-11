@@ -76,7 +76,7 @@ export const getStaffColumns = (): TableColumn<Staff>[] => [
   },
 
   {
-    title: "Position",
+    title: "Jabatan",
     dataIndex: "position",
     key: "position",
     render: (text) => text || "-",

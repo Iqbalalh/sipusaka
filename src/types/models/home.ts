@@ -74,6 +74,10 @@ export interface HomeTable {
     employeePict: string | null;
     createdAt: string;
     updatedAt: string;
+    regions?: {
+      id: number;
+      regionName: string;
+    } | null;
   };
   wali: Wali | null;
   regions: {

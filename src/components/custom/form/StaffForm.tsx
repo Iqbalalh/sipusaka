@@ -288,12 +288,12 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                 />
               </FormField>
 
-              <FormField label="Position">
+              <FormField label="Jabatan">
                 <TextInput
                   type="text"
                   value={form.position ?? ""}
                   onChange={(value) => handleFieldChange("position", value)}
-                  placeholder="Masukkan position"
+                  placeholder="Masukkan jabatan"
                 />
               </FormField>
 

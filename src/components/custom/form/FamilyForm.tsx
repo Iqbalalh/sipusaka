@@ -28,7 +28,7 @@ import { getEmployees } from "@/utils/services/employee.service";
 import { getPartners } from "@/utils/services/partner.service";
 import { getWaliList } from "@/utils/services/wali.service";
 import { getChildrens } from "@/utils/services/children.service";
-import { BaseHome } from "@/types/models/home";
+import { BaseHome, Home } from "@/types/models/home";
 import { Option } from "@/types/generic/select-option";
 import { Region } from "@/types/models/region";
 
@@ -50,12 +50,13 @@ const INITIAL_FORM_STATE: BaseHome = {
 interface FamilyFormProps {
   mode: "create" | "edit";
   familyId?: string;
+  homeData?: Home;
 }
 
 // ==============================================
 // MAIN COMPONENT
 // ==============================================
-export default function FamilyForm({ mode, familyId }: FamilyFormProps) {
+export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { notify } = useNotify();
@@ -140,12 +141,9 @@ export default function FamilyForm({ mode, familyId }: FamilyFormProps) {
           }))
         );
 
-        // If edit mode, fetch existing family data
-        if (mode === "edit" && familyId) {
-          const { getHomeDetail } = await import("@/utils/services/home.service");
-          const homeData = await getHomeDetail(familyId);
-          
-          console.log("Home data fetched:", homeData);
+        // If edit mode and homeData is provided, prefill the form
+        if (mode === "edit" && homeData) {
+          console.log("Prefilling form with homeData:", homeData);
           
           const employeeId = homeData.employeeId;
           const partnerId = homeData.partnerId;
@@ -160,16 +158,19 @@ export default function FamilyForm({ mode, familyId }: FamilyFormProps) {
             waliId,
           });
           
-          setForm({
-            id: homeData.id,
-            regionId: homeData.regionId,
-            postalCode: homeData.postalCode,
-            employeeId,
-            partnerId,
-            waliId,
-          });
-          setSelectedChildrenIds(homeData.childrens?.map((c: any) => c.id) || []);
-          setWaliMode(waliId ? "existing" : "none");
+          // Set form state after options are populated to ensure proper prefilling
+          setTimeout(() => {
+            setForm({
+              id: homeData.id,
+              regionId: homeData.regionId,
+              postalCode: homeData.postalCode,
+              employeeId,
+              partnerId,
+              waliId,
+            });
+            setSelectedChildrenIds(homeData.childrens?.map((c: any) => c.id) || []);
+            setWaliMode(waliId ? "existing" : "none");
+          }, 0);
         }
       } catch (err) {
         notifyFromResult(notify, { error: err });
@@ -179,7 +180,7 @@ export default function FamilyForm({ mode, familyId }: FamilyFormProps) {
     };
 
     init();
-  }, [mode, familyId, notify]);
+  }, [mode, homeData, notify]);
 
   // ==============================================
   // VALIDATION

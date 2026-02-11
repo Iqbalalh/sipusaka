@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Spin, Modal, Input, Button, Select, Progress } from "antd";
+import { Spin, Modal, Input, Button, Select, Progress, Space } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, LeftOutlined, RightOutlined, DoubleLeftOutlined, DoubleRightOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { ChildAssistance } from "@/utils/services/childassistance.service";
 import { deleteChildAssistance, getAllChildAssistanceOptimized, getAllChildAssistanceByYear } from "@/utils/services/childassistance.service";
 import { formatDate } from "@/utils/formatter/formatDate";
-import { exportChildAssistanceToExcel, ExportProgress } from "@/utils/export/excelExport";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 // ==========================
 // HIGHLIGHT TEXT FUNCTION
@@ -23,6 +24,169 @@ const highlightText = (text: string, searchTerm: string): string => {
 
 const escapeRegExp = (string: string): string => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// ==============================================
+// EXCEL EXPORT FUNCTION WITH PROGRESS
+// ==============================================
+const exportChildAssistanceToExcel = async (
+  data: ChildAssistance[],
+  year: number,
+  setShowProgress: (show: boolean) => void,
+  setProgress: (progress: number) => void
+) => {
+  try {
+    console.log("exportChildAssistanceToExcel called with:", { year, dataLength: data.length });
+    setShowProgress(true);
+    setProgress(10);
+
+    const exportData = data;
+
+    if (!exportData || exportData.length === 0) {
+      setShowProgress(false);
+      throw new Error("Tidak ada data untuk diekspor");
+    }
+
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(`Bantuan Anak ${year}`, {
+      views: [{ state: "frozen", ySplit: 1 }],
+    });
+    setProgress(30);
+
+    // Define columns with Indonesian names
+    worksheet.columns = [
+      { header: "Bantuan Ke-", key: "assistanceNumber", width: 15 },
+      { header: "Nama Anak", key: "childrenName", width: 25 },
+      { header: "Tanggal Bantuan", key: "assistanceDate", width: 20 },
+      { header: "Jumlah Bantuan", key: "assistanceAmount", width: 20 },
+      { header: "Penyedia Bantuan", key: "assistanceProvider", width: 25 },
+      { header: "Tingkat Pendidikan", key: "educationLevel", width: 20 },
+      { header: "Kelas", key: "educationGrade", width: 15 },
+      { header: "Nama Sekolah", key: "schoolName", width: 30 },
+      { header: "Usia", key: "age", width: 10 },
+      { header: "Wilayah", key: "regionName", width: 20 },
+      { header: "Catatan", key: "notes", width: 40 },
+    ];
+
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 30;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF2563EB" },
+      };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    setProgress(50);
+
+    // Prepare data rows
+    const dataRows: any[] = [];
+    exportData.forEach((item) => {
+      const regionName = item.regionName || item.children?.homes?.regions?.regionName || "-";
+      
+      dataRows.push({
+        assistanceNumber: item.assistanceNumber || "-",
+        childrenName: item.children?.childrenName || "-",
+        assistanceDate: item.assistanceDate ? formatDate(item.assistanceDate) : "-",
+        assistanceAmount: item.assistanceAmount ? `Rp ${item.assistanceAmount.toLocaleString("id-ID")}` : "-",
+        assistanceProvider: item.assistanceProvider || "-",
+        educationLevel: item.educationLevel || "-",
+        educationGrade: item.educationGrade || "-",
+        schoolName: item.schoolName || "-",
+        age: item.age ? `${item.age} tahun` : "-",
+        regionName: regionName,
+        notes: item.notes || "-",
+      });
+    });
+
+    // Add data to worksheet
+    dataRows.forEach((row, index) => {
+      const excelRow = worksheet.addRow(row);
+
+      // Style alternating rows
+      if (index % 2 === 1) {
+        excelRow.eachCell((cell) => {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF1F5F9" },
+          };
+        });
+      }
+
+      // Style all cells
+      excelRow.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      // Update progress
+      if (index % Math.floor(dataRows.length / 10) === 0) {
+        setProgress(50 + Math.floor((index / dataRows.length) * 30));
+      }
+    });
+
+    setProgress(80);
+
+    // Auto-fit column widths
+    worksheet.columns?.forEach((column: any) => {
+      if (!column || typeof column.eachCell !== "function") return;
+
+      let maxLength = 10;
+
+      column.eachCell({ includeEmpty: true }, (cell: any) => {
+        const value = cell.value ? cell.value.toString() : "";
+        maxLength = Math.max(maxLength, value.length);
+      });
+
+      column.width = Math.min(maxLength + 4, 50);
+    });
+
+    setProgress(90);
+
+    // Export file
+    console.log("Writing workbook to buffer...");
+    const buffer = await workbook.xlsx.writeBuffer();
+    console.log("Buffer created, size:", buffer.byteLength);
+    
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    console.log("Blob created, size:", blob.size);
+
+    const fileName = `Bantuan_Anak_${year}.xlsx`;
+    console.log("Saving file as:", fileName);
+    
+    saveAs(blob, fileName);
+    console.log("File saved successfully");
+
+    setProgress(100);
+    setTimeout(() => {
+      setShowProgress(false);
+      setProgress(0);
+    }, 1000);
+  } catch (error) {
+    console.error("Export failed:", error);
+    setShowProgress(false);
+    setProgress(0);
+    throw error; // Re-throw to let the caller handle it
+  }
 };
 
 export default function ChildAssistanceTable() {
@@ -52,8 +216,9 @@ export default function ChildAssistanceTable() {
   // Export State
   const [exportYear, setExportYear] = useState<number | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
-  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // ==========================
   // FETCH DATA WITH PAGINATION
@@ -64,7 +229,12 @@ export default function ChildAssistanceTable() {
       
       const response = await getAllChildAssistanceOptimized(page, pageSize, search);
       
-      setData(response.data);
+      // Sort by assistance date (newest first)
+      const sortedData = response.data.sort((a, b) => 
+        new Date(b.assistanceDate).getTime() - new Date(a.assistanceDate).getTime()
+      );
+      
+      setData(sortedData);
       setTotal(response.pagination.total);
       setTotalPages(response.pagination.totalPages);
       setCurrentPage(response.pagination.page);
@@ -157,19 +327,13 @@ export default function ChildAssistanceTable() {
     if (!exportYear) return;
 
     setExportLoading(true);
-    setExportProgress(null);
 
     try {
-      // Update progress: Fetching data
-      setExportProgress({
-        current: 0,
-        total: 0,
-        percentage: 0,
-        status: 'Mengambil data dari server...'
-      });
-
+      console.log("Starting export for year:", exportYear);
+      
       // Fetch data for the selected year
       const data = await getAllChildAssistanceByYear(exportYear);
+      console.log("Fetched data:", data.length, "records");
 
       if (data.length === 0) {
         notifyFromResult(notify, {
@@ -180,9 +344,7 @@ export default function ChildAssistanceTable() {
       }
 
       // Export to Excel with progress tracking
-      await exportChildAssistanceToExcel(data, exportYear, (progress) => {
-        setExportProgress(progress);
-      });
+      await exportChildAssistanceToExcel(data, exportYear, setShowProgress, setProgress);
 
       setIsExportModalOpen(false);
       notifyFromResult(notify, {
@@ -193,7 +355,6 @@ export default function ChildAssistanceTable() {
       notifyFromResult(notify, { error: err });
     } finally {
       setExportLoading(false);
-      setExportProgress(null);
     }
   };
 
@@ -234,7 +395,6 @@ export default function ChildAssistanceTable() {
         onCancel={() => {
           setIsExportModalOpen(false);
           setExportYear(null);
-          setExportProgress(null);
         }}
         footer={[
           <Button key="cancel" onClick={() => setIsExportModalOpen(false)} disabled={exportLoading}>
@@ -256,46 +416,36 @@ export default function ChildAssistanceTable() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Pilih Tahun
             </label>
-            <Select
-              placeholder="Pilih tahun untuk export"
-              value={exportYear}
-              onChange={setExportYear}
-              disabled={exportLoading}
-              className="w-full"
-              size="large"
-            >
-              <Select.Option value={2025}>2025</Select.Option>
-              <Select.Option value={2024}>2024</Select.Option>
-            </Select>
+            <Space.Compact className="w-full" vertical>
+              {[2025, 2024].map((year) => (
+                <Button
+                  key={year}
+                  type={exportYear === year ? "primary" : "default"}
+                  onClick={() => setExportYear(year)}
+                  disabled={exportLoading}
+                >
+                  {year}
+                </Button>
+              ))}
+            </Space.Compact>
           </div>
-
-          {exportProgress && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {exportProgress.status}
-                </span>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  {exportProgress.percentage}%
-                </span>
-              </div>
-              <Progress
-                percent={exportProgress.percentage}
-                status={exportProgress.percentage === 100 ? 'success' : 'active'}
-                strokeColor={{
-                  '0%': '#108ee9',
-                  '100%': '#87d068',
-                }}
-              />
-              {exportProgress.total > 0 && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  {exportProgress.current} dari {exportProgress.total} data
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </Modal>
+
+      {/* EXPORT PROGRESS */}
+      {showProgress && (
+        <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Sedang mengekspor data...
+            </span>
+            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+              {progress}%
+            </span>
+          </div>
+          <Progress percent={progress} status="active" strokeColor="#2563EB" />
+        </div>
+      )}
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -368,7 +518,7 @@ export default function ChildAssistanceTable() {
           }
         `}</style>
         <div className="overflow-x-auto" style={{ maxHeight: '500px' }}>
-          <table className="w-full text-sm text-left table-fixed" style={{ minWidth: '1200px' }}>
+          <table className="w-full text-sm text-left table-fixed" style={{ minWidth: '1350px' }}>
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 font-medium border-b border-gray-200 dark:border-gray-700" style={{ width: '200px' }}>
@@ -389,6 +539,9 @@ export default function ChildAssistanceTable() {
                 <th className="px-4 py-3 font-medium border-b border-gray-200 dark:border-gray-700" style={{ width: '120px' }}>
                   Tingkat Pendidikan
                 </th>
+                <th className="px-4 py-3 font-medium border-b border-gray-200 dark:border-gray-700" style={{ width: '120px' }}>
+                  Wilayah
+                </th>
                 <th className="px-4 py-3 font-medium border-b border-gray-200 dark:border-gray-700" style={{ width: '80px' }}>
                   Usia
                 </th>
@@ -403,7 +556,7 @@ export default function ChildAssistanceTable() {
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {data.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                     Tidak ada data
                   </td>
                 </tr>
@@ -422,7 +575,7 @@ export default function ChildAssistanceTable() {
                       {record.assistanceDate ? formatDate(record.assistanceDate) : "-"}
                     </td>
                     <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 truncate">
-                      {record.assistanceAmount || "-"}
+                      {record.assistanceAmount ? `Rp ${record.assistanceAmount.toLocaleString("id-ID")}` : "-"}
                     </td>
                     <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 truncate">
                       <span className="inline-block px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">
@@ -436,6 +589,11 @@ export default function ChildAssistanceTable() {
                         <span dangerouslySetInnerHTML={{
                           __html: highlightText(record.educationLevel || "-", searchQuery)
                         }} />
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 truncate">
+                      <span className="inline-block px-2 py-1 text-xs font-medium text-purple-800 bg-purple-100 rounded-full dark:bg-purple-900 dark:text-purple-300">
+                        {record.children?.homes?.regions?.regionName || "-"}
                       </span>
                     </td>
                     <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 truncate">

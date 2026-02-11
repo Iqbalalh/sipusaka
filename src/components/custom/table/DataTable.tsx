@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 
 // Components
@@ -21,9 +21,22 @@ import { notifyFromResult } from "@/utils/fetch/notify";
 // ==============================================
 // TYPES
 // ==============================================
+export interface PaginationResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedDataResponse<T> {
+  data: T[];
+  pagination: PaginationResponse;
+}
+
 export interface DataTableProps<T> {
-  // Data fetching
-  fetchData: () => Promise<T[]>;
+  // Data fetching - can be either simple array or paginated response
+  fetchData?: () => Promise<T[]>;
+  fetchPaginatedData?: (page: number, pageSize: number, search?: string) => Promise<PaginatedDataResponse<T>>;
   deleteItem?: (id: number) => Promise<void>;
 
   // Table configuration
@@ -43,6 +56,9 @@ export interface DataTableProps<T> {
   pageSize?: number;
   scrollY?: number;
 
+  // Server-side pagination
+  serverSidePagination?: boolean;
+
   // Custom actions
   renderActions?: (
     record: T,
@@ -60,6 +76,7 @@ export interface DataTableProps<T> {
 // ==============================================
 export default function DataTable<T extends Record<string, any>>({
   fetchData,
+  fetchPaginatedData,
   deleteItem,
   columns,
   rowKey,
@@ -69,6 +86,7 @@ export default function DataTable<T extends Record<string, any>>({
   createPath,
   pageSize = 50,
   scrollY = 500,
+  serverSidePagination = false,
   renderActions,
   deleteConfirmTitle = "Konfirmasi Hapus",
   deleteConfirmMessage = "Apakah Anda yakin ingin menghapus data ini?",
@@ -78,66 +96,133 @@ export default function DataTable<T extends Record<string, any>>({
   const [data, setData] = useState<T[]>([]);
   const [currentData, setCurrentData] = useState<T[]>([]);
   const [filteredData, setFilteredData] = useState<T[]>([]);
-
+  
   // Page State
   const { notify } = useNotify();
   const [loading, setLoading] = useState(true);
   const [count, setCount] = useState(0);
-
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Delete State
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  
+  // Refs to store functions and values to avoid recreation
+  const hasLoaded = useRef(false);
+  const fetchDataRef = useRef(fetchData);
+  const fetchPaginatedDataRef = useRef(fetchPaginatedData);
+  const notifyRef = useRef(notify);
+  const pageSizeRef = useRef(pageSize);
+  const serverSidePaginationRef = useRef(serverSidePagination);
+  
+  // Update refs when props change
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+    fetchPaginatedDataRef.current = fetchPaginatedData;
+    notifyRef.current = notify;
+    pageSizeRef.current = pageSize;
+    serverSidePaginationRef.current = serverSidePagination;
+  }, [fetchData, fetchPaginatedData, notify, pageSize, serverSidePagination]);
 
   // ==========================
-  // FETCH INITIAL DATA
+  // FETCH DATA FUNCTION
   // ==========================
-  useEffect(() => {
-    const init = async () => {
-      try {
-        setLoading(true);
-        const result = await fetchData();
+  const loadData = useCallback(async (page: number = 1, search: string = "") => {
+    try {
+      setLoading(true);
+      
+      if (serverSidePaginationRef.current && fetchPaginatedDataRef.current) {
+        // Server-side pagination
+        const response = await fetchPaginatedDataRef.current(page, pageSizeRef.current, search);
+        setData(response.data);
+        setFilteredData(response.data);
+        setCount(response.pagination.total);
+        setTotalPages(response.pagination.totalPages);
+        setCurrentPage(response.pagination.page);
+      } else if (fetchDataRef.current) {
+        // Client-side pagination
+        const result = await fetchDataRef.current();
         setData(result);
         setFilteredData(result);
         setCount(result.length);
-      } catch (err) {
-        notifyFromResult(notify, { error: err });
-      } finally {
-        setLoading(false);
+        setTotalPages(Math.ceil(result.length / pageSizeRef.current));
       }
-    };
+    } catch (err) {
+      notifyFromResult(notifyRef.current, { error: err });
+      setData([]);
+      setFilteredData([]);
+      setCount(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Empty deps - uses refs internally
 
-    init();
-  }, [fetchData, notify]);
+  // ==========================
+  // INITIAL LOAD
+  // ==========================
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      loadData(1, "");
+    }
+  }, []); // Only run once on mount
 
   // ==========================
   // SEARCH FILTER
   // ==========================
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredData(data);
-      setCount(data.length);
-      return;
-    }
+    if (serverSidePaginationRef.current) {
+      // Server-side search with debounce
+      if (searchTimer) {
+        clearTimeout(searchTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        loadData(1, searchQuery);
+      }, 500);
+      
+      setSearchTimer(timer);
+      
+      return () => {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      };
+    } else {
+      // Client-side search
+      if (!searchQuery.trim()) {
+        setFilteredData(data);
+        setCount(data.length);
+        setTotalPages(Math.ceil(data.length / pageSizeRef.current));
+        return;
+      }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = data.filter((record) => {
-      return Object.entries(record).some(([key, value]) => {
-        // Skip non-string values and null/undefined
-        if (value === null || value === undefined) return false;
+      const query = searchQuery.toLowerCase();
+      const filtered = data.filter((record) => {
+        return Object.entries(record).some(([key, value]) => {
+          // Skip non-string values and null/undefined
+          if (value === null || value === undefined) return false;
 
-        // Check if value is a string or can be converted to string
-        const strValue = String(value).toLowerCase();
-        return strValue.includes(query);
+          // Check if value is a string or can be converted to string
+          const strValue = String(value).toLowerCase();
+          return strValue.includes(query);
+        });
       });
-    });
 
-    setFilteredData(filtered);
-    setCount(filtered.length);
-  }, [searchQuery, data]);
+      setFilteredData(filtered);
+      setCount(filtered.length);
+      setTotalPages(Math.ceil(filtered.length / pageSizeRef.current));
+    }
+  }, [searchQuery, data, loadData]); // Removed searchTimer from deps
 
   // ==========================
   // DELETE HANDLER
@@ -146,6 +231,27 @@ export default function DataTable<T extends Record<string, any>>({
     setDeleteId(id);
     setIsDeleteModalOpen(true);
   }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteId || !deleteItem) return;
+
+    setDeleteLoading(true);
+    try {
+      await deleteItem(deleteId);
+      
+      // Reload data
+      await loadData(currentPage, searchQuery);
+
+      setIsDeleteModalOpen(false);
+      notifyFromResult(notify, {
+        successMessage: deleteSuccessMessage,
+      });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [deleteId, deleteItem, loadData, currentPage, searchQuery, notify, deleteSuccessMessage]);
 
   // ==========================
   // EXPORT TO EXCEL
@@ -193,32 +299,10 @@ export default function DataTable<T extends Record<string, any>>({
     });
   }, [columns, openDeleteModal]);
 
-  const handleDelete = useCallback(async () => {
-    if (!deleteId || !deleteItem) return;
-
-    setDeleteLoading(true);
-    try {
-      await deleteItem(deleteId);
-      const refreshed = await fetchData();
-      setData(refreshed);
-      setFilteredData(refreshed);
-      setCount(refreshed.length);
-
-      setIsDeleteModalOpen(false);
-      notifyFromResult(notify, {
-        successMessage: deleteSuccessMessage,
-      });
-    } catch (err) {
-      notifyFromResult(notify, { error: err });
-    } finally {
-      setDeleteLoading(false);
-    }
-  }, [deleteId, deleteItem, fetchData, notify, deleteSuccessMessage]);
-
   // ==========================
   // LOADING STATE
   // ==========================
-  if (loading) {
+  if (loading && data.length === 0) {
     return (
       <div className="flex justify-center items-center gap-4 h-40 text-gray-500">
         <Flex align="center" gap="middle">
@@ -298,13 +382,29 @@ export default function DataTable<T extends Record<string, any>>({
         dataSource={filteredData}
         rowKey={rowKey}
         bordered
-        pagination={{ pageSize, showSizeChanger: false }}
+        pagination={
+          serverSidePagination
+            ? {
+                pageSize,
+                current: currentPage,
+                total: count,
+                showSizeChanger: false,
+                onChange: (page) => loadData(page, searchQuery),
+              }
+            : {
+                pageSize,
+                showSizeChanger: false,
+              }
+        }
         scroll={{ x: "max-content", y: scrollY }}
         onChange={(_, __, ___, extra) => {
           const current = extra.currentDataSource as T[];
           setCurrentData(current);
-          setCount(current.length);
+          if (!serverSidePagination) {
+            setCount(current.length);
+          }
         }}
+        loading={loading}
       />
     </div>
   );

@@ -26,8 +26,19 @@ export interface ChildAssistance {
   children?: {
     id: number;
     childrenName: string;
+    homeId?: number | null;
+    homes?: {
+      id: number;
+      regionId?: number | null;
+      regions?: {
+        regionId: number;
+        regionName: string;
+      } | null;
+    } | null;
   };
   childAssistanceDocs?: ChildAssistanceDoc[];
+  regionId?: number | null;
+  regionName?: string | null;
 }
 
 export interface ChildAssistanceDoc {
