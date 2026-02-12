@@ -271,38 +271,42 @@ export default function FamilyView() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h4 className="text-xl gap-3 flex font-semibold text-gray-800 dark:text-white/90">
               Data Keluarga{" "}
-              <Badge variant="light" color="info">
-                {data?.regions?.regionName || "Tidak ada data"}
-              </Badge>
             </h4>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                handlePrintFamily(
-                  data,
-                  `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
-                    data?.employee?.employeePict
-                  )}`,
-                  `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
-                    data?.partner?.partnerPict
-                  )}`,
-                  data?.waliId && data?.wali
-                    ? `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
-                        data.wali.waliPict
-                      )}`
-                    : undefined,
-                  data?.childrens?.map(
-                    (child) =>
-                      `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
-                        child.childrenPict
-                      )}`
+            <div className="flex items-center gap-2">
+              <Link href={`/family/edit/${id}`}>
+                <Button variant="outline" size="sm">
+                  Edit
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  handlePrintFamily(
+                    data,
+                    `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
+                      data?.employee?.employeePict
+                    )}`,
+                    `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
+                      data?.partner?.partnerPict
+                    )}`,
+                    data?.waliId && data?.wali
+                      ? `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
+                          data.wali.waliPict
+                        )}`
+                      : undefined,
+                    data?.childrens?.map(
+                      (child) =>
+                        `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
+                          child.childrenPict
+                        )}`
+                    )
                   )
-                )
-              }
-            >
-              Print
-            </Button>
+                }
+              >
+                Print
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -410,7 +414,7 @@ export default function FamilyView() {
                 Dibuat Oleh
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                {data?.employee?.createdBy || "-"}
+                {(data?.employee as any)?.createdByStaffName || data?.employee?.createdBy || "-"}
               </span>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -418,7 +422,7 @@ export default function FamilyView() {
                 Diedit Oleh
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                {data?.employee?.editedBy || "-"}
+                {(data?.employee as any)?.editedByStaffName || data?.employee?.editedBy || "-"}
               </span>
             </div>
           </div>
@@ -555,7 +559,7 @@ export default function FamilyView() {
                 Dibuat Oleh
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                {data?.partner?.createdBy || "-"}
+                {(data?.partner as any)?.createdByStaffName || data?.partner?.createdBy || "-"}
               </span>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -563,7 +567,7 @@ export default function FamilyView() {
                 Diedit Oleh
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                {data?.partner?.editedBy || "-"}
+                {(data?.partner as any)?.editedByStaffName || data?.partner?.editedBy || "-"}
               </span>
             </div>
           </div>
@@ -677,7 +681,7 @@ export default function FamilyView() {
                   Dibuat Oleh
                 </span>
                 <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                  {data.wali?.createdBy || "-"}
+                  {(data.wali as any)?.createdByStaffName || data.wali?.createdBy || "-"}
                 </span>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -685,7 +689,7 @@ export default function FamilyView() {
                   Diedit Oleh
                 </span>
                 <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                  {data.wali?.editedBy || "-"}
+                  {(data.wali as any)?.editedByStaffName || data.wali?.editedBy || "-"}
                 </span>
               </div>
             </div>
@@ -869,7 +873,7 @@ export default function FamilyView() {
                       Dibuat Oleh
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.createdBy || "-"}
+                      {(child as any)?.createdByStaffName || child?.createdBy || "-"}
                     </span>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -877,7 +881,7 @@ export default function FamilyView() {
                       Diedit Oleh
                     </span>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.editedBy || "-"}
+                      {(child as any)?.editedByStaffName || child?.editedBy || "-"}
                     </span>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">

@@ -100,7 +100,6 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
     title: "Pegawai",
     dataIndex: "employeeName",
     key: "employeeName",
-    ...getColumnSearchProps("employeeName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.employees?.employeePict ? (
@@ -136,7 +135,6 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
     title: "Pasangan",
     dataIndex: "partnerName",
     key: "partnerName",
-    ...getColumnSearchProps("partnerName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.partners?.partnerPict ? (
@@ -174,7 +172,6 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
     title: "Wali",
     dataIndex: "waliName",
     key: "waliName",
-    ...getColumnSearchProps("waliName"),
     render: (_, home) => home.wali?.waliName || "-",
   },
   {
@@ -219,13 +216,13 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
     title: "Dibuat Oleh",
     dataIndex: "createdBy",
     key: "createdBy",
-    render: (value) => value || "-",
+    render: (_: any, record: any) => (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
   },
   {
     title: "Diedit Oleh",
     dataIndex: "editedBy",
     key: "editedBy",
-    render: (value) => value || "-",
+    render: (_: any, record: any) => (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
   },
   {
     title: "Aksi",

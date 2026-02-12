@@ -13,7 +13,7 @@ export default function ChildrenTables() {
       {" "}
       <PageBreadcrumb pageTitle="Anak Asuh" />
       <div className="space-y-6">
-        <ComponentCard title="Jumlah Data" header={false}>
+        <ComponentCard title="Data Anak Asuh" header={false}>
           <ChildrenTable />
         </ComponentCard>
       </div>

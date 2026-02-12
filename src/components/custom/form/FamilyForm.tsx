@@ -123,7 +123,7 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
         setPartners(
           partnerList.map((p: any) => ({
             value: p.id,
-            label: `${p.partnerName}`,
+            label: `${p.partnerName}${p.regions?.regionName ? ` - ${p.regions.regionName}` : ""}`,
           }))
         );
 

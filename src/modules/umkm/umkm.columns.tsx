@@ -143,16 +143,16 @@ export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
     title: "Dibuat Oleh",
     dataIndex: "createdBy",
     key: "createdBy",
-    render: (text: any) => text || "-",
-    exportRender: (_: any, record: Umkm) => record.createdBy ?? "-",
+    render: (_: any, record: any) => (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
+    exportRender: (_: any, record: any) => ((record as any)?.createdByStaffName || (record as any)?.createdBy) ?? "-",
   } as any,
 
   {
     title: "Diedit Oleh",
     dataIndex: "editedBy",
     key: "editedBy",
-    render: (text: any) => text || "-",
-    exportRender: (_: any, record: Umkm) => record.editedBy ?? "-",
+    render: (_: any, record: any) => (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
+    exportRender: (_: any, record: any) => ((record as any)?.editedByStaffName || (record as any)?.editedBy) ?? "-",
   } as any,
 
   {

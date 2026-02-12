@@ -345,6 +345,18 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
                 />
               </FormField>
 
+              <FormField label="Status Hidup">
+                <SelectInput
+                  value={form.isAlive}
+                  onChange={(value) => handleFieldChange("isAlive", value)}
+                  options={[
+                    { value: true, label: "Hidup" },
+                    { value: false, label: "Meninggal" }
+                  ]}
+                  placeholder="Pilih status hidup"
+                />
+              </FormField>
+
               <hr className="border-gray-100" />
 
               <FormField label="Foto Pasangan">

@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Button, Progress } from "antd";
-import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined } from "@ant-design/icons";
+import { Table, Spin, Modal, Input, Progress } from "antd";
+import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import Link from "next/link";
+import Button from "@/components/ui/button/Button";
 
 // Types
 import { HomeTable } from "@/types/models/home";
@@ -463,11 +464,21 @@ export default function FamilyTable() {
       <Modal
         title="Konfirmasi Hapus"
         open={isDeleteModalOpen}
-        onOk={handleDelete}
         onCancel={() => setIsDeleteModalOpen(false)}
-        cancelText="Batal"
-        okText={deleteLoading ? "Menghapus..." : "Hapus"}
-        okButtonProps={{ danger: true, loading: deleteLoading }}
+        footer={[
+          <Button key="cancel" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={deleteLoading}>
+            Batal
+          </Button>,
+          <Button
+            key="delete"
+            variant="primary"
+            onClick={handleDelete}
+            disabled={deleteLoading}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {deleteLoading ? "Menghapus..." : "Hapus"}
+          </Button>,
+        ]}
       >
         <p>Apakah Anda yakin ingin menghapus keluarga ini?</p>
       </Modal>
@@ -489,8 +500,8 @@ export default function FamilyTable() {
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="block w-full">
-          <h3 className="text-base mb-2 font-medium text-gray-800 dark:text-white/90">
+        <div className="flex flex-col gap-4 w-full sm:w-auto">
+          <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
             Jumlah Data Keluarga: {total}
           </h3>
           <div className="w-full">
@@ -506,16 +517,17 @@ export default function FamilyTable() {
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
-            type="primary"
-            icon={<DownloadOutlined />}
+            variant="primary"
+            size="sm"
             onClick={handleExportWithProgress}
             className="bg-blue-600 hover:bg-blue-700"
           >
+            <DownloadOutlined className="mr-2" />
             Export Excel
           </Button>
           <Link href="/family/create">
-            <Button type="primary" className="bg-blue-600 hover:bg-blue-700">
-              +
+            <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
+              <PlusOutlined />
             </Button>
           </Link>
         </div>
@@ -523,7 +535,37 @@ export default function FamilyTable() {
 
       {/* TABLE */}
       <Table
-        columns={columns}
+        columns={columns.map((col) => {
+          if (col.key === "actions") {
+            return {
+              ...col,
+              render: (_: any, home: HomeTable) => (
+                <div className="flex gap-2 text-xs">
+                  <Link href={`family/view/${home.id}`}>
+                    <Button size="xs">
+                      <EyeOutlined />
+                    </Button>
+                  </Link>
+                  <Link href={`family/edit/${home.id}`}>
+                    <Button size="xs">
+                      <EditOutlined />
+                    </Button>
+                  </Link>
+                  <Button
+                    size="xs"
+                    onClick={() => {
+                      setDeleteId(home.id);
+                      setIsDeleteModalOpen(true);
+                    }}
+                  >
+                    <DeleteOutlined />
+                  </Button>
+                </div>
+              ),
+            };
+          }
+          return col;
+        })}
         dataSource={data}
         rowKey="id"
         bordered

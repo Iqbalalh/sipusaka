@@ -261,7 +261,7 @@ export default function PartnerView() {
               Dibuat Oleh
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.createdBy || "-"}
+              {(data as any)?.createdByStaffName || (data as any)?.createdBy || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -269,7 +269,7 @@ export default function PartnerView() {
               Diedit Oleh
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.editedBy || "-"}
+              {(data as any)?.editedByStaffName || (data as any)?.editedBy || "-"}
             </span>
           </div>
         </div>

@@ -37,6 +37,10 @@ export interface Children extends BaseChildren {
     createdAt: string;
     regionId: number | null;
     postalCode: string | null;
+    regions?: {
+      regionId: number;
+      regionName: string;
+    };
     employees?: {
       id: number;
       nipNipp: string;
@@ -50,6 +54,10 @@ export interface Children extends BaseChildren {
       employeePict: string | null;
       createdAt: string;
       updatedAt: string;
+      regions?: {
+        regionId: number;
+        regionName: string;
+      };
     };
     partners?: {
       id: number;

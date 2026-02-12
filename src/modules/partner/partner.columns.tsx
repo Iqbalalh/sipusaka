@@ -164,16 +164,16 @@ export const getPartnerColumns = (
     title: "Dibuat Oleh",
     dataIndex: "createdBy",
     key: "createdBy",
-    render: (text) => text || "-",
-    exportRender: (value: number) => value ?? "-",
+    render: (_: any, record: any) => (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
+    exportRender: (_: any, record: any) => ((record as any)?.createdByStaffName || (record as any)?.createdBy) ?? "-",
   },
 
   {
     title: "Diedit Oleh",
     dataIndex: "editedBy",
     key: "editedBy",
-    render: (text) => text || "-",
-    exportRender: (value: number) => value ?? "-",
+    render: (_: any, record: any) => (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
+    exportRender: (_: any, record: any) => ((record as any)?.editedByStaffName || (record as any)?.editedBy) ?? "-",
   },
 
   {

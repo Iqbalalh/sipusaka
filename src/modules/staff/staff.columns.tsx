@@ -129,16 +129,16 @@ export const getStaffColumns = (): TableColumn<Staff>[] => [
     title: "Dibuat Oleh",
     dataIndex: "createdBy",
     key: "createdBy",
-    render: (value) => value || "-",
-    exportRender: (value: number) => value ?? "-",
+    render: (_: any, record: any) => (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
+    exportRender: (_: any, record: any) => ((record as any)?.createdByStaffName || (record as any)?.createdBy) ?? "-",
   },
 
   {
     title: "Diedit Oleh",
     dataIndex: "editedBy",
     key: "editedBy",
-    render: (value) => value || "-",
-    exportRender: (value: number) => value ?? "-",
+    render: (_: any, record: any) => (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
+    exportRender: (_: any, record: any) => ((record as any)?.editedByStaffName || (record as any)?.editedBy) ?? "-",
   },
 
   {

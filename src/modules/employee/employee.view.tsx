@@ -184,7 +184,7 @@ export default function EmployeeView() {
               Dibuat Oleh
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.createdBy || "-"}
+              {(data as any)?.createdByStaffName || (data as any)?.createdBy || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -192,7 +192,7 @@ export default function EmployeeView() {
               Diedit Oleh
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.editedBy || "-"}
+              {(data as any)?.editedByStaffName || (data as any)?.editedBy || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">

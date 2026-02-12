@@ -205,7 +205,7 @@ export default function WaliView() {
               Dibuat Oleh
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-              {data?.createdBy || "-"}
+              {(data as any)?.createdByStaffName || (data as any)?.createdBy || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -213,7 +213,7 @@ export default function WaliView() {
               Diedit Oleh
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-              {data?.editedBy || "-"}
+              {(data as any)?.editedByStaffName || (data as any)?.editedBy || "-"}
             </span>
           </div>
         </div>

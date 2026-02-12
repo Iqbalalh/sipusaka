@@ -51,7 +51,7 @@ const exportUmkmVisitToExcel = async (
     // Define columns with Indonesian names
     worksheet.columns = [
       { header: "ID", key: "id", width: 15 },
-      { header: "No. Kunjungan", key: "visitNumber", width: 15 },
+      { header: "Kunjunga ke-", key: "visitNumber", width: 15 },
       { header: "Nama UMKM", key: "businessName", width: 25 },
       { header: "Pemilik", key: "ownerName", width: 25 },
       { header: "Tanggal Bantuan", key: "assistanceDate", width: 20 },

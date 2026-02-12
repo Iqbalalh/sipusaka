@@ -29,11 +29,11 @@ export default function UmkmInfo({ data }: UmkmInfoProps) {
     },
     {
       label: "Dibuat Oleh",
-      value: data?.createdBy || "-",
+      value: (data as any)?.createdByStaffName || (data as any)?.createdBy || "-",
     },
     {
       label: "Diedit Oleh",
-      value: data?.editedBy || "-",
+      value: (data as any)?.editedByStaffName || (data as any)?.editedBy || "-",
     },
   ];
 

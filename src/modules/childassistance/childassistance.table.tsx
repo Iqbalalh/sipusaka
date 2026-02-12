@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Spin, Modal, Input, Button, Select, Progress, Space } from "antd";
+import { Spin, Modal, Input, Select, Progress, Space } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, LeftOutlined, RightOutlined, DoubleLeftOutlined, DoubleRightOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -11,6 +11,7 @@ import { deleteChildAssistance, getAllChildAssistanceOptimized, getAllChildAssis
 import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import Button from "@/components/ui/button/Button";
 
 // ==========================
 // HIGHLIGHT TEXT FUNCTION
@@ -379,11 +380,21 @@ export default function ChildAssistanceTable() {
       <Modal
         title="Konfirmasi Hapus"
         open={isDeleteModalOpen}
-        onOk={handleDelete}
         onCancel={() => setIsDeleteModalOpen(false)}
-        cancelText="Batal"
-        okText={deleteLoading ? "Menghapus..." : "Hapus"}
-        okButtonProps={{ danger: true, loading: deleteLoading }}
+        footer={[
+          <Button key="cancel" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={deleteLoading}>
+            Batal
+          </Button>,
+          <Button
+            key="delete"
+            variant="primary"
+            onClick={handleDelete}
+            disabled={deleteLoading}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {deleteLoading ? "Menghapus..." : "Hapus"}
+          </Button>,
+        ]}
       >
         <p>Apakah Anda yakin ingin menghapus data bantuan anak ini?</p>
       </Modal>
@@ -397,14 +408,13 @@ export default function ChildAssistanceTable() {
           setExportYear(null);
         }}
         footer={[
-          <Button key="cancel" onClick={() => setIsExportModalOpen(false)} disabled={exportLoading}>
+          <Button key="cancel" variant="outline" onClick={() => setIsExportModalOpen(false)} disabled={exportLoading}>
             Batal
           </Button>,
           <Button
             key="export"
-            type="primary"
+            variant="primary"
             onClick={handleExport}
-            loading={exportLoading}
             disabled={!exportYear || exportLoading}
           >
             {exportLoading ? 'Exporting...' : 'Export'}
@@ -420,7 +430,7 @@ export default function ChildAssistanceTable() {
               {[2025, 2024].map((year) => (
                 <Button
                   key={year}
-                  type={exportYear === year ? "primary" : "default"}
+                  variant={exportYear === year ? "primary" : "outline"}
                   onClick={() => setExportYear(year)}
                   disabled={exportLoading}
                 >
@@ -449,8 +459,8 @@ export default function ChildAssistanceTable() {
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="block">
-          <h3 className="text-base mb-2 font-medium text-gray-800 dark:text-white/90">
+        <div className="flex flex-col gap-4 w-full sm:w-auto">
+          <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
             Jumlah Data Bantuan Anak: {total}
           </h3>
           <div className="w-full">
@@ -465,11 +475,12 @@ export default function ChildAssistanceTable() {
           </div>
         </div>
         <Button
-          type="primary"
-          icon={<DownloadOutlined />}
+          variant="primary"
+          size="sm"
           onClick={() => setIsExportModalOpen(true)}
           className="bg-blue-600 hover:bg-blue-700"
         >
+          <DownloadOutlined className="mr-2" />
           Export Excel
         </Button>
       </div>
@@ -607,25 +618,27 @@ export default function ChildAssistanceTable() {
                     <td className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex gap-2">
                         <Button
-                          type="default"
-                          size="small"
-                          icon={<EditOutlined />}
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             if (record.childrenId) {
                               router.push(`/children/view/${record.childrenId}`);
                             }
                           }}
-                        />
+                        >
+                          <EditOutlined />
+                        </Button>
                         <Button
-                          danger
-                          size="small"
-                          icon={<DeleteOutlined />}
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             if (!record.id) return;
                             setDeleteId(record.id);
                             setIsDeleteModalOpen(true);
                           }}
-                        />
+                        >
+                          <DeleteOutlined />
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -644,26 +657,28 @@ export default function ChildAssistanceTable() {
             <div className="flex items-center gap-1">
               {/* First Page */}
               <Button
-                size="small"
-                icon={<DoubleLeftOutlined />}
-                disabled={currentPage === 1}
+                size="xs"
                 onClick={() => {
                   updatePageUrl(1, searchQuery);
                   fetchData(1, searchQuery);
                 }}
-              />
+                disabled={currentPage === 1}
+              >
+                <DoubleLeftOutlined />
+              </Button>
               
               {/* Previous Page */}
               <Button
-                size="small"
-                icon={<LeftOutlined />}
-                disabled={currentPage === 1}
+                size="xs"
                 onClick={() => {
                   const newPage = currentPage - 1;
                   updatePageUrl(newPage, searchQuery);
                   fetchData(newPage, searchQuery);
                 }}
-              />
+                disabled={currentPage === 1}
+              >
+                <LeftOutlined />
+              </Button>
               
               {/* Page Numbers */}
               <div className="flex gap-1">
@@ -684,8 +699,8 @@ export default function ChildAssistanceTable() {
                   return (
                     <Button
                       key={pageNum}
-                      size="small"
-                      type={currentPage === pageNum ? "primary" : "default"}
+                      size="xs"
+                      variant={currentPage === pageNum ? "primary" : "outline"}
                       onClick={() => {
                         updatePageUrl(pageNum, searchQuery);
                         fetchData(pageNum, searchQuery);
@@ -699,26 +714,28 @@ export default function ChildAssistanceTable() {
               
               {/* Next Page */}
               <Button
-                size="small"
-                icon={<RightOutlined />}
-                disabled={currentPage === totalPages}
+                size="xs"
                 onClick={() => {
                   const newPage = currentPage + 1;
                   updatePageUrl(newPage, searchQuery);
                   fetchData(newPage, searchQuery);
                 }}
-              />
+                disabled={currentPage === totalPages}
+              >
+                <RightOutlined />
+              </Button>
               
               {/* Last Page */}
               <Button
-                size="small"
-                icon={<DoubleRightOutlined />}
-                disabled={currentPage === totalPages}
+                size="xs"
                 onClick={() => {
                   updatePageUrl(totalPages, searchQuery);
                   fetchData(totalPages, searchQuery);
                 }}
-              />
+                disabled={currentPage === totalPages}
+              >
+                <DoubleRightOutlined />
+              </Button>
             </div>
           </div>
         )}
