@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin, Checkbox, DatePicker } from "antd";
-import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
+import { LoadingOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import dayjs, { Dayjs } from "dayjs";
 
@@ -14,11 +14,11 @@ import FileInput from "@/components/form/input/FileInput";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
-import { TextInput } from "@/components/custom/TextInput";
 
 // Hooks & Utils
 import { useFormSubmit } from "@/hooks/useFormSubmit";
 import { useFilePreview } from "@/hooks/useFilePreview";
+import { useMultipleFilePreview } from "@/hooks/useMultipleFilePreview";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
@@ -45,11 +45,11 @@ const INITIAL_FORM_STATE: BaseGallery = {
 // ==============================================
 const validateForm = (
   form: BaseGallery,
-  imageFile: File | null,
+  imageFiles: File[],
   mode: "create" | "edit"
 ): { isValid: boolean; error?: string } => {
-  if (mode === "create" && !imageFile) {
-    return { isValid: false, error: "Gambar wajib diunggah!" };
+  if (mode === "create" && imageFiles.length === 0) {
+    return { isValid: false, error: "Minimal satu gambar wajib diunggah!" };
   }
   return { isValid: true };
 };
@@ -76,7 +76,18 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
   const [form, setForm] = useState<BaseGallery>(INITIAL_FORM_STATE);
   const [galleryDate, setGalleryDate] = useState<Dayjs | null>(null);
 
+  // Single file for edit mode
   const { file: imageFile, preview, selectFile, clearFile } = useFilePreview();
+  
+  // Multiple files for create mode
+  const {
+    files: multipleFiles,
+    addFiles,
+    removeFile,
+    clearFiles,
+    hasFiles,
+    fileCount,
+  } = useMultipleFilePreview();
 
   // ==============================================
   // SUBMIT HOOK
@@ -93,8 +104,13 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
           ? "Data galeri berhasil diperbarui!"
           : "Galeri berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
-      const id = mode === "edit" ? galleryId : data?.data?.id;
-      router.push(`/galleries/view/${id}`);
+      
+      // For create mode with multiple files, go back to gallery list
+      if (mode === "create") {
+        router.push("/galleries");
+      } else {
+        router.push(`/galleries/view/${galleryId}`);
+      }
     }
   );
 
@@ -172,16 +188,28 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
 
   const handleSelectFile = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      const fileList = e.target.files;
+      if (!fileList || fileList.length === 0) return;
 
       try {
-        selectFile(file);
+        if (mode === "edit") {
+          // Edit mode: single file
+          const file = fileList[0];
+          selectFile(file);
+        } else {
+          // Create mode: multiple files
+          const addedCount = addFiles(fileList);
+          if (addedCount === 0) {
+            notify("warning", "Tidak ada file yang valid untuk diunggah.");
+          } else {
+            notify("success", `${addedCount} gambar berhasil ditambahkan.`);
+          }
+        }
       } catch (error) {
         notifyFromResult(notify, { error });
       }
     },
-    [selectFile, notify]
+    [selectFile, addFiles, mode, notify]
   );
 
   const handleCategoryChange = useCallback((categoryId: number) => {
@@ -195,15 +223,27 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    const validation = validateForm(form, imageFile, mode);
+    // Get files based on mode
+    const filesToUpload = mode === "create" ? multipleFiles.map(f => f.file) : (imageFile ? [imageFile] : []);
+    
+    const validation = validateForm(form, filesToUpload, mode);
     if (!validation.isValid) {
       return notify("warning", validation.error!);
     }
 
     const extraData = new FormData();
-    if (imageFile) {
+    
+    // Append files based on mode
+    if (mode === "create" && multipleFiles.length > 0) {
+      // Multiple files for create mode
+      multipleFiles.forEach((fileWithPreview) => {
+        extraData.append("images", fileWithPreview.file);
+      });
+    } else if (imageFile) {
+      // Single file for edit mode
       extraData.append("image", imageFile);
     }
+    
     if (selectedCategories.length > 0) {
       selectedCategories.forEach((catId) => {
         extraData.append("categoryIds", catId.toString());
@@ -219,7 +259,7 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, imageFile, mode, selectedCategories, galleryDate, submit, notify]);
+  }, [form, imageFile, multipleFiles, mode, selectedCategories, galleryDate, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     if (mode === "create") {
@@ -338,9 +378,9 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
                       </Popconfirm>
                     </div>
                   </div>
-                ) : (
+                ) : mode === "edit" ? (
+                  /* EDIT MODE: Single file with preview */
                   <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
                     {preview ? (
                       <div className="relative inline-block">
                         <Image
@@ -357,6 +397,74 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
                       </div>
                     ) : (
                       <FileInput onChange={handleSelectFile} />
+                    )}
+                  </div>
+                ) : (
+                  /* CREATE MODE: Multiple files support */
+                  <div className="mt-2">
+                    {/* Preview multiple images */}
+                    {hasFiles ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {multipleFiles.map((fileWithPreview, index) => (
+                            <div key={index} className="relative group">
+                              <Image
+                                src={fileWithPreview.preview}
+                                className="object-cover rounded-lg w-full h-32 border border-gray-200"
+                                alt={`Preview ${index + 1}`}
+                              />
+                              <button
+                                onClick={() => removeFile(index)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <DeleteOutlined className="text-sm" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+                                {index + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Add more images button */}
+                        <div className="flex items-center gap-4">
+                          <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-gray-50 transition-colors">
+                            <PlusOutlined className="text-gray-500" />
+                            <span className="text-sm text-gray-600">Tambah Gambar</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={handleSelectFile}
+                            />
+                          </label>
+                          
+                          <button
+                            type="button"
+                            onClick={clearFiles}
+                            className="text-sm text-red-500 hover:text-red-600"
+                          >
+                            Hapus Semua
+                          </button>
+                        </div>
+                        
+                        <p className="text-sm text-gray-500">
+                          Total: {fileCount} gambar akan diunggah
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <FileInput
+                          onChange={handleSelectFile}
+                          multiple
+                          accept="image/*"
+                          className="file:cursor-pointer"
+                        />
+                        <p className="text-sm text-gray-500">
+                          Anda dapat memilih beberapa gambar sekaligus
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}

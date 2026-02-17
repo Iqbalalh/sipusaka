@@ -58,6 +58,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Bantuan Anak", path: "/childassistance", pro: false },
       { name: "Bantuan UMKM", path: "/umkmvisit", pro: false },
+      { name: "Bantuan Sosial", path: "/socialassistance", pro: false },
     ],
   },
 ];

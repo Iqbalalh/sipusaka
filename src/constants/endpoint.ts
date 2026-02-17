@@ -3,6 +3,7 @@ const baseUrl = "https://api.yayasanpusakakai.org"
 
 // Auth
 export const API_AUTH_LOGIN = `${baseUrl}/api/auth/login`;
+export const API_AUTH_CHANGE_CREDENTIALS = `${baseUrl}/api/auth/change-credentials`;
 
 // Homes
 export const API_HOME = `${baseUrl}/api/homes`;
@@ -54,3 +55,7 @@ export const API_CHILD_ASSISTANCE_OPTIMIZED = `${baseUrl}/api/child-assistance/o
 
 // Galleries
 export const API_GALLERIES = `${baseUrl}/api/galleries`;
+
+// Social Assistance
+export const API_SOCIAL_ASSISTANCE = `${baseUrl}/api/social-assistance`;
+export const API_SOCIAL_ASSISTANCE_OPTIMIZED = `${baseUrl}/api/social-assistance/optimized`;
