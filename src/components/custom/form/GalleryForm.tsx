@@ -249,17 +249,14 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
         extraData.append("categoryIds", catId.toString());
       });
     }
-    if (galleryDate) {
-      extraData.append("galleryDate", galleryDate.format('YYYY-MM-DD'));
-    }
-    // Note: regionId is already in the form object and will be added by buildFormData
+    // Note: galleryDate and regionId are already in the form object and will be added by buildFormData
 
     const { success, error } = await submit(form, extraData);
 
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, imageFile, multipleFiles, mode, selectedCategories, galleryDate, submit, notify]);
+  }, [form, imageFile, multipleFiles, mode, selectedCategories, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     if (mode === "create") {

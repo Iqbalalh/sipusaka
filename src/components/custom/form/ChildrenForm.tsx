@@ -319,6 +319,7 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
               <FormField label="Tanggal Lahir">
                 <DatePicker
                   style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
                   value={
                     form.childrenBirthdate
                       ? dayjs(form.childrenBirthdate)

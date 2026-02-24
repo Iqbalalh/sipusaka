@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Spin, Modal, Input, Progress, Select, Form } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, FilterOutlined, PlusOutlined } from "@ant-design/icons";
@@ -395,8 +395,31 @@ export default function ChildrenTable() {
     setExportModalVisible(true);
   };
 
-  // Generate columns with regions
-  const columns = getChildrenColumns(regions);
+  // Generate columns with regions and inject openDeleteModal
+  const openDeleteModal = (id: number) => {
+    setDeleteId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const columns = useMemo(() => {
+    const baseColumns = getChildrenColumns(regions);
+    return baseColumns.map((col) => {
+      if (col.key === "actions" && col.render) {
+        const originalRender = col.render;
+        return {
+          ...col,
+          render: (_: any, record: Children, index: number) => {
+            const recordWithDeleteHandler = {
+              ...record,
+              _openDeleteModal: openDeleteModal,
+            };
+            return originalRender(_, recordWithDeleteHandler as Children, index);
+          },
+        };
+      }
+      return col;
+    });
+  }, [regions]);
 
   // ==========================
   // LOADING STATE

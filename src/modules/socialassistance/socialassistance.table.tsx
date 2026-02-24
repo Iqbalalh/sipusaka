@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Spin, Modal, Input, Progress } from "antd";
-import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
+import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import Link from "next/link";
@@ -22,6 +22,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { MEDICAL_EQUIPMENT_OPTIONS } from "./socialassistance.constants";
+import ImportModal from "./components/ImportModal";
 
 // ==============================================
 // EXCEL EXPORT FUNCTION WITH PROGRESS
@@ -97,13 +98,18 @@ const exportSocialAssistanceToExcel = async (
     // Prepare data rows
     const dataRows: any[] = [];
     exportData.forEach((item, index) => {
-      // Format medical equipment
-      const medicalEquipmentStr = item.medicalEquipment && item.medicalEquipment.length > 0
-        ? item.medicalEquipment.map(eq => {
-            const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === eq.type)?.label || eq.type;
-            return `${typeLabel} (${eq.quantity}x Rp ${eq.nominal.toLocaleString("id-ID")})`;
-          }).join("; ")
-        : "-";
+      // Format medical equipment (single item)
+      let medicalEquipmentStr = "-";
+      if (item.medicalEquipment) {
+        const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === item.medicalEquipment)?.label || item.medicalEquipment;
+        const quantity = item.equipmentQuantity || 1;
+        const nominal = item.equipmentNominal || 0;
+        if (nominal > 0) {
+          medicalEquipmentStr = `${typeLabel} (${quantity}x Rp ${nominal.toLocaleString("id-ID")})`;
+        } else {
+          medicalEquipmentStr = typeLabel;
+        }
+      }
       
       dataRows.push({
         no: index + 1,
@@ -190,15 +196,7 @@ const exportSocialAssistanceToExcel = async (
   }
 };
 
-interface SocialAssistanceTableWrapperProps {
-  searchQuery: string;
-  onTotalChange?: (total: number) => void;
-}
-
-export default function SocialAssistanceTableWrapper({ 
-  searchQuery, 
-  onTotalChange 
-}: SocialAssistanceTableWrapperProps) {
+export default function SocialAssistanceTable() {
   const { notify } = useNotify();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -212,6 +210,10 @@ export default function SocialAssistanceTableWrapper({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
+
   // Delete State
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -220,6 +222,9 @@ export default function SocialAssistanceTableWrapper({
   // Export State
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Import State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // ==========================
   // FETCH DATA WITH PAGINATION
@@ -233,10 +238,6 @@ export default function SocialAssistanceTableWrapper({
       setData(response.data);
       setTotal(response.pagination.total);
       setCurrentPage(response.pagination.page);
-      
-      if (onTotalChange) {
-        onTotalChange(response.pagination.total);
-      }
     } catch (err) {
       console.error("Error fetching social assistance data:", err);
       notifyFromResult(notify, { error: err });
@@ -245,26 +246,51 @@ export default function SocialAssistanceTableWrapper({
     } finally {
       setLoading(false);
     }
-  }, [notify, pageSize, onTotalChange]);
+  }, [notify, pageSize]);
 
   // ==========================
   // INITIAL FETCH FROM URL
   // ==========================
   useEffect(() => {
     const pageParam = searchParams.get('page');
+    const searchParam = searchParams.get('search') || '';
     const initialPage = pageParam ? parseInt(pageParam, 10) : 1;
+    setSearchQuery(searchParam);
     setCurrentPage(initialPage);
-    fetchData(initialPage, searchQuery);
-  }, [searchParams, fetchData, searchQuery]);
+    fetchData(initialPage, searchParam);
+  }, []); // Only run once on mount
+
+  // ==========================
+  // FETCH ON SEARCH/PAGE CHANGE
+  // ==========================
+  useEffect(() => {
+    fetchData(currentPage, searchQuery);
+  }, [currentPage, searchQuery, fetchData]);
+
+  // ==========================
+  // SEARCH WITH DEBOUNCE
+  // ==========================
+  const handleSearchChange = (value: string) => {
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+    }
+
+    const timer = setTimeout(() => {
+      setSearchQuery(value);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+
+    setSearchTimer(timer);
+  };
 
   // ==========================
   // UPDATE URL WITH PAGE PARAMETER
   // ==========================
-  const updatePageUrl = (page: number) => {
+  const updatePageUrl = (page: number, search: string = searchQuery) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', page.toString());
-    if (searchQuery && searchQuery.trim()) {
-      params.set('search', searchQuery);
+    if (search && search.trim()) {
+      params.set('search', search);
     } else {
       params.delete('search');
     }
@@ -306,10 +332,22 @@ export default function SocialAssistanceTableWrapper({
   const columns = getSocialAssistanceColumns();
 
   // ==========================
+  // LOADING STATE
+  // ==========================
+  if (loading && data.length === 0) {
+    return (
+      <div className="flex justify-center items-center gap-4 h-40 text-gray-500">
+        <Spin indicator={<LoadingOutlined spin />} size="large" />
+        Memuat data...
+      </div>
+    );
+  }
+
+  // ==========================
   // RENDER
   // ==========================
   return (
-    <div className="flex flex-col h-full">
+    <>
       {/* DELETE MODAL */}
       <Modal
         title="Konfirmasi Hapus"
@@ -333,6 +371,13 @@ export default function SocialAssistanceTableWrapper({
         <p>Apakah Anda yakin ingin menghapus data bantuan sosial ini?</p>
       </Modal>
 
+      {/* IMPORT MODAL */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => fetchData(currentPage, searchQuery)}
+      />
+
       {/* EXPORT PROGRESS */}
       {showProgress && (
         <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -348,73 +393,101 @@ export default function SocialAssistanceTableWrapper({
         </div>
       )}
 
-      {/* TABLE */}
-      <div className="flex-1 overflow-hidden">
-        <Table
-          columns={columns.map((col) => {
-            if (col.key === "actions") {
-              return {
-                ...col,
-                render: (_: any, record: SocialAssistance) => (
-                  <div className="flex gap-2 text-xs">
-                    <Link href={`socialassistance/view/${record.id}`}>
-                      <Button size="xs">
-                        <EyeOutlined />
-                      </Button>
-                    </Link>
-                    <Link href={`socialassistance/edit/${record.id}`}>
-                      <Button size="xs">
-                        <EditOutlined />
-                      </Button>
-                    </Link>
-                    <Button
-                      size="xs"
-                      onClick={() => {
-                        setDeleteId(record.id);
-                        setIsDeleteModalOpen(true);
-                      }}
-                    >
-                      <DeleteOutlined />
-                    </Button>
-                  </div>
-                ),
-              };
-            }
-            return col;
-          })}
-          dataSource={data}
-          rowKey="id"
-          bordered
-          pagination={{
-            pageSize,
-            current: currentPage,
-            total,
-            showSizeChanger: false,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} dari ${total} data`,
-            onChange: (page) => {
-              updatePageUrl(page);
-              fetchData(page, searchQuery);
-            },
-          }}
-          scroll={{ x: "max-content", y: "calc(100vh - 400px)" }}
-          loading={loading}
-          size="middle"
-        />
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col gap-4 w-full sm:w-auto">
+          <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
+            Jumlah Data Bantuan Sosial: {total}
+          </h3>
+          <div className="w-full">
+            <Input
+              placeholder="Cari data..."
+              prefix={<SearchOutlined />}
+              defaultValue={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              allowClear
+              className="w-full"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsImportModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <UploadOutlined className="mr-2" />
+            Import Excel
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleExportWithProgress}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <DownloadOutlined className="mr-2" />
+            Export Excel
+          </Button>
+          <Link href="/socialassistance/create">
+            <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
+              <PlusOutlined />
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* EXPORT BUTTON - Fixed at bottom */}
-      <div className="mt-4 flex justify-end">
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleExportWithProgress}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <DownloadOutlined className="mr-2" />
-          Export Excel
-        </Button>
-      </div>
-    </div>
+      {/* TABLE */}
+      <Table
+        columns={columns.map((col) => {
+          if (col.key === "actions") {
+            return {
+              ...col,
+              render: (_: any, record: SocialAssistance) => (
+                <div className="flex gap-2 text-xs">
+                  <Link href={`socialassistance/view/${record.id}`}>
+                    <Button size="xs">
+                      <EyeOutlined />
+                    </Button>
+                  </Link>
+                  <Link href={`socialassistance/edit/${record.id}`}>
+                    <Button size="xs">
+                      <EditOutlined />
+                    </Button>
+                  </Link>
+                  <Button
+                    size="xs"
+                    onClick={() => {
+                      if (record.id) {
+                        setDeleteId(record.id);
+                        setIsDeleteModalOpen(true);
+                      }
+                    }}
+                  >
+                    <DeleteOutlined />
+                  </Button>
+                </div>
+              ),
+            };
+          }
+          return col;
+        })}
+        dataSource={data}
+        rowKey="id"
+        bordered
+        pagination={{
+          pageSize,
+          current: currentPage,
+          total,
+          showSizeChanger: false,
+          onChange: (page) => {
+            updatePageUrl(page, searchQuery);
+            setCurrentPage(page);
+          },
+        }}
+        scroll={{ x: "max-content", y: 500 }}
+        loading={loading}
+      />
+    </>
   );
 }

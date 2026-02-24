@@ -27,4 +27,6 @@ export interface Wali extends BaseWali {
   partner?: BasePartner | null;
   employee?: BaseEmployee | null;
   childrens?: BaseChildren[];
+  // Region from homes
+  regionName?: string | null;
 }

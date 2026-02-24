@@ -8,13 +8,7 @@ import {
 import { deleteResource } from "../fetch/deleteResource";
 import { fetchWithAuth } from "../fetch/fetchWithAuth";
 
-// Medical Equipment Types
-export interface MedicalEquipmentItem {
-  type: string;
-  quantity: number;
-  nominal: number;
-}
-
+// Social Assistance Types (single medical equipment)
 export interface SocialAssistance {
   id: number;
   nipNipp?: string | null;
@@ -22,7 +16,9 @@ export interface SocialAssistance {
   ktpAddress?: string | null;
   region?: string | null;
   condition?: string | null;
-  medicalEquipment?: MedicalEquipmentItem[] | null;
+  medicalEquipment?: string | null;
+  equipmentQuantity?: number | null;
+  equipmentNominal?: number | null;
   cashAmount?: number | null;
   totalAmount?: number | null;
   notes?: string | null;
@@ -48,7 +44,9 @@ export interface SocialAssistanceFormData {
   ktpAddress?: string | null;
   region?: string | null;
   condition?: string | null;
-  medicalEquipment?: MedicalEquipmentItem[] | null;
+  medicalEquipment?: string | null;
+  equipmentQuantity?: number | null;
+  equipmentNominal?: number | null;
   cashAmount?: number | null;
   totalAmount?: number | null;
   notes?: string | null;
@@ -132,6 +130,69 @@ export const updateSocialAssistance = async (id: string | number, data: SocialAs
 export const deleteSocialAssistance = async (id: number) => {
   try {
     return await deleteResource(`${API_SOCIAL_ASSISTANCE}/${id}`);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Import result type
+export interface ImportResult {
+  success: boolean;
+  message: string;
+  data?: {
+    totalRows: number;
+    insertedRows: number;
+    skippedRows: number;
+  };
+  errors?: string[];
+}
+
+// Import Excel file
+export const importSocialAssistanceFromExcel = async (
+  file: File
+): Promise<ImportResult> => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetchWithAuth(`${API_SOCIAL_ASSISTANCE}/import`, {
+      method: "POST",
+      body: formData,
+      // Don't set Content-Type header, let the browser set it with boundary
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: "Import failed" }));
+      throw new Error(errorData.message || "Import failed");
+    }
+
+    const result = await response.json();
+    return result as ImportResult;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Download template
+export const downloadSocialAssistanceTemplate = async (): Promise<void> => {
+  try {
+    const response = await fetchWithAuth(`${API_SOCIAL_ASSISTANCE}/template`, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to download template");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "template-import-bantuan-sosial.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   } catch (error) {
     throw error;
   }

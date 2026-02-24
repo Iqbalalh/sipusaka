@@ -142,6 +142,7 @@ const DateFilter = ({
             }
           }}
           style={{ width: "100%", marginBottom: 8 }}
+          format="DD/MM/YYYY"
         />
       )}
       

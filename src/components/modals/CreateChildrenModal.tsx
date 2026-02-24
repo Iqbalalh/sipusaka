@@ -166,6 +166,7 @@ export default function CreateChildrenModal({
           <DatePicker
             size="large"
             className="w-full"
+            format="DD/MM/YYYY"
             value={form.childrenBirthdate ? dayjs(form.childrenBirthdate) : null}
             onChange={(date) =>
               setForm({ ...form, childrenBirthdate: date ? date.format("YYYY-MM-DD") : null })

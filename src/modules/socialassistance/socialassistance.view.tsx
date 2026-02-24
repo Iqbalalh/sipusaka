@@ -47,32 +47,38 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
   }, [id, notify]);
 
   // ==========================
-  // FORMAT MEDICAL EQUIPMENT
+  // FORMAT MEDICAL EQUIPMENT (SINGLE ITEM)
   // ==========================
-  const formatMedicalEquipment = (equipment: SocialAssistance['medicalEquipment']) => {
-    if (!equipment || equipment.length === 0) return "-";
+  const formatMedicalEquipment = (record: SocialAssistance) => {
+    if (!record.medicalEquipment) return "-";
     
-    return equipment.map((item, index) => {
-      const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === item.type)?.label || item.type;
-      return (
-        <div key={index} className="mb-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span className="font-medium">{typeLabel}</span>
-            <Tag color="blue">{item.quantity} unit</Tag>
-          </div>
-          <div className="text-sm text-gray-500 mt-1">
-            Nominal: Rp {item.nominal.toLocaleString("id-ID")}
-          </div>
-          <div className="text-sm font-medium text-blue-600 mt-1">
-            Subtotal: Rp {(item.quantity * item.nominal).toLocaleString("id-ID")}
-          </div>
+    const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === record.medicalEquipment)?.label || record.medicalEquipment;
+    const quantity = record.equipmentQuantity || 1;
+    const nominal = record.equipmentNominal || 0;
+    const subtotal = quantity * nominal;
+    
+    return (
+      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="flex justify-between items-center">
+          <span className="font-medium">{typeLabel}</span>
+          <Tag color="blue">{quantity} unit</Tag>
         </div>
-      );
-    });
+        {nominal > 0 && (
+          <>
+            <div className="text-sm text-gray-500 mt-1">
+              Nominal: Rp {nominal.toLocaleString("id-ID")}
+            </div>
+            <div className="text-sm font-medium text-blue-600 mt-1">
+              Subtotal: Rp {subtotal.toLocaleString("id-ID")}
+            </div>
+          </>
+        )}
+      </div>
+    );
   };
 
   // Calculate totals
-  const equipmentTotal = data?.medicalEquipment?.reduce((sum, item) => sum + (item.quantity * item.nominal), 0) || 0;
+  const equipmentTotal = (data?.equipmentQuantity || 0) * (data?.equipmentNominal || 0);
   const cashAmount = data?.cashAmount || 0;
   const totalAmount = equipmentTotal + cashAmount;
 
@@ -84,6 +90,14 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    // Format medical equipment for print
+    const typeLabel = data.medicalEquipment 
+      ? MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === data.medicalEquipment)?.label || data.medicalEquipment 
+      : "-";
+    const quantity = data.equipmentQuantity || 0;
+    const nominal = data.equipmentNominal || 0;
+    const subtotal = quantity * nominal;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -116,18 +130,15 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
         </table>
 
         <h2>Alat Kesehatan</h2>
-        ${data.medicalEquipment && data.medicalEquipment.length > 0 
-          ? data.medicalEquipment.map(eq => {
-              const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === eq.type)?.label || eq.type;
-              return `
-                <div class="equipment-item">
-                  <strong>${typeLabel}</strong><br>
-                  Jumlah: ${eq.quantity} unit<br>
-                  Nominal: Rp ${eq.nominal.toLocaleString("id-ID")}<br>
-                  Subtotal: Rp ${(eq.quantity * eq.nominal).toLocaleString("id-ID")}
-                </div>
-              `;
-            }).join("")
+        ${data.medicalEquipment 
+          ? `<div class="equipment-item">
+              <strong>${typeLabel}</strong><br>
+              Jumlah: ${quantity} unit<br>
+              ${nominal > 0 ? `
+                Nominal: Rp ${nominal.toLocaleString("id-ID")}<br>
+                Subtotal: Rp ${subtotal.toLocaleString("id-ID")}
+              ` : ""}
+            </div>`
           : "<p>-</p>"
         }
 
@@ -222,8 +233,8 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
       <Descriptions
         title="Informasi Penerima"
         bordered
-        column={{ xs: 1, sm: 2, md: 2 }}
-        labelStyle={{ fontWeight: 500, width: 200 }}
+        column={2}
+        styles={{ label: { fontWeight: 500, width: 200 } }}
       >
         <Descriptions.Item label="NIP/NIPP">{data.nipNipp || "-"}</Descriptions.Item>
         <Descriptions.Item label="Nama Penerima">{data.recipientName || "-"}</Descriptions.Item>
@@ -237,7 +248,7 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
       {/* Medical Equipment */}
       <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold mb-4">Alat Kesehatan</h3>
-        {formatMedicalEquipment(data.medicalEquipment)}
+        {formatMedicalEquipment(data)}
       </div>
 
       {/* Financial Summary */}
@@ -266,7 +277,7 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
         title="Keterangan"
         bordered
         column={1}
-        labelStyle={{ fontWeight: 500, width: 200 }}
+        styles={{ label: { fontWeight: 500, width: 200 } }}
       >
         <Descriptions.Item label="Keterangan">{data.notes || "-"}</Descriptions.Item>
       </Descriptions>
@@ -275,8 +286,8 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
       <Descriptions
         title="Informasi Sistem"
         bordered
-        column={{ xs: 1, sm: 2, md: 2 }}
-        labelStyle={{ fontWeight: 500, width: 200 }}
+        column={2}
+        styles={{ label: { fontWeight: 500, width: 200 } }}
       >
         <Descriptions.Item label="Dibuat">{data.createdAt ? formatDate(data.createdAt) : "-"}</Descriptions.Item>
         <Descriptions.Item label="Diperbarui">{data.updatedAt ? formatDate(data.updatedAt) : "-"}</Descriptions.Item>

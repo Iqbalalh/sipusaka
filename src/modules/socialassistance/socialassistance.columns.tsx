@@ -15,15 +15,19 @@ import { MEDICAL_EQUIPMENT_OPTIONS } from "./socialassistance.constants";
 import type { ColumnsType } from "antd/es/table";
 
 // ==============================================
-// FORMAT MEDICAL EQUIPMENT
+// FORMAT MEDICAL EQUIPMENT (SINGLE ITEM)
 // ==============================================
-const formatMedicalEquipment = (equipment: SocialAssistance['medicalEquipment']): string => {
-  if (!equipment || equipment.length === 0) return "-";
+const formatMedicalEquipment = (record: SocialAssistance): string => {
+  if (!record.medicalEquipment) return "-";
   
-  return equipment.map(item => {
-    const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === item.type)?.label || item.type;
-    return `${typeLabel} (${item.quantity}x Rp ${item.nominal.toLocaleString("id-ID")})`;
-  }).join(", ");
+  const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === record.medicalEquipment)?.label || record.medicalEquipment;
+  const quantity = record.equipmentQuantity || 1;
+  const nominal = record.equipmentNominal || 0;
+  
+  if (nominal > 0) {
+    return `${typeLabel} (${quantity}x Rp ${nominal.toLocaleString("id-ID")})`;
+  }
+  return typeLabel;
 };
 
 // ==============================================
@@ -143,11 +147,10 @@ export const getSocialAssistanceColumns = (): ColumnsType<SocialAssistance> => [
   },
   {
     title: "Alat Kesehatan",
-    dataIndex: "medicalEquipment",
     key: "medicalEquipment",
     width: 200,
     ellipsis: true,
-    render: (equipment) => formatMedicalEquipment(equipment),
+    render: (_, record) => formatMedicalEquipment(record),
   },
   {
     title: "Uang",

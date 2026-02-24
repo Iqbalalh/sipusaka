@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input, Select, Button, Spin } from "antd";
-import { LoadingOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { LoadingOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { 
   SocialAssistance, 
   SocialAssistanceFormData, 
-  MedicalEquipmentItem,
   createSocialAssistance, 
   updateSocialAssistance, 
   getSocialAssistanceById 
@@ -38,12 +37,14 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
   const [ktpAddress, setKtpAddress] = useState("");
   const [region, setRegion] = useState("");
   const [condition, setCondition] = useState("");
-  const [medicalEquipment, setMedicalEquipment] = useState<MedicalEquipmentItem[]>([]);
+  const [medicalEquipment, setMedicalEquipment] = useState<string | null>(null);
+  const [equipmentQuantity, setEquipmentQuantity] = useState<number | null>(null);
+  const [equipmentNominal, setEquipmentNominal] = useState<number | null>(null);
   const [cashAmount, setCashAmount] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
   // Calculate total
-  const equipmentTotal = medicalEquipment.reduce((sum, item) => sum + (item.quantity * item.nominal), 0);
+  const equipmentTotal = (equipmentQuantity || 0) * (equipmentNominal || 0);
   const totalAmount = equipmentTotal + (cashAmount || 0);
 
   // ==========================
@@ -60,7 +61,9 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
           setKtpAddress(data.ktpAddress || "");
           setRegion(data.region || "");
           setCondition(data.condition || "");
-          setMedicalEquipment(data.medicalEquipment || []);
+          setMedicalEquipment(data.medicalEquipment || null);
+          setEquipmentQuantity(data.equipmentQuantity || null);
+          setEquipmentNominal(data.equipmentNominal || null);
           setCashAmount(data.cashAmount || null);
           setNotes(data.notes || "");
         }
@@ -73,32 +76,6 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
 
     fetchInitialData();
   }, [id, isEditMode, notify]);
-
-  // ==========================
-  // MEDICAL EQUIPMENT HANDLERS
-  // ==========================
-  const addMedicalEquipment = () => {
-    setMedicalEquipment([
-      ...medicalEquipment,
-      { type: "kursi roda", quantity: 1, nominal: 0 }
-    ]);
-  };
-
-  const removeMedicalEquipment = (index: number) => {
-    setMedicalEquipment(medicalEquipment.filter((_, i) => i !== index));
-  };
-
-  const updateMedicalEquipment = (index: number, field: keyof MedicalEquipmentItem, value: string | number) => {
-    const updated = [...medicalEquipment];
-    if (field === "type") {
-      updated[index].type = value as string;
-    } else if (field === "quantity") {
-      updated[index].quantity = Number(value);
-    } else if (field === "nominal") {
-      updated[index].nominal = Number(value);
-    }
-    setMedicalEquipment(updated);
-  };
 
   // ==========================
   // FORM SUBMIT
@@ -114,7 +91,9 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
         ktpAddress: ktpAddress || null,
         region: region || null,
         condition: condition || null,
-        medicalEquipment: medicalEquipment.length > 0 ? medicalEquipment : null,
+        medicalEquipment: medicalEquipment || null,
+        equipmentQuantity: equipmentQuantity || null,
+        equipmentNominal: equipmentNominal || null,
         cashAmount: cashAmount,
         totalAmount: totalAmount,
         notes: notes || null,
@@ -229,76 +208,61 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Alat Kesehatan
         </label>
-        <div className="space-y-3">
-          {medicalEquipment.map((item, index) => (
-            <div key={index} className="flex flex-wrap gap-3 items-start p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              {/* Type */}
-              <div className="w-full sm:w-48">
-                <label className="block text-xs text-gray-500 mb-1">Jenis</label>
-                <Select
-                  value={item.type}
-                  onChange={(value) => updateMedicalEquipment(index, "type", value)}
-                  className="w-full"
-                >
-                  {MEDICAL_EQUIPMENT_OPTIONS.map((option) => (
-                    <Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-4">
+          {/* Type */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Jenis Alat</label>
+            <Select
+              value={medicalEquipment}
+              onChange={(value) => setMedicalEquipment(value)}
+              className="w-full"
+              allowClear
+              placeholder="Pilih jenis alat kesehatan"
+            >
+              {MEDICAL_EQUIPMENT_OPTIONS.map((option) => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </div>
 
+          {/* Quantity and Nominal */}
+          {medicalEquipment && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Quantity */}
-              <div className="w-24">
+              <div>
                 <label className="block text-xs text-gray-500 mb-1">Jumlah</label>
                 <Input
                   type="number"
                   min={1}
-                  value={item.quantity}
-                  onChange={(e) => updateMedicalEquipment(index, "quantity", e.target.value)}
+                  value={equipmentQuantity || ""}
+                  onChange={(e) => setEquipmentQuantity(e.target.value ? Number(e.target.value) : null)}
+                  placeholder="1"
                 />
               </div>
 
               {/* Nominal */}
-              <div className="w-40">
+              <div>
                 <label className="block text-xs text-gray-500 mb-1">Nominal (Rp)</label>
                 <Input
                   type="number"
                   min={0}
-                  value={item.nominal}
-                  onChange={(e) => updateMedicalEquipment(index, "nominal", e.target.value)}
+                  value={equipmentNominal || ""}
+                  onChange={(e) => setEquipmentNominal(e.target.value ? Number(e.target.value) : null)}
+                  placeholder="0"
                 />
               </div>
 
               {/* Subtotal */}
-              <div className="w-40">
+              <div>
                 <label className="block text-xs text-gray-500 mb-1">Subtotal</label>
                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-1.5">
-                  Rp {(item.quantity * item.nominal).toLocaleString("id-ID")}
+                  Rp {equipmentTotal.toLocaleString("id-ID")}
                 </div>
               </div>
-
-              {/* Remove Button */}
-              <div className="flex items-end">
-                <Button
-                  type="text"
-                  danger
-                  icon={<MinusCircleOutlined />}
-                  onClick={() => removeMedicalEquipment(index)}
-                />
-              </div>
             </div>
-          ))}
-
-          {/* Add Button */}
-          <Button
-            type="dashed"
-            icon={<PlusOutlined />}
-            onClick={addMedicalEquipment}
-            className="w-full"
-          >
-            Tambah Alat Kesehatan
-          </Button>
+          )}
         </div>
       </div>
 

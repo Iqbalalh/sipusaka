@@ -85,6 +85,14 @@ export const getWaliColumns = (): TableColumn<Wali>[] => [
   },
 
   {
+    title: "Wilayah",
+    dataIndex: "regionName",
+    key: "regionName",
+    render: (text) => text || "-",
+    exportRender: (value: string) => value ?? "-",
+  },
+
+  {
     title: "Koordinat",
     dataIndex: "addressCoordinate",
     key: "addressCoordinate",
