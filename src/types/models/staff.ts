@@ -8,13 +8,10 @@ export interface Staff {
   phoneNumber?: string | null;
   email?: string | null;
   nik?: string | null;
-  roleId?: number | null;
   position?: string | null;
   staffPict?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   createdBy?: number | null;
   editedBy?: number | null;
-  
-  roleName?: string | null;
 }

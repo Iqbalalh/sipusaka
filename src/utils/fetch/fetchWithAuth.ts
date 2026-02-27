@@ -16,6 +16,9 @@ export async function fetchWithAuth(
 
   let body = options.body as any;
 
+  console.log("fetchWithAuth - original body:", body);
+  console.log("fetchWithAuth - body type:", typeof body);
+
   // =====================================
   // AUTO-CONVERT BODY
   // =====================================
@@ -41,8 +44,11 @@ export async function fetchWithAuth(
       body = fd;
       headers.delete("Content-Type");
     } else {
-      body = JSON.stringify(snakecaseKeys(body, { deep: true }));
+      const snakeBody = snakecaseKeys(body, { deep: true });
+      console.log("fetchWithAuth - snakeBody:", snakeBody);
+      body = JSON.stringify(snakeBody);
       headers.set("Content-Type", "application/json");
+      console.log("fetchWithAuth - final body:", body);
     }
   } else if (body instanceof FormData) {
     // FormData is already provided - let the browser set Content-Type with boundary
@@ -50,11 +56,17 @@ export async function fetchWithAuth(
     headers.delete("Content-Type");
   }
 
+  console.log("fetchWithAuth - url:", url);
+  console.log("fetchWithAuth - method:", options.method);
+  console.log("fetchWithAuth - headers:", Object.fromEntries(headers));
+
   const res = await fetch(url, {
     ...options,
     headers,
     body,
   });
+
+  console.log("fetchWithAuth - response status:", res.status);
 
   return res;
 }

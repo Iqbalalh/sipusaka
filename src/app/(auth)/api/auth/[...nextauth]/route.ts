@@ -8,7 +8,7 @@ interface LoginResponse {
     username: string;
     email?: string;
     staff_name?: string;
-    role_name?: string;
+    role?: string;
     staff_pict?: string;
   };
   token: string;
@@ -43,7 +43,7 @@ const authOptions: NextAuthOptions = {
             username: data.user.username,
             email: data.user.email,
             staffName: data.user.staff_name,
-            roleName: data.user.role_name,
+            role: data.user.role,
             staffPict: data.user.staff_pict,
             token: data.token,
           };
@@ -65,7 +65,7 @@ const authOptions: NextAuthOptions = {
         token.username = user.username;
         token.email = user.email;
         token.staffName = user.staffName;
-        token.roleName = user.roleName;
+        token.role = user.role;
         token.staffPict = user.staffPict;
       }
       return token;
@@ -77,7 +77,7 @@ const authOptions: NextAuthOptions = {
         session.user.username = token.username;
         session.user.email = token.email;
         session.user.staffName = token.staffName;
-        session.user.roleName = token.roleName;
+        session.user.role = token.role;
         session.user.staffPict = token.staffPict;
         session.user.token = token.accessToken;
       }

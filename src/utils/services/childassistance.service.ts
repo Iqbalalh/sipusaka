@@ -187,3 +187,13 @@ export const getAllChildAssistanceByYear = async (
     throw error;
   }
 };
+
+export const getChildAssistanceYears = async (): Promise<number[]> => {
+  try {
+    const url = `${API_CHILD_ASSISTANCE}/years`;
+    const json = await apiClient<{ data: number[] }>(url);
+    return json.data ?? [];
+  } catch (error) {
+    throw error;
+  }
+};

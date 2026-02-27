@@ -95,6 +95,14 @@ export default function WaliView() {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   {data?.waliJob || "-"}
                 </span>
+                {data?.regionName && (
+                  <>
+                    <span className="text-gray-300 dark:text-gray-700">•</span>
+                    <span className="text-sm text-primary-600 dark:text-primary-400">
+                      {data.regionName}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -140,6 +148,14 @@ export default function WaliView() {
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
               {data?.waliJob || "-"}
+            </span>
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+              Wilayah
+            </span>
+            <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
+              {data?.regionName || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">

@@ -71,12 +71,20 @@ export default function ChangeCredentialsPage() {
 
       const response = await fetchWithAuth(API_AUTH_CHANGE_CREDENTIALS, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // If session expired, redirect to login
+        if (response.status === 403 && data.message?.includes("Session expired")) {
+          router.push("/login");
+          return;
+        }
         setError(data.message || "Failed to update credentials");
         setLoading(false);
         return;

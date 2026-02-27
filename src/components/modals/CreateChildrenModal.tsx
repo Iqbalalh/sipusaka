@@ -30,6 +30,7 @@ export default function CreateChildrenModal({
   const [form, setForm] = useState<BaseChildren>({
     id: undefined,
     childrenName: "",
+    nik: "",
     index: null,
     childrenGender: "M",
     childrenBirthdate: null,
@@ -94,6 +95,7 @@ export default function CreateChildrenModal({
       setForm({
         id: undefined,
         childrenName: "",
+        nik: "",
         index: null,
         childrenGender: "M",
         childrenBirthdate: null,
@@ -142,6 +144,13 @@ export default function CreateChildrenModal({
             value={form.childrenName}
             onChange={(value) => setForm({ ...form, childrenName: value })}
             placeholder="Masukkan nama anak"
+          />
+        </FormField>
+        <FormField label="NIK">
+          <TextInput
+            value={form.nik ?? ""}
+            onChange={(value) => setForm({ ...form, nik: value })}
+            placeholder="Masukkan NIK"
           />
         </FormField>
         <FormField label="Anak-ke">

@@ -38,7 +38,9 @@ export const config = {
       - /_next/static     (handler static file)
       - /_next/image      (handler image file)
       - /favicon.ico      (favicon file)
+      - /images           (public images folder)
+      - /public           (public folder)
     */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|images|public).*)",
   ],
 };

@@ -93,10 +93,14 @@ export default function StaffView() {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   {data?.gender === "M" ? "Laki-laki" : "Perempuan"}
                 </span>
-                <span className="text-gray-300 dark:text-gray-700">•</span>
-                <Badge variant="light" color="info">
-                  {data?.roleName || "-"}
-                </Badge>
+                {data?.position && (
+                  <>
+                    <span className="text-gray-300 dark:text-gray-700">•</span>
+                    <Badge variant="light" color="info">
+                      {data.position}
+                    </Badge>
+                  </>
+                )}
               </div>
             </div>
           </div>

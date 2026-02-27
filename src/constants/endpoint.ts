@@ -59,3 +59,6 @@ export const API_GALLERIES = `${baseUrl}/api/galleries`;
 // Social Assistance
 export const API_SOCIAL_ASSISTANCE = `${baseUrl}/api/social-assistance`;
 export const API_SOCIAL_ASSISTANCE_OPTIMIZED = `${baseUrl}/api/social-assistance/optimized`;
+
+// Users
+export const API_USERS = `${baseUrl}/api/users`;

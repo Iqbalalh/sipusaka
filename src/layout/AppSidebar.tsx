@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
+import { useSession } from "next-auth/react";
 
 import {
   FaShop,
@@ -15,6 +16,7 @@ import {
   FaAlignLeft,
   FaImage,
   FaHandHoldingHeart,
+  FaUsers,
 } from "react-icons/fa6";
 import { ChevronDownIcon, HorizontaLDots } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
@@ -81,13 +83,26 @@ const othersItems: NavItem[] = [
   },
 ];
 
+// Superadmin only menu items
+const superadminItems: NavItem[] = [
+  {
+    icon: <FaUsers className="text-2xl" />,
+    name: "User",
+    path: "/users",
+  },
+];
+
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  // Check if user is superadmin
+  const isSuperadmin = session?.user?.role === "superadmin";
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "internals",
+    menuType: "main" | "internals" | "superadmin",
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -212,7 +227,7 @@ const AppSidebar: React.FC = () => {
   );
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "internals";
+    type: "main" | "internals" | "superadmin";
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
@@ -267,7 +282,7 @@ const AppSidebar: React.FC = () => {
 
   const handleSubmenuToggle = (
     index: number,
-    menuType: "main" | "internals",
+    menuType: "main" | "internals" | "superadmin",
   ) => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
@@ -374,6 +389,26 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(othersItems, "internals")}
             </div>
+
+            {/* Superadmin only section */}
+            {isSuperadmin && (
+              <div className="">
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
+                    !isExpanded && !isHovered
+                      ? "lg:justify-center"
+                      : "justify-start"
+                  }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    "Superadmin"
+                  ) : (
+                    <HorizontaLDots />
+                  )}
+                </h2>
+                {renderMenuItems(superadminItems, "superadmin")}
+              </div>
+            )}
           </div>
         </nav>
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}

@@ -7,7 +7,7 @@ import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, LeftOutl
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { ChildAssistance } from "@/utils/services/childassistance.service";
-import { deleteChildAssistance, getAllChildAssistanceOptimized, getAllChildAssistanceByYear } from "@/utils/services/childassistance.service";
+import { deleteChildAssistance, getAllChildAssistanceOptimized, getAllChildAssistanceByYear, getChildAssistanceYears } from "@/utils/services/childassistance.service";
 import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -222,6 +222,8 @@ export default function ChildAssistanceTable() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [yearsLoading, setYearsLoading] = useState(false);
 
   // ==========================
   // FETCH DATA WITH PAGINATION
@@ -253,6 +255,24 @@ export default function ChildAssistanceTable() {
   }, [notify, pageSize]);
 
   // ==========================
+  // FETCH AVAILABLE YEARS
+  // ==========================
+  const fetchAvailableYears = useCallback(async () => {
+    try {
+      setYearsLoading(true);
+      const years = await getChildAssistanceYears();
+      setAvailableYears(years);
+    } catch (err) {
+      console.error("Error fetching available years:", err);
+      // Fallback to current year and previous year if fetch fails
+      const currentYear = new Date().getFullYear();
+      setAvailableYears([currentYear, currentYear - 1]);
+    } finally {
+      setYearsLoading(false);
+    }
+  }, []);
+
+  // ==========================
   // INITIAL FETCH FROM URL
   // ==========================
   useEffect(() => {
@@ -263,6 +283,13 @@ export default function ChildAssistanceTable() {
     setSearchQuery(searchParam);
     fetchData(initialPage, searchParam);
   }, [fetchData, searchParams]);
+
+  // ==========================
+  // FETCH YEARS ON MOUNT
+  // ==========================
+  useEffect(() => {
+    fetchAvailableYears();
+  }, [fetchAvailableYears]);
 
   // ==========================
   // SEARCH WITH DEBOUNCE
@@ -428,18 +455,26 @@ export default function ChildAssistanceTable() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Pilih Tahun
             </label>
-            <Space.Compact className="w-full" vertical>
-              {[2025, 2024].map((year) => (
-                <Button
-                  key={year}
-                  variant={exportYear === year ? "primary" : "outline"}
-                  onClick={() => setExportYear(year)}
-                  disabled={exportLoading}
-                >
-                  {year}
-                </Button>
-              ))}
-            </Space.Compact>
+            {yearsLoading ? (
+              <div className="flex justify-center py-4">
+                <Spin indicator={<LoadingOutlined spin />} />
+              </div>
+            ) : availableYears.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">Tidak ada data tahun tersedia</p>
+            ) : (
+              <Space.Compact className="w-full" vertical>
+                {availableYears.map((year) => (
+                  <Button
+                    key={year}
+                    variant={exportYear === year ? "primary" : "outline"}
+                    onClick={() => setExportYear(year)}
+                    disabled={exportLoading}
+                  >
+                    {year}
+                  </Button>
+                ))}
+              </Space.Compact>
+            )}
           </div>
         </div>
       </Modal>

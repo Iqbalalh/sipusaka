@@ -18,10 +18,8 @@ export interface Staff {
   phoneNumber: string | null;
   email: string | null;
   nik: string;
-  roleId: number;
   position: string | null;
   staffPict: string | null;
-  roleName?: string;
 }
 
 export const getStaffs = async (): Promise<Staff[]> => {

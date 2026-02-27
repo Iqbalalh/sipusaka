@@ -141,6 +141,14 @@ export const getPartnerColumns = (
   },
 
   {
+    title: "Koordinat Rumah",
+    dataIndex: "homeCoordinate",
+    key: "homeCoordinate",
+    render: (text) => text || "-",
+    exportRender: (value: string) => value ?? "-",
+  },
+
+  {
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
