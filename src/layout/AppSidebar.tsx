@@ -79,7 +79,12 @@ const othersItems: NavItem[] = [
   {
     icon: <FaAlignLeft className="text-2xl" />,
     name: "Surat",
-    subItems: [{ name: "Editor", path: "/letter/editor", pro: false }],
+    subItems: [
+      { name: "Arsip Surat", path: "/letters/archives", pro: false },
+      { name: "Draf Surat", path: "/letters/drafts", pro: false },
+      { name: "Menunggu Persetujuan", path: "/letters/pending", pro: false },
+      { name: "Template Surat", path: "/letters/templates", pro: false },
+    ],
   },
 ];
 

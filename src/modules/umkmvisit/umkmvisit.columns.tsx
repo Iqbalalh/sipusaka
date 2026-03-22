@@ -92,7 +92,7 @@ const getColumnSearchProps = (dataIndex: string): any => ({
 // ==============================================
 export const getUmkmVisitColumns = (): ColumnsType<UmkmVisit> => [
   {
-    title: "No. Kunjungan",
+    title: "Kunjungan ke-",
     dataIndex: "visitNumber",
     key: "visitNumber",
     width: 100,

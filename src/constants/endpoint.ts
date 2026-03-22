@@ -1,5 +1,5 @@
-// const baseUrl = "http://localhost:9000";
-const baseUrl = "https://api.yayasanpusakakai.org"
+const baseUrl = "http://localhost:9000";
+// const baseUrl = "https://api.yayasanpusakakai.org"
 
 // Auth
 export const API_AUTH_LOGIN = `${baseUrl}/api/auth/login`;
@@ -62,3 +62,12 @@ export const API_SOCIAL_ASSISTANCE_OPTIMIZED = `${baseUrl}/api/social-assistance
 
 // Users
 export const API_USERS = `${baseUrl}/api/users`;
+
+// Letters
+export const API_LETTERS = `${baseUrl}/api/letters`;
+export const API_LETTERS_OPTIMIZED = `${baseUrl}/api/letters/optimized`;
+export const API_LETTERS_DRAFTS = `${baseUrl}/api/letters/drafts`;
+export const API_LETTERS_PENDING = `${baseUrl}/api/letters/pending`;
+
+// Letter Templates
+export const API_LETTER_TEMPLATES = `${baseUrl}/api/letter-templates`;

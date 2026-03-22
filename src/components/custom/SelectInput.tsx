@@ -8,6 +8,7 @@ interface SelectInputProps {
   onChange: (value: any) => void;
   options: Option[];
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export const SelectInput = ({
@@ -15,6 +16,7 @@ export const SelectInput = ({
   onChange,
   options,
   placeholder,
+  disabled = false,
 }: SelectInputProps) => (
   <Select
     size="large"
@@ -27,5 +29,6 @@ export const SelectInput = ({
     onChange={onChange}
     placeholder={placeholder}
     allowClear
+    disabled={disabled}
   />
 );
