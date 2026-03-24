@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback} from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin, DatePicker } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -98,6 +98,9 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
   const [roles, setRoles] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BaseStaff>(INITIAL_FORM_STATE);
+  
+  // Prevent double execution in strict mode or window focus
+  const isInitialized = useRef(false);
 
   const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
 
@@ -126,20 +129,29 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+
       try {
         setLoading(true);
         
-        // Mock roles - in real app, fetch from API
-        setRoles([
+        // Mock roles - using Promise.all for potential future API calls
+        const mockRoles: Option[] = [
           { value: 1, label: "Admin" },
           { value: 2, label: "Staff" },
           { value: 3, label: "Super Admin" },
+        ];
+
+        const [staffData] = await Promise.all([
+          mode === "edit" && staffId ? getStaff(staffId) : Promise.resolve(null)
         ]);
 
-        if (mode === "edit" && staffId) {
-          const staffData = await getStaff(staffId);
+        setRoles(mockRoles);
+
+        if (staffData) {
           setForm(staffData);
         }
+        
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -201,6 +213,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
     const extraData = new FormData();
     if (photoFile) {
+      // Key "picture" matches the expected backend key for staff upload
       extraData.append("picture", photoFile);
     }
 
@@ -230,9 +243,6 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     );
   }
 
-  // ==============================================
-  // PAGE TITLE
-  // ==============================================
   const pageTitle =
     mode === "edit"
       ? `Edit Staf: ${form.staffName}`
@@ -240,9 +250,6 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
   const submitButtonText = mode === "edit" ? "Update Data Staf" : "Simpan";
 
-  // ==============================================
-  // RENDER FORM
-  // ==============================================
   return (
     <div className="pb-10">
       <PageBreadcrumb pageTitle={pageTitle} />
@@ -262,7 +269,6 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
               <FormField label="NIK" required>
                 <TextInput
-                  type="text"
                   value={form.nik}
                   onChange={(value) => handleFieldChange("nik", value)}
                   placeholder="Masukkan NIK"
@@ -290,7 +296,6 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
               <FormField label="Jabatan">
                 <TextInput
-                  type="text"
                   value={form.position ?? ""}
                   onChange={(value) => handleFieldChange("position", value)}
                   placeholder="Masukkan jabatan"
@@ -354,7 +359,6 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
               <hr className="border-gray-100" />
 
               <FormField label="Foto Staf">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
                 {mode === "edit" && form.staffPict ? (
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="relative inline-block">
@@ -379,7 +383,6 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                   </div>
                 ) : (
                   <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
                     {preview ? (
                       <div className="relative inline-block">
                         <Image

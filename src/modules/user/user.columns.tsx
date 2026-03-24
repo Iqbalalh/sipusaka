@@ -12,31 +12,6 @@ import type { TableColumn } from "@/types/generic/antd-table";
 // ==============================================
 export const getUserColumns = (): TableColumn<User>[] => [
   {
-    title: "Foto",
-    dataIndex: "staffPict",
-    key: "staffPict",
-    render: (_: any, user: User) =>
-      user.staffPict ? (
-        <Image
-          src={user.staffPict}
-          alt={user.staffName || user.username}
-          width={40}
-          height={40}
-          className="rounded-full object-cover w-10 h-10"
-        />
-      ) : (
-        <Image
-          src="/images/user/alt-user.png"
-          alt="N/A"
-          width={40}
-          height={40}
-        />
-      ),
-    exportRender: (_: any, user: User) =>
-      user.staffPict ? user.staffPict : "-",
-  } as any,
-
-  {
     title: "Username",
     dataIndex: "username",
     key: "username",

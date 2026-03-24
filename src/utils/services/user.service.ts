@@ -103,23 +103,3 @@ export const deleteUser = async (id: number) => {
     throw error;
   }
 };
-
-// Signer interface for letter approval workflow
-export interface Signer {
-  id: number;
-  username: string;
-  staffId: number | null;
-  staffName: string | null;
-  staffPosition: string | null;
-  role: string;
-}
-
-// Get list of users who can be signers (for letter approval workflow)
-export const getSigners = async (): Promise<Signer[]> => {
-  try {
-    const json = await apiClient<ApiResponseList<Signer>>(`${API_USERS}/signers`);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Signer[];
-  } catch (error) {
-    throw error;
-  }
-};

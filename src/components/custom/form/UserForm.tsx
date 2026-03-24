@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Flex, Spin, Select } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -15,8 +15,6 @@ import { TextInput } from "@/components/custom/TextInput";
 // Hooks & Utils
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
-import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
-import { API_USERS } from "@/constants/endpoint";
 import { getUser, createUser, updateUser } from "@/utils/services/user.service";
 import { getStaffs, Staff } from "@/utils/services/staff.service";
 
@@ -101,12 +99,17 @@ export default function UserForm({ mode, userId }: UserFormProps) {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [form, setForm] = useState<UserFormData>(INITIAL_FORM_STATE);
+  
+  // Guard against redundant initializations
+  const isInitialized = useRef(false);
 
   // ==============================================
   // FETCH INITIAL DATA
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+      
       try {
         setLoading(true);
 
@@ -124,6 +127,8 @@ export default function UserForm({ mode, userId }: UserFormProps) {
             role: userData.role || "staff",
           });
         }
+        
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -152,14 +157,12 @@ export default function UserForm({ mode, userId }: UserFormProps) {
 
     setSubmitLoading(true);
     try {
-      // Prepare submit data
       const submitData: any = {
         username: form.username,
         staffId: form.staffId,
         role: form.role,
       };
 
-      // Only include password if provided
       if (form.password) {
         submitData.password = form.password;
       }
@@ -195,27 +198,14 @@ export default function UserForm({ mode, userId }: UserFormProps) {
     );
   }
 
-  // ==============================================
-  // PAGE TITLE
-  // ==============================================
-  const pageTitle =
-    mode === "edit"
-      ? `Edit User: ${form.username}`
-      : "Tambah User Baru";
-
+  const pageTitle = mode === "edit" ? `Edit User: ${form.username}` : "Tambah User Baru";
   const submitButtonText = mode === "edit" ? "Update User" : "Simpan";
 
-  // ==============================================
-  // STAFF OPTIONS FOR SELECT
-  // ==============================================
   const staffOptions = staffList.map((staff) => ({
     value: staff.id,
     label: `${staff.staffName} (${staff.nik})`,
   }));
 
-  // ==============================================
-  // RENDER FORM
-  // ==============================================
   return (
     <div className="pb-10">
       <PageBreadcrumb pageTitle={pageTitle} />
@@ -287,7 +277,7 @@ export default function UserForm({ mode, userId }: UserFormProps) {
             <div className="space-y-5">
               <div className="text-sm text-gray-600">
                 <p className="font-semibold mb-2">Tentang User:</p>
-                <p className="mb-2">User adalah akun yang dapat digunakan untuk login ke sistem SIPUSAKA.</p>
+                <p className="mb-2">User adalah akun yang dapat digunakan untuk login ke sistem GEOPUSAKA.</p>
                 <p className="mb-2">Keterangan:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
                   <li>Username minimal 3 karakter</li>

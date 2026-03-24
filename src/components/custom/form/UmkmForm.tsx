@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin, Upload, message } from "antd";
 import { LoadingOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
@@ -10,7 +10,6 @@ import type { UploadFile } from "antd/es/upload/interface";
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
-import FileInput from "@/components/form/input/FileInput";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
@@ -18,7 +17,6 @@ import { TextInput } from "@/components/custom/TextInput";
 
 // Hooks & Utils
 import { useFormSubmit } from "@/hooks/useFormSubmit";
-import { useFilePreview } from "@/hooks/useFilePreview";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
@@ -96,6 +94,8 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
   const [form, setForm] = useState<Partial<Umkm>>(INITIAL_FORM_STATE);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
+  
+  const isInitialized = useRef(false);
 
   // ==============================================
   // SUBMIT HOOK
@@ -107,11 +107,11 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
       return fetchWithAuth(url, { method, body: fd });
     },
     (data) => {
-      const message =
+      const messageTxt =
         mode === "edit"
           ? "Data UMKM berhasil diperbarui!"
           : "UMKM berhasil ditambahkan!";
-      notifyFromResult(notify, { successMessage: message });
+      notifyFromResult(notify, { successMessage: messageTxt });
       const id = mode === "edit" ? umkmId : data?.data?.id;
       router.push(`/umkm/view/${id}`);
     }
@@ -120,7 +120,7 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
   // ==============================================
   // FILE UPLOAD HANDLERS
   // ==============================================
-  const beforeUpload = (file: UploadFile) => {
+  const beforeUpload = (file: any) => {
     const isImage = file.type?.startsWith("image/");
     if (!isImage) {
       messageApi.error({
@@ -128,9 +128,9 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
         key: "upload-error",
         duration: 2,
       });
-      return false;
+      return Upload.LIST_IGNORE;
     }
-    return true;
+    return false; // Prevent auto upload
   };
 
   const handleDeletePhoto = async (photoField: keyof Umkm) => {
@@ -151,49 +151,29 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+      
       try {
         setLoading(true);
         
-        // Fetch regions
-        const regionList = await getRegionsList();
-        setRegions(
-          regionList.map((r: Region) => ({
-            value: r.regionId,
-            label: r.regionName,
-          }))
-        );
+        const [regionList, partnerList, empList, waliList] = await Promise.all([
+          getRegionsList(),
+          getPartners(),
+          getEmployees(),
+          getWaliList()
+        ]);
 
-        // Fetch partners
-        const partnerList = await getPartners();
-        setPartners(
-          partnerList.map((p: any) => ({
-            value: p.id,
-            label: p.partnerName,
-          }))
-        );
-
-        // Fetch employees
-        const empList = await getEmployees();
-        setEmployees(
-          empList.map((e: any) => ({
-            value: e.id,
-            label: `${e.employeeName} (${e.nipNipp})`,
-          }))
-        );
-
-        // Fetch walis
-        const waliList = await getWaliList();
-        setWalis(
-          waliList.map((w: any) => ({
-            value: w.id,
-            label: w.waliName,
-          }))
-        );
+        setRegions(regionList.map((r: Region) => ({ value: r.regionId, label: r.regionName })));
+        setPartners(partnerList.map((p: any) => ({ value: p.id, label: p.partnerName })));
+        setEmployees(empList.map((e: any) => ({ value: e.id, label: `${e.employeeName} (${e.nipNipp})` })));
+        setWalis(waliList.map((w: any) => ({ value: w.id, label: w.waliName })));
 
         if (mode === "edit" && umkmId) {
           const umkmData = await getUmkm(umkmId);
           setForm(umkmData);
         }
+        
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -204,7 +184,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     init();
   }, [mode, umkmId, notify]);
 
-
   // ==============================================
   // EVENT HANDLERS
   // ==============================================
@@ -214,7 +193,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     },
     []
   );
-
 
   const handleSubmit = useCallback(async () => {
     const validation = validateForm(form);
@@ -230,7 +208,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     });
 
     const { success, error } = await submit(form, extraData);
-
     if (!success) {
       notifyFromResult(notify, { error });
     }
@@ -244,9 +221,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     }
   }, [router, mode, umkmId]);
 
-  // ==============================================
-  // RENDER LOADING STATE
-  // ==============================================
   if (loading) {
     return (
       <Flex align="center" justify="center" className="min-h-[400px]">
@@ -255,19 +229,9 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     );
   }
 
-  // ==============================================
-  // PAGE TITLE
-  // ==============================================
-  const pageTitle =
-    mode === "edit"
-      ? `Edit UMKM: ${form.businessName}`
-      : "Tambah Data UMKM";
-
+  const pageTitle = mode === "edit" ? `Edit UMKM: ${form.businessName}` : "Tambah Data UMKM";
   const submitButtonText = mode === "edit" ? "Update Data UMKM" : "Simpan";
 
-  // ==============================================
-  // RENDER FORM
-  // ==============================================
   return (
     <div className="pb-10">
       {contextHolder}
@@ -405,7 +369,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
 
               <FormField label="Foto UMKM">
                 <div className="mt-2">
-                  {/* EXISTING PHOTOS (EDIT MODE) */}
                   {mode === "edit" && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
                       {[
@@ -423,14 +386,14 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
                               className="object-cover rounded-lg w-full h-32 border shadow-sm"
                             />
                             <Popconfirm
-                              title="Hapus foto permanen?"
-                              description="Foto akan langsung dihapus dari server S3."
+                              title="Hapus foto?"
+                              description="Foto akan dihapus permanen dari server S3."
                               onConfirm={() => handleDeletePhoto(photo.key)}
                               okText="Hapus"
                               cancelText="Batal"
                               okButtonProps={{ danger: true }}
                             >
-                              <button className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <DeleteOutlined className="text-xs" />
                               </button>
                             </Popconfirm>
@@ -440,7 +403,6 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
                     </div>
                   )}
 
-                  {/* UPLOAD NEW PHOTOS */}
                   <Upload
                     fileList={fileList}
                     onChange={({ fileList }) => setFileList(fileList)}
@@ -457,7 +419,7 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
                     )}
                   </Upload>
                   <div className="text-sm text-gray-500 mt-2">
-                    Anda dapat mengunggah hingga 5 foto (JPG, PNG, WEBP, dll.)
+                    Maksimal 5 foto (JPG, PNG, WEBP).
                   </div>
                 </div>
               </FormField>

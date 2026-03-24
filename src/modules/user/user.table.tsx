@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -10,10 +10,7 @@ import { Progress } from "antd";
 import { User } from "@/utils/services/user.service";
 
 // Utils
-import {
-  deleteUser,
-  getUsers,
-} from "@/utils/services/user.service";
+import { deleteUser, getUsers } from "@/utils/services/user.service";
 import { getUserColumns } from "./user.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
@@ -30,10 +27,10 @@ export default function UserTable() {
       setShowProgress(true);
       setProgress(10);
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       setProgress(30);
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       setProgress(50);
 
       await exportTableToExcel({
@@ -45,7 +42,7 @@ export default function UserTable() {
 
       setProgress(80);
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(100);
 
       setTimeout(() => {

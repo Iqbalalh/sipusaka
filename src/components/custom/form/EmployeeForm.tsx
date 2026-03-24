@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback} from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -88,6 +88,9 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BaseEmployee>(INITIAL_FORM_STATE);
 
+  // Execution lock to prevent re-trigger on window focus
+  const isInitialized = useRef(false);
+
   const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
 
   // ==============================================
@@ -116,13 +119,21 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
   );
 
   // ==============================================
-  // FETCH INITIAL DATA
+  // FETCH INITIAL DATA (Optimized with useRef Lock)
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+
       try {
         setLoading(true);
-        const regionList = await getRegionsList();
+        
+        // Fetch dependencies in parallel
+        const [regionList, empData] = await Promise.all([
+          getRegionsList(),
+          mode === "edit" && employeeId ? getEmployee(employeeId) : Promise.resolve(null)
+        ]);
+
         setRegions(
           regionList.map((r: Region) => ({
             value: r.regionId,
@@ -130,10 +141,11 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
           }))
         );
 
-        if (mode === "edit" && employeeId) {
-          const empData = await getEmployee(employeeId);
+        if (empData) {
           setForm(empData);
         }
+
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -329,7 +341,6 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
               <hr className="border-gray-100" />
 
               <FormField label="Foto Pegawai">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
                 {mode === "edit" && form.employeePict ? (
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="relative inline-block">
@@ -354,7 +365,6 @@ export default function EmployeeForm({ mode, employeeId }: EmployeeFormProps) {
                   </div>
                 ) : (
                   <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
                     {preview ? (
                       <div className="relative inline-block">
                         <Image

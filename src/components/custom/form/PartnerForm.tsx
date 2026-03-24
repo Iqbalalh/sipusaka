@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback} from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -28,7 +28,6 @@ import { BasePartner } from "@/types/models/partner";
 import { hardDeleteFile } from "@/utils/fetch/deleteFile";
 import { Option } from "@/types/generic/select-option";
 import { Region } from "@/types/models/region";
-import { GENDER_OPTIONS } from "@/constants/option";
 
 // ==============================================
 // INITIAL FORM STATE
@@ -82,6 +81,9 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
   const [regions, setRegions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BasePartner>(INITIAL_FORM_STATE);
+  
+  // Execution lock to prevent re-trigger on window focus
+  const isInitialized = useRef(false);
 
   const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
 
@@ -111,13 +113,20 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
   );
 
   // ==============================================
-  // FETCH INITIAL DATA
+  // FETCH INITIAL DATA (Optimized with useRef Lock)
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+
       try {
         setLoading(true);
-        const regionList = await getRegionsList();
+        
+        const [regionList, partnerData] = await Promise.all([
+          getRegionsList(),
+          mode === "edit" && partnerId ? getPartner(partnerId) : Promise.resolve(null)
+        ]);
+
         setRegions(
           regionList.map((r: Region) => ({
             value: r.regionId,
@@ -125,10 +134,11 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
           }))
         );
 
-        if (mode === "edit" && partnerId) {
-          const partnerData = await getPartner(partnerId);
+        if (partnerData) {
           setForm(partnerData);
         }
+
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -360,7 +370,6 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
               <hr className="border-gray-100" />
 
               <FormField label="Foto Pasangan">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
                 {mode === "edit" && form.partnerPict ? (
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="relative inline-block">
@@ -385,7 +394,6 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
                   </div>
                 ) : (
                   <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
                     {preview ? (
                       <div className="relative inline-block">
                         <Image

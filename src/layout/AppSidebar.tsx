@@ -13,7 +13,6 @@ import {
   FaHouseChimney,
   FaChartSimple,
   FaUserTie,
-  FaAlignLeft,
   FaImage,
   FaHandHoldingHeart,
   FaUsers,
@@ -75,16 +74,6 @@ const othersItems: NavItem[] = [
     icon: <FaImage className="text-2xl" />,
     name: "Galeri",
     subItems: [{ name: "Dokumentasi", path: "/galleries", pro: false }, { name: "Kategori", path: "/categories", pro: false }],
-  },
-  {
-    icon: <FaAlignLeft className="text-2xl" />,
-    name: "Surat",
-    subItems: [
-      { name: "Arsip Surat", path: "/letters/archives", pro: false },
-      { name: "Draf Surat", path: "/letters/drafts", pro: false },
-      { name: "Menunggu Persetujuan", path: "/letters/pending", pro: false },
-      { name: "Template Surat", path: "/letters/templates", pro: false },
-    ],
   },
 ];
 

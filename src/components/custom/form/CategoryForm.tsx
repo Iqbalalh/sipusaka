@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Flex, Spin } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -61,6 +61,9 @@ export default function CategoryForm({ mode, categoryId }: CategoryFormProps) {
 
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Partial<Category>>(INITIAL_FORM_STATE);
+  
+  // Execution lock to prevent re-trigger on window focus
+  const isInitialized = useRef(false);
 
   // ==============================================
   // SUBMIT HOOK
@@ -87,10 +90,12 @@ export default function CategoryForm({ mode, categoryId }: CategoryFormProps) {
   );
 
   // ==============================================
-  // FETCH INITIAL DATA
+  // FETCH INITIAL DATA (Optimized with useRef Lock)
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+
       try {
         setLoading(true);
 
@@ -98,6 +103,8 @@ export default function CategoryForm({ mode, categoryId }: CategoryFormProps) {
           const categoryData = await getCategory(categoryId);
           setForm(categoryData);
         }
+        
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -124,7 +131,6 @@ export default function CategoryForm({ mode, categoryId }: CategoryFormProps) {
       return notify("warning", validation.error!);
     }
 
-    // Only send the required fields (name and slug)
     const submitData = {
       name: form.name ?? "",
       slug: form.slug ?? "",

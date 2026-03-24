@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -46,30 +46,23 @@ const INITIAL_FORM_STATE: BaseWali = {
 // ==============================================
 // VALIDATION RULES
 // ==============================================
-const validateForm = (
-  form: BaseWali
-): { isValid: boolean; error?: string } => {
+const validateForm = (form: BaseWali): { isValid: boolean; error?: string } => {
   if (!form.waliName?.trim()) {
     return { isValid: false, error: "Nama wali wajib diisi!" };
   }
   return { isValid: true };
 };
 
-// ==============================================
-// PROPS INTERFACE
-// ==============================================
 interface WaliFormProps {
   mode: "create" | "edit";
   waliId?: string;
 }
 
-// ==============================================
-// MAIN COMPONENT
-// ==============================================
 export default function WaliForm({ mode, waliId }: WaliFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { notify } = useNotify();
+  const isInitialized = useRef(false);
 
   const [employees, setEmployees] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,13 +80,12 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
       return fetchWithAuth(url, { method, body: fd });
     },
     (data) => {
-      const message =
-        mode === "edit"
-          ? "Data wali berhasil diperbarui!"
-          : "Wali berhasil ditambahkan!";
+      const message = mode === "edit" ? "Data wali berhasil diperbarui!" : "Wali berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
+      
       const id = mode === "edit" ? waliId : data?.data?.id;
       const redirect = searchParams.get('redirect');
+      
       if (redirect) {
         router.push(redirect);
       } else {
@@ -107,6 +99,7 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
   // ==============================================
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
       try {
         setLoading(true);
         const employeeList = await getEmployees();
@@ -123,6 +116,7 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
           const waliData = await getWali(waliId);
           setForm(waliData);
         }
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -133,16 +127,11 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
     init();
   }, [mode, waliId, notify]);
 
-  // ==============================================
-  // DELETE PHOTO (EDIT MODE ONLY)
-  // ==============================================
   const handleDeletePhoto = async () => {
-    if (!form?.waliPict)
-      return notify("warning", "Tidak ada foto untuk dihapus.");
+    if (!form?.waliPict) return notify("warning", "Tidak ada foto untuk dihapus.");
 
     try {
       notify("info", "Sedang menghapus foto dari server...");
-
       await hardDeleteFile(form.waliPict);
       setForm((prev) => ({ ...prev, waliPict: null }));
       clearFile();
@@ -152,29 +141,19 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
     }
   };
 
-  // ==============================================
-  // EVENT HANDLERS
-  // ==============================================
-  const handleFieldChange = useCallback(
-    <K extends keyof BaseWali>(field: K, value: BaseWali[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
+  const handleFieldChange = useCallback(<K extends keyof BaseWali>(field: K, value: BaseWali[K]) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  const handleSelectFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      try {
-        selectFile(file);
-      } catch (error) {
-        notifyFromResult(notify, { error });
-      }
-    },
-    [selectFile, notify]
-  );
+  const handleSelectFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      selectFile(file);
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    }
+  }, [selectFile, notify]);
 
   const handleSubmit = useCallback(async () => {
     const validation = validateForm(form);
@@ -188,7 +167,6 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
     }
 
     const { success, error } = await submit(form, extraData);
-
     if (!success) {
       notifyFromResult(notify, { error });
     }
@@ -205,9 +183,6 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
     }
   }, [router, mode, waliId, searchParams]);
 
-  // ==============================================
-  // RENDER LOADING STATE
-  // ==============================================
   if (loading) {
     return (
       <Flex align="center" justify="center" className="min-h-[400px]">
@@ -216,19 +191,9 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
     );
   }
 
-  // ==============================================
-  // PAGE TITLE
-  // ==============================================
-  const pageTitle =
-    mode === "edit"
-      ? `Edit Wali: ${form.waliName}`
-      : "Tambah Data Wali";
-
+  const pageTitle = mode === "edit" ? `Edit Wali: ${form.waliName}` : "Tambah Data Wali";
   const submitButtonText = mode === "edit" ? "Update Data Wali" : "Simpan";
 
-  // ==============================================
-  // RENDER FORM
-  // ==============================================
   return (
     <div className="pb-10">
       <PageBreadcrumb pageTitle={pageTitle} />
@@ -314,7 +279,6 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
               <hr className="border-gray-100" />
 
               <FormField label="Foto Wali">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
                 {mode === "edit" && form.waliPict ? (
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="relative inline-block">
@@ -331,7 +295,7 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
                         cancelText="Batal"
                         okButtonProps={{ danger: true }}
                       >
-                        <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg">
+                        <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg transition-colors">
                           <DeleteOutlined />
                         </button>
                       </Popconfirm>
@@ -339,7 +303,6 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
                   </div>
                 ) : (
                   <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
                     {preview ? (
                       <div className="relative inline-block">
                         <Image
@@ -349,7 +312,7 @@ export default function WaliForm({ mode, waliId }: WaliFormProps) {
                         />
                         <button
                           onClick={clearFile}
-                          className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-600 shadow-md"
+                          className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-600 shadow-md transition-colors"
                         >
                           <DeleteOutlined />
                         </button>

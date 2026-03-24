@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin, DatePicker } from "antd";
 import { LoadingOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -34,7 +34,7 @@ import { Region } from "@/types/models/region";
 import { GENDER_OPTIONS } from "@/constants/option";
 
 // ==============================================
-// INITIAL FORM STATE
+// INITIAL FORM STATE & OPTIONS
 // ==============================================
 const INITIAL_FORM_STATE: BaseChildren = {
   childrenName: "",
@@ -67,30 +67,14 @@ const JENJANG_PENDIDIKAN_OPTIONS = [
   { value: "Doktor", label: "Doktor" },
 ];
 
-// ==============================================
-// VALIDATION RULES
-// ==============================================
-const validateForm = (
-  form: BaseChildren
-): { isValid: boolean; error?: string } => {
-  if (!form.childrenName?.trim()) {
-    return { isValid: false, error: "Nama anak wajib diisi!" };
-  }
-  if (!form.childrenGender) {
-    return { isValid: false, error: "Jenis kelamin wajib diisi!" };
-  }
-  if (form.isActive === null || form.isActive === undefined) {
-    return { isValid: false, error: "Status wajib diisi!" };
-  }
-  if (form.isCondition === null || form.isCondition === undefined) {
-    return { isValid: false, error: "Kondisi ABK wajib diisi!" };
-  }
+const validateForm = (form: BaseChildren): { isValid: boolean; error?: string } => {
+  if (!form.childrenName?.trim()) return { isValid: false, error: "Nama anak wajib diisi!" };
+  if (!form.childrenGender) return { isValid: false, error: "Jenis kelamin wajib diisi!" };
+  if (form.isActive === null || form.isActive === undefined) return { isValid: false, error: "Status wajib diisi!" };
+  if (form.isCondition === null || form.isCondition === undefined) return { isValid: false, error: "Kondisi ABK wajib diisi!" };
   return { isValid: true };
 };
 
-// ==============================================
-// PROPS INTERFACE
-// ==============================================
 interface ChildrenFormProps {
   mode: "create" | "edit";
   childrenId?: string;
@@ -110,11 +94,11 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BaseChildren>(INITIAL_FORM_STATE);
 
+  // EXECUTION LOCK: Mencegah re-trigger saat window focus/tab switch
+  const isInitialized = useRef(false);
+
   const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
 
-  // ==============================================
-  // SUBMIT HOOK
-  // ==============================================
   const { submit, loading: submitLoading } = useFormSubmit(
     (fd) => {
       const url = mode === "edit" ? `${API_CHILDREN}/${childrenId}` : API_CHILDREN;
@@ -122,60 +106,43 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
       return fetchWithAuth(url, { method, body: fd });
     },
     (data) => {
-      const message =
-        mode === "edit"
-          ? "Data anak asuh berhasil diperbarui!"
-          : "Anak asuh berhasil ditambahkan!";
+      const message = mode === "edit" ? "Data anak asuh berhasil diperbarui!" : "Anak asuh berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
       const id = mode === "edit" ? childrenId : data?.data?.id;
       const redirect = searchParams.get('redirect');
-      if (redirect) {
-        router.push(redirect);
-      } else {
-        router.push(`/children/view/${id}`);
-      }
+      if (redirect) router.push(redirect);
+      else router.push(`/children/view/${id}`);
     }
   );
 
-  // ==============================================
-  // FETCH INITIAL DATA
-  // ==============================================
+  // FETCH INITIAL DATA (Optimized with useRef Lock)
   useEffect(() => {
     const init = async () => {
+      if (isInitialized.current) return;
+
       try {
         setLoading(true);
         
-        // Fetch regions
-        const regionList = await getRegionsList();
-        setRegions(
-          regionList.map((r: Region) => ({
-            value: r.regionId,
-            label: r.regionName,
-          }))
-        );
+        // Fetch all dependencies in parallel
+        const [regionList, waliList, homeList] = await Promise.all([
+          getRegionsList(),
+          getWaliList(),
+          getHomesList()
+        ]);
 
-        // Fetch walis
-        const waliList = await getWaliList();
-        setWalis(
-          waliList.map((w: any) => ({
-            value: w.id,
-            label: w.waliName,
-          }))
-        );
-
-        // Fetch homes
-        const homeList = await getHomesList();
-        setHomes(
-          homeList.map((h: any) => ({
-            value: h.id,
-            label: `${h.employees?.employeeName ?? "-"} - ${h.partners?.partnerName ?? "-"}`,
-          }))
-        );
+        setRegions(regionList.map((r: Region) => ({ value: r.regionId, label: r.regionName })));
+        setWalis(waliList.map((w: any) => ({ value: w.id, label: w.waliName })));
+        setHomes(homeList.map((h: any) => ({
+          value: h.id,
+          label: `${h.employees?.employeeName ?? "-"} - ${h.partners?.partnerName ?? "-"}`
+        })));
 
         if (mode === "edit" && childrenId) {
           const childData = await getChildren(childrenId);
           setForm(childData);
         }
+
+        isInitialized.current = true;
       } catch (err) {
         notifyFromResult(notify, { error: err });
       } finally {
@@ -186,81 +153,46 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
     init();
   }, [mode, childrenId, notify]);
 
-  // ==============================================
-  // DELETE PHOTO (EDIT MODE ONLY)
-  // ==============================================
   const handleDeletePhoto = async () => {
-    if (!form?.childrenPict)
-      return notify("warning", "Tidak ada foto untuk dihapus.");
-
+    if (!form?.childrenPict) return notify("warning", "Tidak ada foto untuk dihapus.");
     try {
-      notify("info", "Sedang menghapus foto dari server...");
-
+      notify("info", "Sedang menghapus foto...");
       await hardDeleteFile(form.childrenPict);
       setForm((prev) => ({ ...prev, childrenPict: null }));
       clearFile();
-      notify("success", "Foto berhasil dihapus secara permanen!");
+      notify("success", "Foto berhasil dihapus!");
     } catch (err: any) {
       notify("error", err.message || "Gagal menghapus foto.");
     }
   };
 
-  // ==============================================
-  // EVENT HANDLERS
-  // ==============================================
-  const handleFieldChange = useCallback(
-    <K extends keyof BaseChildren>(field: K, value: BaseChildren[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
+  const handleFieldChange = useCallback(<K extends keyof BaseChildren>(field: K, value: BaseChildren[K]) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  const handleSelectFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      try {
-        selectFile(file);
-      } catch (error) {
-        notifyFromResult(notify, { error });
-      }
-    },
-    [selectFile, notify]
-  );
+  const handleSelectFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) selectFile(file);
+  }, [selectFile]);
 
   const handleSubmit = useCallback(async () => {
     const validation = validateForm(form);
-    if (!validation.isValid) {
-      return notify("warning", validation.error!);
-    }
+    if (!validation.isValid) return notify("warning", validation.error!);
 
     const extraData = new FormData();
-    if (photoFile) {
-      extraData.append("photo", photoFile);
-    }
+    if (photoFile) extraData.append("photo", photoFile);
 
     const { success, error } = await submit(form, extraData);
-
-    if (!success) {
-      notifyFromResult(notify, { error });
-    }
+    if (!success) notifyFromResult(notify, { error });
   }, [form, photoFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     const redirect = searchParams.get('redirect');
-    if (redirect) {
-      router.push(redirect);
-    } else if (mode === "create") {
-      router.push("/children");
-    } else {
-      router.push(`/children/view/${childrenId}`);
-    }
+    if (redirect) router.push(redirect);
+    else if (mode === "create") router.push("/children");
+    else router.push(`/children/view/${childrenId}`);
   }, [router, mode, childrenId, searchParams]);
 
-  // ==============================================
-  // RENDER LOADING STATE
-  // ==============================================
   if (loading) {
     return (
       <Flex align="center" justify="center" className="min-h-[400px]">
@@ -269,19 +201,8 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
     );
   }
 
-  // ==============================================
-  // PAGE TITLE
-  // ==============================================
-  const pageTitle =
-    mode === "edit"
-      ? `Edit Anak Asuh: ${form.childrenName}`
-      : "Tambah Data Anak Asuh";
+  const pageTitle = mode === "edit" ? `Edit Anak Asuh: ${form.childrenName}` : "Tambah Data Anak Asuh";
 
-  const submitButtonText = mode === "edit" ? "Update Data Anak Asuh" : "Simpan";
-
-  // ==============================================
-  // RENDER FORM
-  // ==============================================
   return (
     <div className="pb-10">
       <PageBreadcrumb pageTitle={pageTitle} />
@@ -293,16 +214,15 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
               <FormField label="Nama Anak" required>
                 <TextInput
                   value={form.childrenName}
-                  onChange={(value) => handleFieldChange("childrenName", value)}
+                  onChange={(v) => handleFieldChange("childrenName", v)}
                   placeholder="Masukkan nama anak"
-                  required
                 />
               </FormField>
 
               <FormField label="NIK">
                 <TextInput
                   value={form.nik ?? ""}
-                  onChange={(value) => handleFieldChange("nik", value)}
+                  onChange={(v) => handleFieldChange("nik", v)}
                   placeholder="Masukkan NIK"
                 />
               </FormField>
@@ -310,9 +230,8 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
               <FormField label="Jenis Kelamin" required>
                 <SelectInput
                   value={form.childrenGender}
-                  onChange={(value) => handleFieldChange("childrenGender", value)}
+                  onChange={(v) => handleFieldChange("childrenGender", v)}
                   options={GENDER_OPTIONS}
-                  placeholder="Pilih jenis kelamin"
                 />
               </FormField>
 
@@ -320,69 +239,41 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
                 <DatePicker
                   style={{ width: "100%" }}
                   format="DD/MM/YYYY"
-                  value={
-                    form.childrenBirthdate
-                      ? dayjs(form.childrenBirthdate)
-                      : null
-                  }
-                  onChange={(date) =>
-                    handleFieldChange(
-                      "childrenBirthdate",
-                      date ? date.format("YYYY-MM-DD") : null
-                    )
-                  }
+                  value={form.childrenBirthdate ? dayjs(form.childrenBirthdate) : null}
+                  onChange={(d) => handleFieldChange("childrenBirthdate", d ? d.format("YYYY-MM-DD") : null)}
                 />
               </FormField>
 
               <FormField label="Pekerjaan">
-                <TextInput
-                  value={form.childrenJob ?? ""}
-                  onChange={(value) => handleFieldChange("childrenJob", value)}
-                  placeholder="Masukkan pekerjaan"
-                />
+                <TextInput value={form.childrenJob ?? ""} onChange={(v) => handleFieldChange("childrenJob", v)} />
               </FormField>
 
               <FormField label="Jenjang Pendidikan">
                 <SelectInput
                   value={form.educationLevel ?? ""}
-                  onChange={(value) => handleFieldChange("educationLevel", value)}
+                  onChange={(v) => handleFieldChange("educationLevel", v)}
                   options={JENJANG_PENDIDIKAN_OPTIONS}
-                  placeholder="Pilih jenjang pendidikan"
                 />
               </FormField>
 
               <FormField label="Tingkat Pendidikan">
-                <TextInput
-                  value={form.educationGrade ?? ""}
-                  onChange={(value) => handleFieldChange("educationGrade", value)}
-                  placeholder="Masukkan tingkat pendidikan (mis: Kelas 1, Kelas 2, dll)"
-                />
+                <TextInput value={form.educationGrade ?? ""} onChange={(v) => handleFieldChange("educationGrade", v)} />
               </FormField>
 
               <FormField label="Nama Sekolah">
-                <TextInput
-                  value={form.schoolName ?? ""}
-                  onChange={(value) => handleFieldChange("schoolName", value)}
-                  placeholder="Masukkan nama sekolah"
-                />
+                <TextInput value={form.schoolName ?? ""} onChange={(v) => handleFieldChange("schoolName", v)} />
               </FormField>
 
               <FormField label="Alamat">
                 <TextArea
-                  size="large"
                   rows={3}
                   value={form.childrenAddress ?? ""}
                   onChange={(e) => handleFieldChange("childrenAddress", e.target.value)}
-                  placeholder="Masukkan alamat"
                 />
               </FormField>
 
               <FormField label="Nomor Telepon">
-                <TextInput
-                  value={form.childrenPhone ?? ""}
-                  onChange={(value) => handleFieldChange("childrenPhone", value)}
-                  placeholder="Masukkan nomor telepon"
-                />
+                <TextInput value={form.childrenPhone ?? ""} onChange={(v) => handleFieldChange("childrenPhone", v)} />
               </FormField>
             </div>
           </ComponentCard>
@@ -394,121 +285,75 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
               <FormField label="Status" required>
                 <SelectInput
                   value={form.isActive}
-                  onChange={(value) => handleFieldChange("isActive", value)}
-                  options={[
-                    { value: true, label: "Aktif" },
-                    { value: false, label: "Tidak Aktif" },
-                  ]}
-                  placeholder="Pilih status"
+                  onChange={(v) => handleFieldChange("isActive", v)}
+                  options={[{ value: true, label: "Aktif" }, { value: false, label: "Tidak Aktif" }]}
                 />
               </FormField>
 
               <FormField label="ABK (Anak Berkebutuhan Khusus)" required>
                 <SelectInput
                   value={form.isCondition}
-                  onChange={(value) => handleFieldChange("isCondition", value)}
-                  options={[
-                    { value: true, label: "Tidak" },
-                    { value: false, label: "Ya" },
-                  ]}
-                  placeholder="Pilih kondisi ABK"
+                  onChange={(v) => handleFieldChange("isCondition", v)}
+                  options={[{ value: true, label: "Tidak" }, { value: false, label: "Ya" }]}
                 />
               </FormField>
 
               <FormField label="Ayah Masih Hidup">
                 <SelectInput
                   value={form.isFatherAlive}
-                  onChange={(value) => handleFieldChange("isFatherAlive", value)}
-                  options={[
-                    { value: true, label: "Ya" },
-                    { value: false, label: "Tidak" },
-                  ]}
-                  placeholder="Pilih status ayah"
+                  onChange={(v) => handleFieldChange("isFatherAlive", v)}
+                  options={[{ value: true, label: "Ya" }, { value: false, label: "Tidak" }]}
                 />
               </FormField>
 
               <FormField label="Ibu Masih Hidup">
                 <SelectInput
                   value={form.isMotherAlive}
-                  onChange={(value) => handleFieldChange("isMotherAlive", value)}
-                  options={[
-                    { value: true, label: "Ya" },
-                    { value: false, label: "Tidak" },
-                  ]}
-                  placeholder="Pilih status ibu"
+                  onChange={(v) => handleFieldChange("isMotherAlive", v)}
+                  options={[{ value: true, label: "Ya" }, { value: false, label: "Tidak" }]}
                 />
               </FormField>
 
               <FormField label="Keluarga">
                 <SelectInput
                   value={form.homeId}
-                  onChange={(value) => handleFieldChange("homeId", value)}
+                  onChange={(v) => handleFieldChange("homeId", v)}
                   options={homes}
-                  placeholder="Pilih rumah"
                 />
               </FormField>
 
               <FormField label="Anak ke-">
                 <TextInput
-                  value={form.index !== null && form.index !== undefined ? String(form.index) : ""}
-                  onChange={(value) => handleFieldChange("index", value ? Number(value) : null)}
-                  placeholder="Masukkan urutan anak (contoh: 1, 2, 3)"
+                  value={form.index !== null ? String(form.index) : ""}
+                  onChange={(v) => handleFieldChange("index", v ? Number(v) : null)}
                   type="number"
                 />
               </FormField>
 
               <FormField label="Catatan">
                 <TextArea
-                  size="large"
                   rows={4}
                   value={form.notes ?? ""}
                   onChange={(e) => handleFieldChange("notes", e.target.value)}
-                  placeholder="Tambahkan catatan (opsional)"
                 />
               </FormField>
 
               <hr className="border-gray-100" />
 
               <FormField label="Foto Anak">
-                {/* LOGIKA FOTO SERVER (EDIT MODE) */}
                 {mode === "edit" && form.childrenPict ? (
-                  <div className="flex flex-col gap-3 mt-2">
-                    <div className="relative inline-block">
-                      <Image
-                        src={form.childrenPict}
-                        alt="Foto Anak"
-                        className="object-cover rounded-lg w-48 h-48 border shadow-sm"
-                      />
-                      <Popconfirm
-                        title="Hapus foto permanen?"
-                        description="Foto akan langsung dihapus dari server S3."
-                        onConfirm={handleDeletePhoto}
-                        okText="Hapus"
-                        cancelText="Batal"
-                        okButtonProps={{ danger: true }}
-                      >
-                        <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg">
-                          <DeleteOutlined />
-                        </button>
-                      </Popconfirm>
-                    </div>
+                  <div className="relative inline-block mt-2">
+                    <Image src={form.childrenPict} alt="" className="object-cover rounded-lg w-48 h-48 border" />
+                    <Popconfirm title="Hapus foto permanen?" onConfirm={handleDeletePhoto} okText="Hapus" okButtonProps={{ danger: true }}>
+                      <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow-lg"><DeleteOutlined /></button>
+                    </Popconfirm>
                   </div>
                 ) : (
                   <div className="mt-2">
-                    {/* PREVIEW FILE BARU */}
                     {preview ? (
                       <div className="relative inline-block">
-                        <Image
-                          src={preview}
-                          className="object-cover rounded-lg w-48 h-48 border border-primary-200"
-                          alt="Preview"
-                        />
-                        <button
-                          onClick={clearFile}
-                          className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-600 shadow-md"
-                        >
-                          <DeleteOutlined />
-                        </button>
+                        <Image src={preview} alt=""  className="object-cover rounded-lg w-48 h-48 border border-primary-200" />
+                        <button onClick={clearFile} className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 shadow-md"><DeleteOutlined /></button>
                       </div>
                     ) : (
                       <FileInput onChange={handleSelectFile} />
@@ -520,12 +365,8 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
 
             <div className="flex justify-between items-center pt-8 mt-4 border-t border-gray-100">
               <Button onClick={handleGoBack}>Batal</Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={submitLoading}
-                className="bg-primary-600 text-white min-w-[150px]"
-              >
-                {submitLoading ? "Menyimpan..." : submitButtonText}
+              <Button onClick={handleSubmit} disabled={submitLoading} className="bg-primary-600 text-white min-w-[150px]">
+                {submitLoading ? "Menyimpan..." : mode === "edit" ? "Update Data" : "Simpan"}
               </Button>
             </div>
           </ComponentCard>
