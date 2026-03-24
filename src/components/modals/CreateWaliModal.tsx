@@ -34,7 +34,7 @@ export default function CreateWaliModal({
 
   const validateFile = (file: File): boolean => {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    const maxSize = 1 * 1024 * 1024;
+    const maxSize = 1 * 5120 * 5120;
 
     if (!allowedTypes.includes(file.type)) {
       message.error("Format tidak valid. Hanya JPG, PNG, atau WEBP.");

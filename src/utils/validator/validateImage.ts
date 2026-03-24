@@ -1,7 +1,7 @@
 export const validateImage = (
   file: File,
   opts = {
-    maxSizeMB: 1,
+    maxSizeMB: 5,
     types: ["image/jpeg", "image/png", "image/webp"],
   }
 ) => {
