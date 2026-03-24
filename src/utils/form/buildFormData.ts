@@ -4,6 +4,12 @@ export const buildFormData = <T extends Record<string, any>>(data: T) => {
   Object.entries(data).forEach(([key, value]) => {
     if (value === null || value === undefined) return;
 
+    // Handle File and Blob objects directly without converting to string
+    if (value instanceof File || value instanceof Blob) {
+      fd.append(key, value);
+      return;
+    }
+
     let finalValue = value;
 
     if (typeof value === "boolean") {

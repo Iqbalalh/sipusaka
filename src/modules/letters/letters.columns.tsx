@@ -4,8 +4,7 @@ import { Tag } from "antd";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined, SendOutlined } from "@ant-design/icons";
-import { Letter, LetterStatus } from "@/types/models/letter";
-import { User } from "@/types/models/user";
+import { Letter, LetterStatus, User } from "@/types/models/letter";
 import type { ColumnsType } from "antd/es/table";
 import { formatDate } from "@/utils/formatter/formatDate";
 
@@ -31,7 +30,7 @@ export const renderStatus = (status: LetterStatus) => {
 // ==============================================
 const getSignerName = (signer?: User | null): string => {
   if (!signer) return "-";
-  return signer.name || signer.username || "-";
+  return signer.name || "-";
 };
 
 // ==============================================
@@ -42,41 +41,41 @@ export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> =
     title: "Jenis Surat",
     dataIndex: "letterType",
     key: "letterType",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Nomor Surat",
     dataIndex: "letterNumber",
     key: "letterNumber",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Perihal",
     dataIndex: "subject",
     key: "subject",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Tanggal Surat",
     dataIndex: "letterDate",
     key: "letterDate",
-    render: (text) => (text ? formatDate(text) : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  },
+  } as any,
 
   {
     title: "Tujuan Surat",
     dataIndex: "destination",
     key: "destination",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Penandatangan 1",
@@ -84,7 +83,7 @@ export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> =
     key: "signer1",
     render: (_: any, letter: Letter) => getSignerName(letter.signer1),
     exportRender: (_: any, letter: Letter) => getSignerName(letter.signer1),
-  },
+  } as any,
 
   {
     title: "Penandatangan 2",
@@ -92,7 +91,7 @@ export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> =
     key: "signer2",
     render: (_: any, letter: Letter) => getSignerName(letter.signer2),
     exportRender: (_: any, letter: Letter) => getSignerName(letter.signer2),
-  },
+  } as any,
 
   {
     title: "Penandatangan 3",
@@ -100,7 +99,7 @@ export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> =
     key: "signer3",
     render: (_: any, letter: Letter) => getSignerName(letter.signer3),
     exportRender: (_: any, letter: Letter) => getSignerName(letter.signer3),
-  },
+  } as any,
 
   {
     title: "Status",
@@ -118,15 +117,15 @@ export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> =
       };
       return statusText[status] || "Draft";
     },
-  },
+  } as any,
 
   {
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text) => (text ? formatDate(text) : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  },
+  } as any,
 
   {
     title: "Aksi",
@@ -169,33 +168,33 @@ export const getApprovalLetterColumns = (users: User[] = []): ColumnsType<Letter
     title: "Jenis Surat",
     dataIndex: "letterType",
     key: "letterType",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Nomor Surat",
     dataIndex: "letterNumber",
     key: "letterNumber",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Perihal",
     dataIndex: "subject",
     key: "subject",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Tanggal Surat",
     dataIndex: "letterDate",
     key: "letterDate",
-    render: (text) => (text ? formatDate(text) : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  },
+  } as any,
 
   {
     title: "Dibuat Oleh",
@@ -206,7 +205,7 @@ export const getApprovalLetterColumns = (users: User[] = []): ColumnsType<Letter
       return "-";
     },
     exportRender: () => "-",
-  },
+  } as any,
 
   {
     title: "Status",
@@ -224,7 +223,7 @@ export const getApprovalLetterColumns = (users: User[] = []): ColumnsType<Letter
       };
       return statusText[status] || "Draft";
     },
-  },
+  } as any,
 
   {
     title: "Aksi",
@@ -250,41 +249,41 @@ export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter>
     title: "Jenis Surat",
     dataIndex: "letterType",
     key: "letterType",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Nomor Surat",
     dataIndex: "letterNumber",
     key: "letterNumber",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Perihal",
     dataIndex: "subject",
     key: "subject",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Tanggal Surat",
     dataIndex: "letterDate",
     key: "letterDate",
-    render: (text) => (text ? formatDate(text) : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  },
+  } as any,
 
   {
     title: "Tujuan Surat",
     dataIndex: "destination",
     key: "destination",
-    render: (text) => text || "-",
+    render: (text: any) => text || "-",
     exportRender: (value: string) => value ?? "-",
-  },
+  } as any,
 
   {
     title: "Penandatangan 1",
@@ -292,7 +291,7 @@ export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter>
     key: "signer1",
     render: (_: any, letter: Letter) => getSignerName(letter.signer1),
     exportRender: (_: any, letter: Letter) => getSignerName(letter.signer1),
-  },
+  } as any,
 
   {
     title: "Penandatangan 2",
@@ -300,7 +299,7 @@ export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter>
     key: "signer2",
     render: (_: any, letter: Letter) => getSignerName(letter.signer2),
     exportRender: (_: any, letter: Letter) => getSignerName(letter.signer2),
-  },
+  } as any,
 
   {
     title: "Penandatangan 3",
@@ -308,7 +307,7 @@ export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter>
     key: "signer3",
     render: (_: any, letter: Letter) => getSignerName(letter.signer3),
     exportRender: (_: any, letter: Letter) => getSignerName(letter.signer3),
-  },
+  } as any,
 
   {
     title: "Status",
@@ -335,7 +334,7 @@ export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter>
       };
       return statusText[status] || "Draft";
     },
-  },
+  } as any,
 
   {
     title: "Dibuat Pada",
@@ -343,9 +342,9 @@ export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter>
     key: "createdAt",
     sorter: (a: Letter, b: Letter) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     defaultSortOrder: "descend",
-    render: (text) => (text ? formatDate(text) : "-"),
+    render: (text: any) => (text ? formatDate(text) : "-"),
     exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  },
+  } as any,
 
   {
     title: "Aksi",

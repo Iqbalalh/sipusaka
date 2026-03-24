@@ -95,30 +95,11 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
   // SUBMIT HOOK
   // ==============================================
   const { submit, loading: submitLoading } = useFormSubmit(
-    async (data) => {
-      const fd = new FormData();
-      fd.append("letterType", data.letterType);
-      fd.append("letterNumber", data.letterNumber || "");
-      fd.append("attachment", data.attachment || "");
-      fd.append("subject", data.subject);
-      fd.append("letterDate", data.letterDate);
-      fd.append("destination", data.destination);
-      fd.append("carbonCopy", data.carbonCopy || "");
-      fd.append("signer1Id", String(data.signer1Id));
-      if (data.signer2Id) {
-        fd.append("signer2Id", String(data.signer2Id));
-      }
-      if (data.signer3Id) {
-        fd.append("signer3Id", String(data.signer3Id));
-      }
-      if (data.documentFile) {
-        fd.append("documentFile", data.documentFile);
-      }
-
+    async (fd) => {
       if (mode === "edit" && letterId) {
-        return await updateLetter(letterId, fd);
+        return await updateLetter(letterId, fd as any);
       } else {
-        return await createLetter(fd);
+        return await createLetter(fd as any);
       }
     },
     () => {
