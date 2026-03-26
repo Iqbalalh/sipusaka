@@ -317,7 +317,7 @@ export default function DataTable<T extends Record<string, any>>({
   // RENDER
   // ==========================
   return (
-    <div className="overflow-x-auto">
+    <div>
       {/* DELETE MODAL */}
       {deleteItem && (
         <Modal

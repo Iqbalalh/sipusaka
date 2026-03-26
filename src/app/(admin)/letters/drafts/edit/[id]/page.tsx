@@ -1,10 +1,9 @@
-import LetterForm from "@/components/custom/form/LetterForm";
+import EditLetter from "@/modules/letters/letters.edit";
 
-interface EditLetterPageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function EditLetterPage({ params }: EditLetterPageProps) {
-  const { id } = await params;
-  return <LetterForm mode="edit" letterId={id} />;
+export default function LetterEditPage() {
+  return (
+    <div>
+      <EditLetter />
+    </div>
+  );
 }

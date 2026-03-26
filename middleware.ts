@@ -41,6 +41,6 @@ export const config = {
       - /images           (public images folder)
       - /public           (public folder)
     */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|images|public).*)",
+    "/((?!api/auth|verify|_next/static|_next/image|favicon.ico|images|public).*)",
   ],
 };

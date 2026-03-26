@@ -16,6 +16,7 @@ import {
   FaImage,
   FaHandHoldingHeart,
   FaUsers,
+  FaEnvelope,
 } from "react-icons/fa6";
 import { ChevronDownIcon, HorizontaLDots } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
@@ -69,6 +70,15 @@ const othersItems: NavItem[] = [
     icon: <FaUserTie className="text-2xl" />,
     name: "Staff",
     path: "/staff",
+  },
+  {
+    icon: <FaEnvelope className="text-2xl" />,
+    name: "Surat",
+    subItems: [
+      { name: "Arsip", path: "/letters/archives", pro: false },
+      { name: "Draft", path: "/letters/drafts", pro: false },
+      { name: "Persetujuan", path: "/letters/approvals", pro: false },
+    ],
   },
   {
     icon: <FaImage className="text-2xl" />,

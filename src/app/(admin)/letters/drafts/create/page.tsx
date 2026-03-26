@@ -1,5 +1,9 @@
-import LetterForm from "@/components/custom/form/LetterForm";
+import CreateLetter from "@/modules/letters/letters.create";
 
-export default function CreateLetterPage() {
-  return <LetterForm mode="create" />;
+export default function LetterCreatePage() {
+  return (
+    <div>
+      <CreateLetter />
+    </div>
+  );
 }

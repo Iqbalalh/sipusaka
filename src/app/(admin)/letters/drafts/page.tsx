@@ -1,83 +1,21 @@
-'use client';
+import ComponentCard from "@/components/common/ComponentCard";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import DraftsTable from "@/modules/letters/letters.drafts-table";
+import { Metadata } from "next";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button, Card, Space, Typography, message } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Letter, User } from '@/types/models/letter';
-import { getDraftLetters, getUsers } from '@/utils/services/letter.service';
-import { getDraftLetterColumns } from '@/modules/letters/letters.columns';
-import LettersTable from '@/modules/letters/letters.table';
+export const metadata: Metadata = {
+  title: "Draft Surat",
+};
 
-const { Title } = Typography;
-
-export default function DraftLettersPage() {
-  const router = useRouter();
-  const [data, setData] = useState<Letter[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [lettersData, usersData] = await Promise.all([
-        getDraftLetters(),
-        getUsers(),
-      ]);
-      setData(lettersData);
-      setUsers(usersData);
-      setPagination((prev) => ({ ...prev, total: lettersData.length }));
-    } catch (error) {
-      message.error('Gagal memuat data surat');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const columns = getDraftLetterColumns(users);
-
-  const handleTableChange = (newPagination: any) => {
-    setPagination(newPagination);
-  };
-
+export default function LetterDraftsPage() {
   return (
-    <div className="p-6">
-      <Card>
-        <div className="flex justify-between items-center mb-4">
-          <Title level={4} style={{ margin: 0 }}>
-            Daftar Draft Surat
-          </Title>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchData}>
-              Refresh
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => router.push('/letters/drafts/create')}
-            >
-              Buat Surat Baru
-            </Button>
-          </Space>
-        </div>
-        <LettersTable
-          columns={columns}
-          data={data}
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          onRefresh={fetchData}
-        />
-      </Card>
+    <div>
+      <PageBreadcrumb pageTitle="Draft Surat" />
+      <div className="space-y-6">
+        <ComponentCard title="Draft Surat" header={false}>
+          <DraftsTable />
+        </ComponentCard>
+      </div>
     </div>
   );
 }

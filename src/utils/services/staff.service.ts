@@ -21,6 +21,8 @@ export interface Staff {
   roleId: number | null;
   position: string | null;
   staffPict: string | null;
+  signaturePath: string | null;
+  signatureUrl: string | null;
 }
 
 export const getStaffs = async (): Promise<Staff[]> => {

@@ -43,6 +43,7 @@ interface BaseStaff {
   roleId: number | null;
   position: string | null;
   staffPict: string | null;
+  signaturePath: string | null;
 }
 
 const INITIAL_FORM_STATE: BaseStaff = {
@@ -57,6 +58,7 @@ const INITIAL_FORM_STATE: BaseStaff = {
   roleId: null,
   position: null,
   staffPict: null,
+  signaturePath: null,
 };
 
 // ==============================================
@@ -103,6 +105,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
   const isInitialized = useRef(false);
 
   const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
+  const { file: signatureFile, preview: sigPreview, selectFile: selectSigFile, clearFile: clearSigFile } = useFilePreview();
 
   // ==============================================
   // SUBMIT HOOK
@@ -181,6 +184,22 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     }
   };
 
+  const handleDeleteSignature = async () => {
+    if (!form?.signaturePath)
+      return notify("warning", "Tidak ada tanda tangan untuk dihapus.");
+
+    try {
+      notify("info", "Sedang menghapus tanda tangan dari server...");
+
+      await hardDeleteFile(form.signaturePath);
+      setForm((prev) => ({ ...prev, signaturePath: null }));
+      clearSigFile();
+      notify("success", "Tanda tangan berhasil dihapus!");
+    } catch (err: any) {
+      notify("error", err.message || "Gagal menghapus tanda tangan.");
+    }
+  };
+
   // ==============================================
   // EVENT HANDLERS
   // ==============================================
@@ -205,6 +224,20 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     [selectFile, notify]
   );
 
+  const handleSelectSignature = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        selectSigFile(file);
+      } catch (error) {
+        notifyFromResult(notify, { error });
+      }
+    },
+    [selectSigFile, notify]
+  );
+
   const handleSubmit = useCallback(async () => {
     const validation = validateForm(form);
     if (!validation.isValid) {
@@ -213,8 +246,10 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
     const extraData = new FormData();
     if (photoFile) {
-      // Key "picture" matches the expected backend key for staff upload
       extraData.append("picture", photoFile);
+    }
+    if (signatureFile) {
+      extraData.append("signature", signatureFile);
     }
 
     const { success, error } = await submit(form, extraData);
@@ -222,7 +257,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, photoFile, submit, notify]);
+  }, [form, photoFile, signatureFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     if (mode === "create") {
@@ -400,6 +435,57 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                     ) : (
                       <FileInput onChange={handleSelectFile} />
                     )}
+                  </div>
+                )}
+              </FormField>
+
+              <hr className="border-gray-100" />
+
+              <FormField label="Tanda Tangan Digital">
+                {mode === "edit" && form.signaturePath ? (
+                  <div className="flex flex-col gap-3 mt-2">
+                    <div className="relative inline-block">
+                      <Image
+                        src={form.signaturePath}
+                        alt="Tanda Tangan"
+                        className="object-contain rounded-lg w-48 h-24 border shadow-sm bg-white"
+                      />
+                      <Popconfirm
+                        title="Hapus tanda tangan permanen?"
+                        description="Tanda tangan akan langsung dihapus dari server."
+                        onConfirm={handleDeleteSignature}
+                        okText="Hapus"
+                        cancelText="Batal"
+                        okButtonProps={{ danger: true }}
+                      >
+                        <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg">
+                          <DeleteOutlined />
+                        </button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    {sigPreview ? (
+                      <div className="relative inline-block">
+                        <Image
+                          src={sigPreview}
+                          className="object-contain rounded-lg w-48 h-24 border border-primary-200 bg-white"
+                          alt="Preview TTD"
+                        />
+                        <button
+                          onClick={clearSigFile}
+                          className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-600 shadow-md"
+                        >
+                          <DeleteOutlined />
+                        </button>
+                      </div>
+                    ) : (
+                      <FileInput onChange={handleSelectSignature} />
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      Upload gambar tanda tangan (PNG transparan disarankan)
+                    </p>
                   </div>
                 )}
               </FormField>

@@ -1,150 +1,91 @@
 "use client";
 
-import { Tag } from "antd";
 import Link from "next/link";
+import { Tag } from "antd";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined, SendOutlined } from "@ant-design/icons";
-import { Letter, LetterStatus, User } from "@/types/models/letter";
+import { Letter, LetterStatus } from "@/types/models/letter";
 import type { ColumnsType } from "antd/es/table";
 import { formatDate } from "@/utils/formatter/formatDate";
 
 // ==============================================
-// STATUS BADGE RENDERER
+// STATUS BADGE
 // ==============================================
-export const renderStatus = (status: LetterStatus) => {
-  const statusConfig: Record<LetterStatus, { color: string; text: string }> = {
-    draft: { color: "default", text: "Draft" },
-    pending1: { color: "processing", text: "Menunggu Penandatangan 1" },
-    pending2: { color: "processing", text: "Menunggu Penandatangan 2" },
-    pending3: { color: "processing", text: "Menunggu Penandatangan 3" },
-    approved: { color: "success", text: "Disetujui" },
-    published: { color: "cyan", text: "Diterbitkan" },
-  };
+const statusConfig: Record<LetterStatus, { label: string; color: string }> = {
+  draft: { label: "Draft", color: "default" },
+  pending1: { label: "Menunggu TTD 1", color: "processing" },
+  pending2: { label: "Menunggu TTD 2", color: "processing" },
+  pending3: { label: "Menunggu TTD 3", color: "processing" },
+  approved: { label: "Disetujui", color: "success" },
+  published: { label: "Diterbitkan", color: "purple" },
+};
 
-  const config = statusConfig[status] || statusConfig.draft;
-  return <Tag color={config.color}>{config.text}</Tag>;
+const StatusBadge = ({ status }: { status: LetterStatus }) => {
+  const config = statusConfig[status] || { label: status, color: "default" };
+  return <Tag color={config.color}>{config.label}</Tag>;
 };
 
 // ==============================================
-// HELPER FUNCTIONS
+// DRAFT COLUMNS
 // ==============================================
-const getSignerName = (signer?: User | null): string => {
-  if (!signer) return "-";
-  return signer.name || "-";
-};
-
-// ==============================================
-// COLUMN CONFIGURATION FOR DRAFT LETTERS
-// ==============================================
-export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> => [
+export const getDraftColumns = (onSubmit?: (id: number) => void): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
     key: "letterType",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    render: (text) => text || "-",
+  },
   {
     title: "Nomor Surat",
     dataIndex: "letterNumber",
     key: "letterNumber",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    render: (text) => text || "-",
+  },
   {
     title: "Perihal",
     dataIndex: "subject",
     key: "subject",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    ellipsis: true,
+    render: (text) => text || "-",
+  },
   {
-    title: "Tanggal Surat",
+    title: "Tanggal",
     dataIndex: "letterDate",
     key: "letterDate",
-    render: (text: any) => (text ? formatDate(text) : "-"),
-    exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  } as any,
-
-  {
-    title: "Tujuan Surat",
-    dataIndex: "destination",
-    key: "destination",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
-  {
-    title: "Penandatangan 1",
-    dataIndex: "signer1",
-    key: "signer1",
-    render: (_: any, letter: Letter) => getSignerName(letter.signer1),
-    exportRender: (_: any, letter: Letter) => getSignerName(letter.signer1),
-  } as any,
-
-  {
-    title: "Penandatangan 2",
-    dataIndex: "signer2",
-    key: "signer2",
-    render: (_: any, letter: Letter) => getSignerName(letter.signer2),
-    exportRender: (_: any, letter: Letter) => getSignerName(letter.signer2),
-  } as any,
-
-  {
-    title: "Penandatangan 3",
-    dataIndex: "signer3",
-    key: "signer3",
-    render: (_: any, letter: Letter) => getSignerName(letter.signer3),
-    exportRender: (_: any, letter: Letter) => getSignerName(letter.signer3),
-  } as any,
-
+    render: (text) => (text ? formatDate(text) : "-"),
+  },
   {
     title: "Status",
     dataIndex: "status",
     key: "status",
-    render: (status: LetterStatus) => renderStatus(status),
-    exportRender: (status: LetterStatus) => {
-      const statusText: Record<LetterStatus, string> = {
-        draft: "Draft",
-        pending1: "Menunggu Penandatangan 1",
-        pending2: "Menunggu Penandatangan 2",
-        pending3: "Menunggu Penandatangan 3",
-        approved: "Disetujui",
-        published: "Diterbitkan",
-      };
-      return statusText[status] || "Draft";
-    },
-  } as any,
-
+    render: (status: LetterStatus) => <StatusBadge status={status} />,
+  },
   {
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text: any) => (text ? formatDate(text) : "-"),
-    exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  } as any,
-
+    render: (text) => (text ? formatDate(text) : "-"),
+  },
   {
     title: "Aksi",
     key: "actions",
     fixed: "right",
     render: (_, letter) => (
       <div className="flex gap-2 text-xs">
-        <Link href={`letters/drafts/view/${letter.id}`}>
-          <Button size="xs">
-            <EyeOutlined />
+        {letter.status === "draft" && onSubmit && (
+          <Button
+            size="xs"
+            onClick={() => onSubmit(letter.id)}
+            className="bg-blue-500 text-white"
+          >
+            <SendOutlined />
           </Button>
-        </Link>
-
-        <Link href={`letters/drafts/edit/${letter.id}`}>
+        )}
+        <Link href={`/letters/drafts/edit/${letter.id}`}>
           <Button size="xs">
             <EditOutlined />
           </Button>
         </Link>
-
         <Button
           size="xs"
           onClick={() => {
@@ -161,77 +102,53 @@ export const getDraftLetterColumns = (users: User[] = []): ColumnsType<Letter> =
 ];
 
 // ==============================================
-// COLUMN CONFIGURATION FOR APPROVAL LETTERS
+// APPROVAL COLUMNS
 // ==============================================
-export const getApprovalLetterColumns = (users: User[] = []): ColumnsType<Letter> => [
+export const getApprovalColumns = (): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
     key: "letterType",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    render: (text) => text || "-",
+  },
   {
     title: "Nomor Surat",
     dataIndex: "letterNumber",
     key: "letterNumber",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    render: (text) => text || "-",
+  },
   {
     title: "Perihal",
     dataIndex: "subject",
     key: "subject",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    ellipsis: true,
+    render: (text) => text || "-",
+  },
   {
-    title: "Tanggal Surat",
+    title: "Pengirim",
+    key: "createdByName",
+    render: (_: any, record: any) =>
+      record.createdByStaffName || record.createdByName || "-",
+  },
+  {
+    title: "Tanggal",
     dataIndex: "letterDate",
     key: "letterDate",
-    render: (text: any) => (text ? formatDate(text) : "-"),
-    exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  } as any,
-
-  {
-    title: "Dibuat Oleh",
-    dataIndex: "createdBy",
-    key: "createdBy",
-    render: (_: any, letter: Letter) => {
-      // This would need createdBy relation to be populated
-      return "-";
-    },
-    exportRender: () => "-",
-  } as any,
-
+    render: (text) => (text ? formatDate(text) : "-"),
+  },
   {
     title: "Status",
     dataIndex: "status",
     key: "status",
-    render: (status: LetterStatus) => renderStatus(status),
-    exportRender: (status: LetterStatus) => {
-      const statusText: Record<LetterStatus, string> = {
-        draft: "Draft",
-        pending1: "Menunggu Penandatangan 1",
-        pending2: "Menunggu Penandatangan 2",
-        pending3: "Menunggu Penandatangan 3",
-        approved: "Disetujui",
-        published: "Diterbitkan",
-      };
-      return statusText[status] || "Draft";
-    },
-  } as any,
-
+    render: (status: LetterStatus) => <StatusBadge status={status} />,
+  },
   {
     title: "Aksi",
     key: "actions",
     fixed: "right",
     render: (_, letter) => (
       <div className="flex gap-2 text-xs">
-        <Link href={`letters/approvals/view/${letter.id}`}>
+        <Link href={`/letters/approvals/view/${letter.id}`}>
           <Button size="xs">
             <EyeOutlined />
           </Button>
@@ -242,117 +159,69 @@ export const getApprovalLetterColumns = (users: User[] = []): ColumnsType<Letter
 ];
 
 // ==============================================
-// COLUMN CONFIGURATION FOR ARCHIVE LETTERS
+// ARCHIVE COLUMNS
 // ==============================================
-export const getArchiveLetterColumns = (users: User[] = []): ColumnsType<Letter> => [
+export const getArchiveColumns = (): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
     key: "letterType",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    render: (text) => text || "-",
+  },
   {
     title: "Nomor Surat",
     dataIndex: "letterNumber",
     key: "letterNumber",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    render: (text) => text || "-",
+  },
   {
     title: "Perihal",
     dataIndex: "subject",
     key: "subject",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    ellipsis: true,
+    render: (text) => text || "-",
+  },
   {
-    title: "Tanggal Surat",
-    dataIndex: "letterDate",
-    key: "letterDate",
-    render: (text: any) => (text ? formatDate(text) : "-"),
-    exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  } as any,
-
-  {
-    title: "Tujuan Surat",
+    title: "Tujuan",
     dataIndex: "destination",
     key: "destination",
-    render: (text: any) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  } as any,
-
+    ellipsis: true,
+    render: (text) => text || "-",
+  },
   {
-    title: "Penandatangan 1",
-    dataIndex: "signer1",
-    key: "signer1",
-    render: (_: any, letter: Letter) => getSignerName(letter.signer1),
-    exportRender: (_: any, letter: Letter) => getSignerName(letter.signer1),
-  } as any,
-
-  {
-    title: "Penandatangan 2",
-    dataIndex: "signer2",
-    key: "signer2",
-    render: (_: any, letter: Letter) => getSignerName(letter.signer2),
-    exportRender: (_: any, letter: Letter) => getSignerName(letter.signer2),
-  } as any,
-
-  {
-    title: "Penandatangan 3",
-    dataIndex: "signer3",
-    key: "signer3",
-    render: (_: any, letter: Letter) => getSignerName(letter.signer3),
-    exportRender: (_: any, letter: Letter) => getSignerName(letter.signer3),
-  } as any,
-
+    title: "Tanggal",
+    dataIndex: "letterDate",
+    key: "letterDate",
+    render: (text) => (text ? formatDate(text) : "-"),
+  },
   {
     title: "Status",
     dataIndex: "status",
     key: "status",
     filters: [
       { text: "Draft", value: "draft" },
-      { text: "Menunggu Penandatangan 1", value: "pending1" },
-      { text: "Menunggu Penandatangan 2", value: "pending2" },
-      { text: "Menunggu Penandatangan 3", value: "pending3" },
+      { text: "Menunggu TTD 1", value: "pending1" },
+      { text: "Menunggu TTD 2", value: "pending2" },
+      { text: "Menunggu TTD 3", value: "pending3" },
       { text: "Disetujui", value: "approved" },
       { text: "Diterbitkan", value: "published" },
     ],
     onFilter: (value: any, record: Letter) => record.status === value,
-    render: (status: LetterStatus) => renderStatus(status),
-    exportRender: (status: LetterStatus) => {
-      const statusText: Record<LetterStatus, string> = {
-        draft: "Draft",
-        pending1: "Menunggu Penandatangan 1",
-        pending2: "Menunggu Penandatangan 2",
-        pending3: "Menunggu Penandatangan 3",
-        approved: "Disetujui",
-        published: "Diterbitkan",
-      };
-      return statusText[status] || "Draft";
-    },
-  } as any,
-
+    render: (status: LetterStatus) => <StatusBadge status={status} />,
+  },
   {
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    sorter: (a: Letter, b: Letter) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    defaultSortOrder: "descend",
-    render: (text: any) => (text ? formatDate(text) : "-"),
-    exportRender: (value: string) => (value ? formatDate(value) : "-"),
-  } as any,
-
+    render: (text) => (text ? formatDate(text) : "-"),
+  },
   {
     title: "Aksi",
     key: "actions",
     fixed: "right",
     render: (_, letter) => (
       <div className="flex gap-2 text-xs">
-        <Link href={`letters/archives/view/${letter.id}`}>
+        <Link href={`/letters/archives/view/${letter.id}`}>
           <Button size="xs">
             <EyeOutlined />
           </Button>
