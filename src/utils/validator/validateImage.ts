@@ -9,7 +9,7 @@ export const validateImage = (
     return "Format file tidak valid";
   }
 
-  if (file.size > opts.maxSizeMB * 1024 * 1024) {
+  if (file.size > opts.maxSizeMB * 5120 * 5120) {
     return `Ukuran maksimal ${opts.maxSizeMB}MB`;
   }
 

@@ -59,6 +59,7 @@ export default function LetterApprovalView() {
   const { notify } = useNotify();
   const router = useRouter();
   const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
 
   useEffect(() => {
     const init = async () => {
@@ -354,29 +355,31 @@ export default function LetterApprovalView() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
-        <Button
-          onClick={handleApproveClick}
-          disabled={actionLoading}
-          className="bg-green-600 text-white min-w-[120px]"
-        >
-          Setujui
-        </Button>
-        <Button
-          onClick={() => setRejectModalOpen(true)}
-          disabled={actionLoading}
-          className="bg-yellow-500 text-white min-w-[120px]"
-        >
-          Revisi
-        </Button>
-        <Button
-          onClick={() => setCancelModalOpen(true)}
-          disabled={actionLoading}
-          className="bg-red-600 text-white min-w-[120px]"
-        >
-          Batalkan
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
+          <Button
+            onClick={handleApproveClick}
+            disabled={actionLoading}
+            className="bg-green-600 text-white min-w-[120px]"
+          >
+            Setujui
+          </Button>
+          <Button
+            onClick={() => setRejectModalOpen(true)}
+            disabled={actionLoading}
+            className="bg-yellow-500 text-white min-w-[120px]"
+          >
+            Revisi
+          </Button>
+          <Button
+            onClick={() => setCancelModalOpen(true)}
+            disabled={actionLoading}
+            className="bg-red-600 text-white min-w-[120px]"
+          >
+            Batalkan
+          </Button>
+        </div>
+      )}
 
       {/* Approve Confirmation Modal (for non-PDF documents) */}
       <Modal

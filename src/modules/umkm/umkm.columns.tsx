@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
+export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Umkm>[] => [
   {
     title: "Nama Usaha",
     dataIndex: "businessName",
@@ -167,22 +167,26 @@ export const getUmkmColumns = (regions: Region[]): TableColumn<Umkm>[] => [
           </Button>
         </Link>
 
-        <Link href={`umkm/edit/${umkm.id}`}>
-          <Button size="xs">
-            <EditOutlined />
-          </Button>
-        </Link>
+        {role !== "staff" && (
+          <Link href={`umkm/edit/${umkm.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!umkm.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            umkm._openDeleteModal(umkm.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!umkm.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              umkm._openDeleteModal(umkm.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

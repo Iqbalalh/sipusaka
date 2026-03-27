@@ -10,7 +10,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getCategoryColumns = (): TableColumn<Category>[] => [
+export const getCategoryColumns = (role?: string): TableColumn<Category>[] => [
   {
     title: "ID",
     dataIndex: "id",
@@ -78,22 +78,26 @@ export const getCategoryColumns = (): TableColumn<Category>[] => [
     fixed: "right",
     render: (_, category) => (
       <div className="flex gap-2 text-xs">
-        <Link href={`categories/edit/${category.id}`}>
-          <Button size="xs">
-            <EditOutlined />
-          </Button>
-        </Link>
+        {role !== "staff" && (
+          <Link href={`categories/edit/${category.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!category.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            category._openDeleteModal(category.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!category.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              category._openDeleteModal(category.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

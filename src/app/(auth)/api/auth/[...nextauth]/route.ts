@@ -7,9 +7,10 @@ interface LoginResponse {
     id: string;
     username: string;
     email?: string;
-    staff_name?: string;
+    staffName?: string;
     role?: string;
-    staff_pict?: string;
+    staffPict?: string;
+    staffPictKey?: string;
   };
   token: string;
   message?: string;
@@ -42,9 +43,10 @@ const authOptions: NextAuthOptions = {
             id: data.user.id,
             username: data.user.username,
             email: data.user.email,
-            staffName: data.user.staff_name,
+            staffName: data.user.staffName,
             role: data.user.role,
-            staffPict: data.user.staff_pict,
+            staffPict: data.user.staffPict,
+            staffPictKey: data.user.staffPictKey,
             token: data.token,
           };
         } catch (error) {
@@ -57,6 +59,10 @@ const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/signin",
   },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -67,6 +73,7 @@ const authOptions: NextAuthOptions = {
         token.staffName = user.staffName;
         token.role = user.role;
         token.staffPict = user.staffPict;
+        token.staffPictKey = user.staffPictKey;
       }
       return token;
     },
@@ -79,6 +86,7 @@ const authOptions: NextAuthOptions = {
         session.user.staffName = token.staffName;
         session.user.role = token.role;
         session.user.staffPict = token.staffPict;
+        session.user.staffPictKey = token.staffPictKey;
         session.user.token = token.accessToken;
       }
       return session;

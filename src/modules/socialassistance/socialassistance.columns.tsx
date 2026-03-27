@@ -96,7 +96,7 @@ const getColumnSearchProps = (dataIndex: string): any => ({
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getSocialAssistanceColumns = (): ColumnsType<SocialAssistance> => [
+export const getSocialAssistanceColumns = (role?: string): ColumnsType<SocialAssistance> => [
   {
     title: "NIP/NIPP",
     dataIndex: "nipNipp",
@@ -192,21 +192,25 @@ export const getSocialAssistanceColumns = (): ColumnsType<SocialAssistance> => [
             <EyeOutlined />
           </Button>
         </Link>
-        <Link href={`socialassistance/edit/${record.id}`}>
-          <Button size="xs">
-            <EditOutlined />
+        {role !== "staff" && (
+          <Link href={`socialassistance/edit/${record.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!record.id) return;
+              // @ts-ignore - _openDeleteModal is injected by table
+              record._openDeleteModal(record.id);
+            }}
+          >
+            <DeleteOutlined />
           </Button>
-        </Link>
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!record.id) return;
-            // @ts-ignore - _openDeleteModal is injected by table
-            record._openDeleteModal(record.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        )}
       </div>
     ),
   },

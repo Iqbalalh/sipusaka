@@ -1,14 +1,31 @@
 "use client";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { signOut, useSession } from "next-auth/react"; 
+import { signOut, useSession } from "next-auth/react";
+import { API_AUTH_AVATAR } from "@/constants/endpoint";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const router = useRouter();
   const { data } = useSession();
+
+  // Fetch fresh presigned URL for avatar on mount / session change
+  useEffect(() => {
+    const key = data?.user?.staffPictKey;
+    if (!key) {
+      setAvatarUrl(null);
+      return;
+    }
+    fetch(`${API_AUTH_AVATAR}?key=${encodeURIComponent(key)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.url) setAvatarUrl(json.url);
+      })
+      .catch(() => setAvatarUrl(null));
+  }, [data?.user?.staffPictKey]);
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     e.stopPropagation();
@@ -21,7 +38,7 @@ export default function UserDropdown() {
 
   const handleSignOut = () => {
     closeDropdown();
-    signOut(); 
+    signOut({ callbackUrl: "/signin" });
   };
 
   const handleChangeCredentials = () => {
@@ -39,12 +56,12 @@ export default function UserDropdown() {
           <Image
             width={44}
             height={44}
-            src={data?.user?.staffPict || "/images/user/alt-user.png"}
+            src={avatarUrl || "/images/user/alt-user.png"}
             alt="User"
           />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">{data?.user?.username}</span>
+        <span className="block mr-1 font-medium text-theme-sm">{data?.user?.staffName || data?.user?.username}</span>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${

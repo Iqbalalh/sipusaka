@@ -3,6 +3,7 @@
 // Hooks
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // Components
 import { Spin, Modal, Form, Input, DatePicker, Upload, message, Image } from "antd";
@@ -51,6 +52,8 @@ export default function ChildrenView() {
   // Data state
   const [data, setData] = useState<Children | null>(null);
   const { id } = useParams<{ id: string }>();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
 
   // Page State
   const [loading, setLoading] = useState(true);
@@ -309,11 +312,13 @@ export default function ChildrenView() {
             >
               Print
             </Button>
-            <Link href={`/children/edit/${data?.id}`}>
-              <Button variant="outline" size="sm">
-                Edit
-              </Button>
-            </Link>
+            {isAdmin && (
+              <Link href={`/children/edit/${data?.id}`}>
+                <Button variant="outline" size="sm">
+                  Edit
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -514,10 +519,10 @@ export default function ChildrenView() {
       <ChildAssistanceSection
         assistance={assistance}
         assistanceLoading={assistanceLoading}
-        onCreateAssistance={handleCreateAssistance}
-        onEditAssistance={handleEditAssistance}
-        onDeleteAssistance={handleDeleteAssistance}
-        onDeleteAssistanceDocument={handleDeleteDocument}
+        onCreateAssistance={isAdmin ? handleCreateAssistance : undefined}
+        onEditAssistance={isAdmin ? handleEditAssistance : undefined}
+        onDeleteAssistance={isAdmin ? handleDeleteAssistance : undefined}
+        onDeleteAssistanceDocument={isAdmin ? handleDeleteDocument : undefined}
         deletingAssistanceId={deletingAssistanceId}
       />
 

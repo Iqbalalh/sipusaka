@@ -8,9 +8,9 @@ import type { ChildAssistance, ChildAssistanceDoc } from "@/utils/services/child
 interface ChildAssistanceSectionProps {
   assistance: ChildAssistance[];
   assistanceLoading: boolean;
-  onCreateAssistance: () => void;
-  onEditAssistance: (assist: ChildAssistance) => void;
-  onDeleteAssistance: (assistId: number) => void;
+  onCreateAssistance?: () => void;
+  onEditAssistance?: (assist: ChildAssistance) => void;
+  onDeleteAssistance?: (assistId: number) => void;
   onDeleteAssistanceDocument?: (assistId: number, docId: number) => void;
   deletingAssistanceId: number | null;
 }
@@ -34,13 +34,15 @@ export default function ChildAssistanceSection({
           <h4 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
             Bantuan Anak ({assistance.length})
           </h4>
-          <Button
-            onClick={onCreateAssistance}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <PlusOutlined className="mr-2" />
-            Tambah Bantuan
-          </Button>
+          {onCreateAssistance && (
+            <Button
+              onClick={onCreateAssistance}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              <PlusOutlined className="mr-2" />
+              Tambah Bantuan
+            </Button>
+          )}
         </div>
 
         {assistanceLoading ? (
@@ -67,17 +69,20 @@ export default function ChildAssistanceSection({
                     </span>
                   </div>
                   <Space size="small">
-                    <Button size="small" variant="outlined" onClick={() => onEditAssistance(assist)}>
-                      <EditOutlined className="mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      className="text-red-600 hover:text-red-700 hover:border-red-600"
-                      onClick={() => onDeleteAssistance(assist.id)}
-                      disabled={deletingAssistanceId === assist.id}
-                    >
+                    {onEditAssistance && (
+                      <Button size="small" variant="outlined" onClick={() => onEditAssistance(assist)}>
+                        <EditOutlined className="mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                    {onDeleteAssistance && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        className="text-red-600 hover:text-red-700 hover:border-red-600"
+                        onClick={() => onDeleteAssistance(assist.id)}
+                        disabled={deletingAssistanceId === assist.id}
+                      >
                       {deletingAssistanceId === assist.id ? (
                         <>
                           <Spin size="small" className="mr-1" />
@@ -90,6 +95,7 @@ export default function ChildAssistanceSection({
                         </>
                       )}
                     </Button>
+                    )}
                   </Space>
                 </div>
 

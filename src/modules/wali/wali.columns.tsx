@@ -11,7 +11,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getWaliColumns = (): TableColumn<Wali>[] => [
+export const getWaliColumns = (role?: string): TableColumn<Wali>[] => [
   {
     title: "Foto",
     dataIndex: "waliPict",
@@ -156,22 +156,26 @@ export const getWaliColumns = (): TableColumn<Wali>[] => [
           </Button>
         </Link>
 
-        <Link href={`wali/edit/${wali.id}`}>
-          <Button size="xs">
-            <EditOutlined />
-          </Button>
-        </Link>
+        {role !== "staff" && (
+          <Link href={`wali/edit/${wali.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!wali.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            wali._openDeleteModal(wali.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!wali.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              wali._openDeleteModal(wali.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

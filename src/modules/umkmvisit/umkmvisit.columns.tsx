@@ -90,7 +90,7 @@ const getColumnSearchProps = (dataIndex: string): any => ({
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getUmkmVisitColumns = (): ColumnsType<UmkmVisit> => [
+export const getUmkmVisitColumns = (role?: string): ColumnsType<UmkmVisit> => [
   {
     title: "Kunjungan ke-",
     dataIndex: "visitNumber",
@@ -204,16 +204,18 @@ export const getUmkmVisitColumns = (): ColumnsType<UmkmVisit> => [
     width: 100,
     render: (_, record) => (
       <div className="flex gap-2 text-xs">
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!record.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            record._openDeleteModal(record.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!record.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              record._openDeleteModal(record.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

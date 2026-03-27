@@ -1,9 +1,10 @@
-// const baseUrl = "http://localhost:9000";
-const baseUrl = "https://api.yayasanpusakakai.org";
+const baseUrl = "http://localhost:9000";
+// const baseUrl = "https://api.yayasanpusakakai.org";
 
 // Auth
 export const API_AUTH_LOGIN = `${baseUrl}/api/auth/login`;
 export const API_AUTH_CHANGE_CREDENTIALS = `${baseUrl}/api/auth/change-credentials`;
+export const API_AUTH_AVATAR = `${baseUrl}/api/auth/avatar`;
 
 // Homes
 export const API_HOME = `${baseUrl}/api/homes`;

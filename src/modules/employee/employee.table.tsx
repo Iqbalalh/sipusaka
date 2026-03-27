@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -21,6 +22,9 @@ import { getEmployeeColumns } from "./employee.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
 export default function EmployeeTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   // State for regions (needed for column filters)
   const [regions, setRegions] = useState<Region[]>([]);
   const [showProgress, setShowProgress] = useState(false);
@@ -41,7 +45,7 @@ export default function EmployeeTable() {
   }, []);
 
   // Generate columns with regions
-  const columns = getEmployeeColumns(regions);
+  const columns = getEmployeeColumns(regions, session?.user?.role);
 
   // Custom export function with progress
   const handleExportWithProgress = async (filteredData: Employee[]) => {
@@ -96,7 +100,7 @@ export default function EmployeeTable() {
 
       <DataTable<Employee>
         fetchData={getEmployees}
-        deleteItem={deleteEmployee}
+        deleteItem={isAdmin ? deleteEmployee : undefined}
         columns={columns}
         rowKey="id"
         exportConfig={{
@@ -105,7 +109,7 @@ export default function EmployeeTable() {
         }}
         onExport={handleExportWithProgress}
         title="Jumlah Data"
-        createPath="/employee/create"
+        createPath={isAdmin ? "/employee/create" : undefined}
         pageSize={50}
         scrollY={500}
         deleteConfirmTitle="Konfirmasi Hapus"

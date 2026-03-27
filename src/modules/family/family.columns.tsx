@@ -95,7 +95,7 @@ const getColumnSearchProps = (dataIndex: string): any => ({
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
+export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<HomeTable> => [
   {
     title: "Pegawai",
     dataIndex: "employeeName",
@@ -235,21 +235,25 @@ export const getFamilyColumns = (regions: Region[]): ColumnsType<HomeTable> => [
             <EyeOutlined />
           </Button>
         </Link>
-        <Link href={`family/edit/${home.id}`}>
-          <Button size="xs">
-            <EditOutlined />
+        {role !== "staff" && (
+          <Link href={`family/edit/${home.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!home.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              home._openDeleteModal(home.id);
+            }}
+          >
+            <DeleteOutlined />
           </Button>
-        </Link>
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!home.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            home._openDeleteModal(home.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        )}
       </div>
     ),
   },

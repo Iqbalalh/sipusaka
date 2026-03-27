@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getGalleryColumns = (regions: Region[] = []): ColumnsType<Gallery> => [
+export const getGalleryColumns = (regions: Region[] = [], role?: string): ColumnsType<Gallery> => [
   {
     title: "Gambar",
     dataIndex: "s3Path",
@@ -137,22 +137,26 @@ export const getGalleryColumns = (regions: Region[] = []): ColumnsType<Gallery> 
           </Button>
         </Link>
 
-        <Link href={`galleries/edit/${gallery.id}`}>
-          <Button size="xs">
-            <EditOutlined />
-          </Button>
-        </Link>
+        {role !== "staff" && (
+          <Link href={`galleries/edit/${gallery.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!gallery.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            gallery._openDeleteModal(gallery.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!gallery.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              gallery._openDeleteModal(gallery.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

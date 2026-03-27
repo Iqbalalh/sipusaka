@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -18,11 +19,14 @@ import { getWaliColumns } from "./wali.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
 export default function WaliTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
 
   // Generate columns
-  const columns = getWaliColumns();
+  const columns = getWaliColumns(session?.user?.role);
 
   // Custom export function with progress
   const handleExportWithProgress = async (filteredData: Wali[]) => {
@@ -77,7 +81,7 @@ export default function WaliTable() {
 
       <DataTable<Wali>
         fetchData={getWalis}
-        deleteItem={deleteWali}
+        deleteItem={isAdmin ? deleteWali : undefined}
         columns={columns}
         rowKey="id"
         exportConfig={{
@@ -86,7 +90,7 @@ export default function WaliTable() {
         }}
         onExport={handleExportWithProgress}
         title="Jumlah Data"
-        createPath="/wali/create"
+        createPath={isAdmin ? "/wali/create" : undefined}
         pageSize={50}
         scrollY={500}
         deleteConfirmTitle="Konfirmasi Hapus"

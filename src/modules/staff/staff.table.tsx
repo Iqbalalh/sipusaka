@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -18,11 +19,14 @@ import { getStaffColumns } from "./staff.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
 export default function StaffTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
 
   // Generate columns
-  const columns = getStaffColumns();
+  const columns = getStaffColumns(session?.user?.role);
 
   // Custom export function with progress
   const handleExportWithProgress = async (filteredData: Staff[]) => {
@@ -77,7 +81,7 @@ export default function StaffTable() {
 
       <DataTable<Staff>
         fetchData={getStaffs}
-        deleteItem={deleteStaff}
+        deleteItem={isAdmin ? deleteStaff : undefined}
         columns={columns}
         rowKey="id"
         exportConfig={{
@@ -86,7 +90,7 @@ export default function StaffTable() {
         }}
         onExport={handleExportWithProgress}
         title="Jumlah Data"
-        createPath="/staff/create"
+        createPath={isAdmin ? "/staff/create" : undefined}
         pageSize={50}
         scrollY={500}
         deleteConfirmTitle="Konfirmasi Hapus"

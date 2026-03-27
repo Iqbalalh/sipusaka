@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 import DataTable from "@/components/custom/table/DataTable";
 import { Progress } from "antd";
@@ -10,10 +11,13 @@ import { getCategoryColumns } from "./categories.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
 export default function CategoriesTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const columns = getCategoryColumns();
+  const columns = getCategoryColumns(session?.user?.role);
 
   // Custom export function with progress
   const handleExportWithProgress = async (filteredData: Category[]) => {
@@ -68,7 +72,7 @@ export default function CategoriesTable() {
 
       <DataTable<Category>
         fetchData={getCategories}
-        deleteItem={deleteCategory}
+        deleteItem={isAdmin ? deleteCategory : undefined}
         columns={columns}
         rowKey="id"
         exportConfig={{
@@ -77,7 +81,7 @@ export default function CategoriesTable() {
         }}
         onExport={handleExportWithProgress}
         title="Jumlah Data"
-        createPath="/categories/create"
+        createPath={isAdmin ? "/categories/create" : undefined}
         pageSize={20}
         scrollY={500}
         deleteConfirmTitle="Konfirmasi Hapus"

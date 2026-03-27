@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { Modal } from "antd";
 import DataTable from "@/components/custom/table/DataTable";
 import { Letter } from "@/types/models/letter";
@@ -9,6 +10,9 @@ import { getDraftColumns } from "./letters.columns";
 import { useNotify } from "@/context/NotificationContext";
 
 export default function DraftsTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const { notify } = useNotify();
   const [refreshKey, setRefreshKey] = useState(0);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
@@ -39,18 +43,18 @@ export default function DraftsTable() {
     }
   };
 
-  const columns = useMemo(() => getDraftColumns(openSubmitModal), [openSubmitModal]);
+  const columns = useMemo(() => getDraftColumns(openSubmitModal, session?.user?.role), [openSubmitModal, session?.user?.role]);
 
   return (
     <>
       <DataTable<Letter>
         key={refreshKey}
         fetchData={getDraftLetters}
-        deleteItem={deleteLetter}
+        deleteItem={isAdmin ? deleteLetter : undefined}
         columns={columns}
         rowKey="id"
         title="Draft Surat"
-        createPath="/letters/drafts/create"
+        createPath={isAdmin ? "/letters/drafts/create" : undefined}
         deleteConfirmTitle="Hapus Surat"
         deleteConfirmMessage="Apakah Anda yakin ingin menghapus surat ini?"
         deleteSuccessMessage="Surat berhasil dihapus"

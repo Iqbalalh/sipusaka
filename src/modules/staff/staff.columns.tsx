@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getStaffColumns = (): TableColumn<Staff>[] => [
+export const getStaffColumns = (role?: string): TableColumn<Staff>[] => [
   {
     title: "Foto",
     dataIndex: "staffPict",
@@ -145,22 +145,26 @@ export const getStaffColumns = (): TableColumn<Staff>[] => [
           </Button>
         </Link>
 
-        <Link href={`staff/edit/${staff.id}`}>
-          <Button size="xs">
-            <EditOutlined />
-          </Button>
-        </Link>
+        {role !== "staff" && (
+          <Link href={`staff/edit/${staff.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!staff.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            staff._openDeleteModal(staff.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!staff.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              staff._openDeleteModal(staff.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

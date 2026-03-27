@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spin, Modal, Input, Select, Progress, Space } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, LeftOutlined, RightOutlined, DoubleLeftOutlined, DoubleRightOutlined, DownloadOutlined } from "@ant-design/icons";
@@ -193,6 +194,9 @@ const exportChildAssistanceToExcel = async (
 };
 
 export default function ChildAssistanceTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const { notify } = useNotify();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -665,17 +669,19 @@ export default function ChildAssistanceTable() {
                         >
                           <EditOutlined />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (!record.id) return;
-                            setDeleteId(record.id);
-                            setIsDeleteModalOpen(true);
-                          }}
-                        >
-                          <DeleteOutlined />
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (!record.id) return;
+                              setDeleteId(record.id);
+                              setIsDeleteModalOpen(true);
+                            }}
+                          >
+                            <DeleteOutlined />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

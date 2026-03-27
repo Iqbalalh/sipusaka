@@ -14,7 +14,8 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
 export const getEmployeeColumns = (
-  regions: Region[]
+  regions: Region[],
+  role?: string
 ): ColumnsType<Employee> => [
   {
     title: "Foto",
@@ -180,22 +181,26 @@ export const getEmployeeColumns = (
           </Button>
         </Link>
 
-        <Link href={`employee/edit/${emp.id}`}>
-          <Button size="xs">
-            <EditOutlined />
-          </Button>
-        </Link>
+        {role !== "staff" && (
+          <Link href={`employee/edit/${emp.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!emp.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            emp._openDeleteModal(emp.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!emp.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              emp._openDeleteModal(emp.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

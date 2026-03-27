@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -20,6 +21,9 @@ import { getPartnerColumns } from "./partner.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
 export default function PartnerTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   // State for regions (needed for column filters)
   const [regions, setRegions] = useState<Region[]>([]);
   const [showProgress, setShowProgress] = useState(false);
@@ -40,7 +44,7 @@ export default function PartnerTable() {
   }, []);
 
   // Generate columns with regions
-  const columns = getPartnerColumns(regions);
+  const columns = getPartnerColumns(regions, session?.user?.role);
 
   // Custom export function with progress
   const handleExportWithProgress = async (filteredData: Partner[]) => {
@@ -95,7 +99,7 @@ export default function PartnerTable() {
 
       <DataTable<Partner>
         fetchData={getPartners}
-        deleteItem={deletePartner}
+        deleteItem={isAdmin ? deletePartner : undefined}
         columns={columns}
         rowKey="id"
         exportConfig={{
@@ -104,7 +108,7 @@ export default function PartnerTable() {
         }}
         onExport={handleExportWithProgress}
         title="Jumlah Data"
-        createPath="/partner/create"
+        createPath={isAdmin ? "/partner/create" : undefined}
         pageSize={50}
         scrollY={500}
         deleteConfirmTitle="Konfirmasi Hapus"

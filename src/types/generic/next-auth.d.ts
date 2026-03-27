@@ -9,6 +9,7 @@ declare module "next-auth" {
       staffName?: string;
       role?: string;
       staffPict?: string;
+      staffPictKey?: string;
       token?: string;
     } & DefaultSession["user"];
   }
@@ -20,6 +21,7 @@ declare module "next-auth" {
     staffName?: string;
     role?: string;
     staffPict?: string;
+    staffPictKey?: string;
     token?: string;
   }
 }
@@ -32,6 +34,7 @@ declare module "next-auth/jwt" {
     staffName?: string;
     role?: string;
     staffPict?: string;
+    staffPictKey?: string;
     accessToken?: string;
   }
 }

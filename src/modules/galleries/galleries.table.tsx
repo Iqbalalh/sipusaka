@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Spin, Modal, Input, Progress } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
@@ -144,6 +145,9 @@ const exportGalleryToExcel = async (
 };
 
 export default function GalleriesTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const { notify } = useNotify();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -316,7 +320,7 @@ export default function GalleriesTable() {
   };
 
   // Generate columns with regions
-  const columns = getGalleryColumns(regions);
+  const columns = getGalleryColumns(regions, session?.user?.role);
 
   // ==========================
   // LOADING STATE
@@ -400,11 +404,13 @@ export default function GalleriesTable() {
             <DownloadOutlined className="mr-2" />
             Export Excel
           </Button>
-          <Link href="/galleries/create">
-            <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
-              <PlusOutlined />
-            </Button>
-          </Link>
+          {isAdmin && (
+            <Link href="/galleries/create">
+              <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <PlusOutlined />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -426,17 +432,19 @@ export default function GalleriesTable() {
                       <EditOutlined />
                     </Button>
                   </Link>
-                  <Button
-                    size="xs"
-                    onClick={() => {
-                      if (gallery.id) {
-                        setDeleteId(gallery.id);
-                        setIsDeleteModalOpen(true);
-                      }
-                    }}
-                  >
-                    <DeleteOutlined />
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      size="xs"
+                      onClick={() => {
+                        if (gallery.id) {
+                          setDeleteId(gallery.id);
+                          setIsDeleteModalOpen(true);
+                        }
+                      }}
+                    >
+                      <DeleteOutlined />
+                    </Button>
+                  )}
                 </div>
               ),
             };

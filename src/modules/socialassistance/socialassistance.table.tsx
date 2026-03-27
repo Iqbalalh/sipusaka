@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Spin, Modal, Input, Progress } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
@@ -197,6 +198,9 @@ const exportSocialAssistanceToExcel = async (
 };
 
 export default function SocialAssistanceTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const { notify } = useNotify();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -329,7 +333,7 @@ export default function SocialAssistanceTable() {
   };
 
   // Generate columns
-  const columns = getSocialAssistanceColumns();
+  const columns = getSocialAssistanceColumns(session?.user?.role);
 
   // ==========================
   // LOADING STATE
@@ -429,11 +433,13 @@ export default function SocialAssistanceTable() {
             <DownloadOutlined className="mr-2" />
             Export Excel
           </Button>
-          <Link href="/socialassistance/create">
-            <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
-              <PlusOutlined />
-            </Button>
-          </Link>
+          {isAdmin && (
+            <Link href="/socialassistance/create">
+              <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <PlusOutlined />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -455,17 +461,19 @@ export default function SocialAssistanceTable() {
                       <EditOutlined />
                     </Button>
                   </Link>
-                  <Button
-                    size="xs"
-                    onClick={() => {
-                      if (record.id) {
-                        setDeleteId(record.id);
-                        setIsDeleteModalOpen(true);
-                      }
-                    }}
-                  >
-                    <DeleteOutlined />
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      size="xs"
+                      onClick={() => {
+                        if (record.id) {
+                          setDeleteId(record.id);
+                          setIsDeleteModalOpen(true);
+                        }
+                      }}
+                    >
+                      <DeleteOutlined />
+                    </Button>
+                  )}
                 </div>
               ),
             };

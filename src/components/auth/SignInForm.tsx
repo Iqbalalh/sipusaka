@@ -6,11 +6,13 @@ import Button from "../ui/button/Button";
 import Link from "next/link";
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +34,7 @@ export default function SignInForm() {
       if (res?.error) {
         setErrorMsg("Username atau password salah.");
       } else {
-        router.push("/");
+        router.replace(callbackUrl);
       }
     } catch (err) {
       console.error("Login error:", err);

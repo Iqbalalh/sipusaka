@@ -170,7 +170,7 @@ const DateFilter = ({
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getChildAssistanceColumns = (router: any): ColumnsType<ChildAssistance> => [
+export const getChildAssistanceColumns = (router: any, role?: string): ColumnsType<ChildAssistance> => [
   {
     title: "Bantuan Ke-",
     dataIndex: "assistanceNumber",
@@ -270,26 +270,30 @@ export const getChildAssistanceColumns = (router: any): ColumnsType<ChildAssista
     width: 100,
     render: (_, record) => (
       <div className="flex gap-2 text-xs">
-        <Button
-          type="default"
-          size="small"
-          icon={<EditOutlined />}
-          onClick={() => {
-            if (record.childrenId) {
-              router.push(`/children/view/${record.childrenId}`);
-            }
-          }}
-        />
-        <ButtonUI
-          size="xs"
-          onClick={() => {
-            if (!record.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            record._openDeleteModal(record.id);
-          }}
-        >
-          <DeleteOutlined />
-        </ButtonUI>
+        {role !== "staff" && (
+          <Button
+            type="default"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => {
+              if (record.childrenId) {
+                router.push(`/children/view/${record.childrenId}`);
+              }
+            }}
+          />
+        )}
+        {role !== "staff" && (
+          <ButtonUI
+            size="xs"
+            onClick={() => {
+              if (!record.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              record._openDeleteModal(record.id);
+            }}
+          >
+            <DeleteOutlined />
+          </ButtonUI>
+        )}
       </div>
     ),
   },

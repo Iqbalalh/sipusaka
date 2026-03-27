@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Spin, Flex, Tag, Table, Modal, Image } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import dynamic from "next/dynamic";
@@ -37,6 +38,8 @@ const isPdfDocument = (url?: string | null, path?: string | null): boolean => {
 };
 
 export default function LetterView() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
   const [data, setData] = useState<Letter | null>(null);
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
@@ -70,15 +73,52 @@ export default function LetterView() {
       data?.documentUrl &&
       isPdfDocument(data.documentUrl, data.documentPath)
     ) {
-      // Generate QR preview for placement mode
+      // Generate QR preview with logo overlay for placement mode
       try {
         const previewUrl = `${window.location.origin}/verify/preview`;
-        const dataUrl = await QRCode.toDataURL(previewUrl, {
+        const qrDataUrl = await QRCode.toDataURL(previewUrl, {
           width: 400,
           margin: 1,
-          errorCorrectionLevel: "M",
+          errorCorrectionLevel: "H", // High correction to survive logo overlay
         });
-        setQrDataUrl(dataUrl);
+
+        // Overlay YPKAI logo in center
+        const canvas = document.createElement("canvas");
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext("2d")!;
+
+        const qrImg = new window.Image();
+        qrImg.src = qrDataUrl;
+        await new Promise<void>((resolve) => { qrImg.onload = () => resolve(); });
+        ctx.drawImage(qrImg, 0, 0, 400, 400);
+
+        // Load logo
+        const logoImg = new window.Image();
+        logoImg.src = "/images/logo/logo-ypkai.png";
+        await new Promise<void>((resolve, reject) => {
+          logoImg.onload = () => resolve();
+          logoImg.onerror = () => reject();
+        });
+
+        const logoSize = 100; // 25% of 400
+        const logoPad = 10;
+        const logoOffset = (400 - logoSize) / 2;
+
+        // White background behind logo
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(logoOffset, logoOffset, logoSize, logoSize);
+
+        // Draw logo
+        ctx.drawImage(
+          logoImg,
+          logoOffset + logoPad,
+          logoOffset + logoPad,
+          logoSize - logoPad * 2,
+          logoSize - logoPad * 2
+        );
+
+        setQrDataUrl(canvas.toDataURL("image/png"));
         setQrMode(true);
       } catch {
         // Fallback: simple publish without QR placement
@@ -231,7 +271,7 @@ export default function LetterView() {
           Detail Surat
         </h4>
         <div className="flex gap-2">
-          {data.status === "approved" && (
+          {isAdmin && data.status === "approved" && (
             <Button
               onClick={handlePublishClick}
               disabled={publishLoading}

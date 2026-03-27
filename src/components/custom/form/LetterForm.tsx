@@ -224,7 +224,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       {revisionNote && (
         <div className="mb-6">
           <Alert
-            message="Catatan Revisi"
+            title="Catatan Revisi"
             description={revisionNote}
             type="warning"
             showIcon

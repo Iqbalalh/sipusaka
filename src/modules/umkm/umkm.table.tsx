@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -20,6 +21,9 @@ import { getUmkmColumns } from "./umkm.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
 export default function UmkmTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   // State for regions (needed for column filters)
   const [regions, setRegions] = useState<Region[]>([]);
   const [showProgress, setShowProgress] = useState(false);
@@ -40,7 +44,7 @@ export default function UmkmTable() {
   }, []);
 
   // Generate columns with regions
-  const columns = getUmkmColumns(regions);
+  const columns = getUmkmColumns(regions, session?.user?.role);
 
   // Custom export function with progress
   const handleExportWithProgress = async (filteredData: Umkm[]) => {
@@ -95,7 +99,7 @@ export default function UmkmTable() {
 
       <DataTable<Umkm>
         fetchData={getUmkmList}
-        deleteItem={deleteUmkm}
+        deleteItem={isAdmin ? deleteUmkm : undefined}
         columns={columns}
         rowKey="id"
         exportConfig={{
@@ -104,7 +108,7 @@ export default function UmkmTable() {
         }}
         onExport={handleExportWithProgress}
         title="Jumlah Data"
-        createPath="/umkm/create"
+        createPath={isAdmin ? "/umkm/create" : undefined}
         pageSize={50}
         scrollY={500}
         deleteConfirmTitle="Konfirmasi Hapus"

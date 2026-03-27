@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
@@ -187,10 +188,13 @@ const fetchUmkmVisitData = async (): Promise<UmkmVisit[]> => {
 };
 
 export default function UmkmVisitTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const columns = getUmkmVisitColumns();
+  const columns = getUmkmVisitColumns(session?.user?.role);
 
   return (
     <div>
@@ -210,7 +214,7 @@ export default function UmkmVisitTable() {
 
       <DataTable<UmkmVisit>
         fetchData={fetchUmkmVisitData}
-        deleteItem={deleteUmkmVisit}
+        deleteItem={isAdmin ? deleteUmkmVisit : undefined}
         columns={columns}
         rowKey="id"
         title="Jumlah Data"

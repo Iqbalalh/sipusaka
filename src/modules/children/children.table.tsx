@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Spin, Modal, Input, Progress, Select, Form } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, FilterOutlined, PlusOutlined } from "@ant-design/icons";
@@ -221,6 +222,9 @@ const exportChildrenToExcel = async (
 };
 
 export default function ChildrenTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
   const { notify } = useNotify();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -402,7 +406,7 @@ export default function ChildrenTable() {
   };
 
   const columns = useMemo(() => {
-    const baseColumns = getChildrenColumns(regions);
+    const baseColumns = getChildrenColumns(regions, session?.user?.role);
     return baseColumns.map((col) => {
       if (col.key === "actions" && col.render) {
         const originalRender = col.render;
@@ -419,7 +423,7 @@ export default function ChildrenTable() {
       }
       return col;
     });
-  }, [regions]);
+  }, [regions, session?.user?.role]);
 
   // ==========================
   // LOADING STATE
@@ -504,11 +508,13 @@ export default function ChildrenTable() {
             <DownloadOutlined className="mr-2" />
             Export Excel
           </Button>
-          <Link href="/children/create">
-            <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
-              <PlusOutlined />
-            </Button>
-          </Link>
+          {isAdmin && (
+            <Link href="/children/create">
+              <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <PlusOutlined />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

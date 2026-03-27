@@ -28,7 +28,7 @@ const StatusBadge = ({ status }: { status: LetterStatus }) => {
 // ==============================================
 // DRAFT COLUMNS
 // ==============================================
-export const getDraftColumns = (onSubmit?: (id: number) => void): ColumnsType<Letter> => [
+export const getDraftColumns = (onSubmit?: (id: number) => void, role?: string): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
@@ -58,7 +58,24 @@ export const getDraftColumns = (onSubmit?: (id: number) => void): ColumnsType<Le
     title: "Status",
     dataIndex: "status",
     key: "status",
-    render: (status: LetterStatus) => <StatusBadge status={status} />,
+    render: (status: LetterStatus, record: Letter) =>
+      record.revisionNote ? (
+        <Tag color="warning">Perlu Revisi</Tag>
+      ) : (
+        <StatusBadge status={status} />
+      ),
+  },
+  {
+    title: "Catatan Revisi",
+    dataIndex: "revisionNote",
+    key: "revisionNote",
+    ellipsis: true,
+    render: (text: string | null) =>
+      text ? (
+        <span className="text-orange-600 text-xs">{text}</span>
+      ) : (
+        "-"
+      ),
   },
   {
     title: "Dibuat Pada",
@@ -72,7 +89,7 @@ export const getDraftColumns = (onSubmit?: (id: number) => void): ColumnsType<Le
     fixed: "right",
     render: (_, letter) => (
       <div className="flex gap-2 text-xs">
-        {letter.status === "draft" && onSubmit && (
+        {role !== "staff" && letter.status === "draft" && onSubmit && (
           <Button
             size="xs"
             onClick={() => onSubmit(letter.id)}
@@ -81,21 +98,25 @@ export const getDraftColumns = (onSubmit?: (id: number) => void): ColumnsType<Le
             <SendOutlined />
           </Button>
         )}
-        <Link href={`/letters/drafts/edit/${letter.id}`}>
-          <Button size="xs">
-            <EditOutlined />
+        {role !== "staff" && (
+          <Link href={`/letters/drafts/edit/${letter.id}`}>
+            <Button size="xs">
+              <EditOutlined />
+            </Button>
+          </Link>
+        )}
+        {role !== "staff" && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!letter.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              letter._openDeleteModal(letter.id);
+            }}
+          >
+            <DeleteOutlined />
           </Button>
-        </Link>
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!letter.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            letter._openDeleteModal(letter.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        )}
       </div>
     ),
   },
@@ -161,7 +182,7 @@ export const getApprovalColumns = (): ColumnsType<Letter> => [
 // ==============================================
 // ARCHIVE COLUMNS
 // ==============================================
-export const getArchiveColumns = (): ColumnsType<Letter> => [
+export const getArchiveColumns = (showDelete = false, role?: string): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
@@ -226,6 +247,18 @@ export const getArchiveColumns = (): ColumnsType<Letter> => [
             <EyeOutlined />
           </Button>
         </Link>
+        {showDelete && role && ["admin", "superadmin"].includes(role) && (
+          <Button
+            size="xs"
+            onClick={() => {
+              if (!letter.id) return;
+              // @ts-ignore - _openDeleteModal is injected by DataTable
+              letter._openDeleteModal(letter.id);
+            }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },
