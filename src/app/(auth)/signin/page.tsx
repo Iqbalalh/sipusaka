@@ -1,5 +1,6 @@
 import SignInForm from "@/components/auth/SignInForm";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "SIPUSAKA - Sign In",
@@ -7,5 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default function SignIn() {
-  return <SignInForm />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          Loading...
+        </div>
+      }
+    >
+      <SignInForm />
+    </Suspense>
+  );
 }
