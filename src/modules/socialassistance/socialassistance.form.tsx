@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Input, Select, Button, Spin } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
+import { Input, Select, Button, Spin, Upload } from "antd";
+import { LoadingOutlined, UploadOutlined } from "@ant-design/icons";
+import type { UploadFile } from "antd/es/upload/interface";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
-import { 
-  SocialAssistance, 
-  SocialAssistanceFormData, 
-  createSocialAssistance, 
-  updateSocialAssistance, 
-  getSocialAssistanceById 
+import {
+  SocialAssistance,
+  SocialAssistanceFormData,
+  createSocialAssistance,
+  updateSocialAssistance,
+  getSocialAssistanceById
 } from "@/utils/services/socialassistance.service";
 import { MEDICAL_EQUIPMENT_OPTIONS } from "./socialassistance.constants";
 
@@ -42,6 +43,7 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
   const [equipmentNominal, setEquipmentNominal] = useState<number | null>(null);
   const [cashAmount, setCashAmount] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   // Calculate total
   const equipmentTotal = (equipmentQuantity || 0) * (equipmentNominal || 0);
@@ -85,19 +87,25 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
     setLoading(true);
 
     try {
-      const formData: SocialAssistanceFormData = {
-        nipNipp: nipNipp || null,
-        recipientName: recipientName || null,
-        ktpAddress: ktpAddress || null,
-        region: region || null,
-        condition: condition || null,
-        medicalEquipment: medicalEquipment || null,
-        equipmentQuantity: equipmentQuantity || null,
-        equipmentNominal: equipmentNominal || null,
-        cashAmount: cashAmount,
-        totalAmount: totalAmount,
-        notes: notes || null,
-      };
+      const formData = new FormData();
+      if (nipNipp) formData.append("nipNipp", nipNipp);
+      if (recipientName) formData.append("recipientName", recipientName);
+      if (ktpAddress) formData.append("ktpAddress", ktpAddress);
+      if (region) formData.append("region", region);
+      if (condition) formData.append("condition", condition);
+      if (medicalEquipment) formData.append("medicalEquipment", medicalEquipment);
+      if (equipmentQuantity != null) formData.append("equipmentQuantity", String(equipmentQuantity));
+      if (equipmentNominal != null) formData.append("equipmentNominal", String(equipmentNominal));
+      if (cashAmount != null) formData.append("cashAmount", String(cashAmount));
+      formData.append("totalAmount", String(totalAmount));
+      if (notes) formData.append("notes", notes);
+
+      // Append files
+      fileList.forEach((file: UploadFile) => {
+        if (file.originFileObj) {
+          formData.append("documents", file.originFileObj);
+        }
+      });
 
       if (isEditMode && id) {
         await updateSocialAssistance(id, formData);
@@ -308,6 +316,25 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
           rows={3}
           className="w-full"
         />
+      </div>
+
+      {/* Document Upload */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Dokumen Pendukung
+        </label>
+        <Upload
+          fileList={fileList}
+          onChange={({ fileList }) => setFileList(fileList)}
+          beforeUpload={() => false}
+          multiple
+          maxCount={10}
+        >
+          <Button icon={<UploadOutlined />}>Upload Dokumen</Button>
+        </Upload>
+        <div className="text-xs text-gray-500 mt-1">
+          Maksimal 10 file
+        </div>
       </div>
 
       {/* Submit Buttons */}

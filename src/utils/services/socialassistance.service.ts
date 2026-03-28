@@ -9,6 +9,14 @@ import { deleteResource } from "../fetch/deleteResource";
 import { fetchWithAuth } from "../fetch/fetchWithAuth";
 
 // Social Assistance Types (single medical equipment)
+export interface SocialAssistanceDoc {
+  id: number;
+  socialAssistanceId: number;
+  name: string;
+  urlDoc: string;
+  createdAt: string;
+}
+
 export interface SocialAssistance {
   id: number;
   nipNipp?: string | null;
@@ -22,6 +30,7 @@ export interface SocialAssistance {
   cashAmount?: number | null;
   totalAmount?: number | null;
   notes?: string | null;
+  documents?: SocialAssistanceDoc[];
   createdAt: string;
   updatedAt: string;
 }
@@ -107,29 +116,36 @@ export const getSocialAssistanceById = async (id: number | string): Promise<Soci
   }
 };
 
-export const createSocialAssistance = async (data: SocialAssistanceFormData) => {
+export const createSocialAssistance = async (fd: FormData) => {
   return await fetchWithAuth(API_SOCIAL_ASSISTANCE, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+    body: fd,
   });
 };
 
-export const updateSocialAssistance = async (id: string | number, data: SocialAssistanceFormData) => {
+export const updateSocialAssistance = async (id: string | number, fd: FormData) => {
   return await fetchWithAuth(`${API_SOCIAL_ASSISTANCE}/${id}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+    body: fd,
   });
 };
 
 export const deleteSocialAssistance = async (id: number) => {
   try {
     return await deleteResource(`${API_SOCIAL_ASSISTANCE}/${id}`);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteSocialAssistanceDocument = async (
+  assistanceId: number,
+  docId: number
+) => {
+  try {
+    return await deleteResource(
+      `${API_SOCIAL_ASSISTANCE}/${assistanceId}/documents/${docId}`
+    );
   } catch (error) {
     throw error;
   }

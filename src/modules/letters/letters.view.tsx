@@ -9,7 +9,6 @@ import dynamic from "next/dynamic";
 import QRCode from "qrcode";
 import Button from "@/components/ui/button/Button";
 import Link from "next/link";
-import { InfoItem } from "@/components/ui/field/InfoItem";
 import { DocumentViewerWithDownload } from "@/components/custom/DocumentViewer";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -287,45 +286,107 @@ export default function LetterView() {
       </div>
 
       {/* Detail Info */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <InfoItem label="Jenis Surat" value={data.letterType || "-"} />
-        <InfoItem label="Nomor Surat" value={data.letterNumber || "-"} />
-        <InfoItem label="Lampiran" value={data.attachment || "-"} />
-        <InfoItem label="Perihal" value={data.subject || "-"} />
-        <InfoItem
-          label="Tanggal Pembuatan"
-          value={data.letterDate ? formatDate(data.letterDate) : "-"}
-        />
-        <InfoItem label="Tujuan Surat" value={data.destination || "-"} />
-        <InfoItem label="Tembusan" value={data.carbonCopy || "-"} />
-        <InfoItem
-          label="Status"
-          value={statusLabels[data.status] || data.status}
-        />
-        <InfoItem
-          label="Penandatangan 1"
-          value={data.signer1?.staffName || data.signer1?.username || "-"}
-        />
-        <InfoItem
-          label="Penandatangan 2"
-          value={
-            data.signer2
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Jenis Surat
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.letterType || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Nomor Surat
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.letterNumber || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Lampiran
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.attachment || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Perihal
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.subject || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Tanggal Pembuatan
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.letterDate ? formatDate(data.letterDate) : "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Tujuan Surat
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.destination || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Tembusan
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.carbonCopy || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Status
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {statusLabels[data.status] || data.status}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Penandatangan 1
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.signer1?.staffName || data.signer1?.username || "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Penandatangan 2
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.signer2
               ? data.signer2.staffName || data.signer2.username
-              : "-"
-          }
-        />
-        <InfoItem
-          label="Penandatangan 3"
-          value={
-            data.signer3
+              : "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Penandatangan 3
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.signer3
               ? data.signer3.staffName || data.signer3.username
-              : "-"
-          }
-        />
-        <InfoItem
-          label="Dibuat Pada"
-          value={data.createdAt ? formatDate(data.createdAt) : "-"}
-        />
+              : "-"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Dibuat Pada
+          </span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white/90 break-words">
+            {data.createdAt ? formatDate(data.createdAt) : "-"}
+          </span>
+        </div>
       </div>
 
       {/* Verification Link (for published letters) */}

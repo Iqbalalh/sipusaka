@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Spin, Descriptions, Tag, Divider, Button } from "antd";
-import { LoadingOutlined, EditOutlined, ArrowLeftOutlined, PrinterOutlined } from "@ant-design/icons";
+import { Spin, Descriptions, Tag, Divider, Button, Image, message } from "antd";
+import { LoadingOutlined, EditOutlined, ArrowLeftOutlined, PrinterOutlined, DeleteOutlined, FileTextOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
-import { 
-  SocialAssistance, 
-  getSocialAssistanceById 
+import {
+  SocialAssistance,
+  SocialAssistanceDoc,
+  getSocialAssistanceById,
+  deleteSocialAssistanceDocument,
 } from "@/utils/services/socialassistance.service";
 import { MEDICAL_EQUIPMENT_OPTIONS } from "./socialassistance.constants";
 import { formatDate } from "@/utils/formatter/formatDate";
@@ -24,27 +26,45 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
   // State
   const [data, setData] = useState<SocialAssistance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [messageApi, contextHolder] = message.useMessage();
 
   // ==========================
   // FETCH DATA
   // ==========================
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const result = await getSocialAssistanceById(id);
-        setData(result);
-      } catch (err) {
-        notifyFromResult(notify, { error: err });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result = await getSocialAssistanceById(id);
+      setData(result);
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (id) {
       fetchData();
     }
   }, [id, notify]);
+
+  // ==========================
+  // DELETE DOCUMENT
+  // ==========================
+  const handleDeleteDocument = async (docId: number) => {
+    try {
+      await deleteSocialAssistanceDocument(Number(id), docId);
+      messageApi.success({
+        content: "Dokumen berhasil dihapus",
+        key: "delete-doc",
+        duration: 2,
+      });
+      fetchData();
+    } catch (error) {
+      notifyFromResult(notify, { error });
+    }
+  };
 
   // ==========================
   // FORMAT MEDICAL EQUIPMENT (SINGLE ITEM)
@@ -203,6 +223,7 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
   // ==========================
   return (
     <div className="space-y-6">
+      {contextHolder}
       {/* Action Buttons */}
       <div className="flex gap-2">
         <Button
@@ -281,6 +302,60 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
       >
         <Descriptions.Item label="Keterangan">{data.notes || "-"}</Descriptions.Item>
       </Descriptions>
+
+      {/* Documents */}
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold mb-4">Dokumen Pendukung</h3>
+        {data.documents && data.documents.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {data.documents.map((doc: SocialAssistanceDoc) => {
+              const isImage = doc.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+              return (
+                <div key={doc.id} className="relative group">
+                  <div className="relative w-full h-32 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                    {isImage ? (
+                      <Image.PreviewGroup>
+                        <Image
+                          src={doc.urlDoc}
+                          alt={doc.name}
+                          className="object-cover w-full h-full cursor-pointer"
+                          preview={{
+                            cover: <div className="text-white">Lihat</div>,
+                          }}
+                        />
+                      </Image.PreviewGroup>
+                    ) : (
+                      <a
+                        href={doc.urlDoc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col items-center justify-center w-full h-full bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <FileTextOutlined className="text-2xl text-gray-400 mb-2" />
+                        <span className="text-xs text-blue-600 dark:text-blue-400">Unduh</span>
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleDeleteDocument(doc.id)}
+                      className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Hapus dokumen"
+                    >
+                      <DeleteOutlined className="text-xs" />
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {doc.name}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+            Belum ada dokumen yang diunggah.
+          </p>
+        )}
+      </div>
 
       {/* Metadata */}
       <Descriptions

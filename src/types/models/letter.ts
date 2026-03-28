@@ -36,7 +36,8 @@ export interface Letter {
   signedDocumentPath?: string | null;
   signedDocumentUrl?: string | null;
   status: LetterStatus;
-  signer1Id: number;
+  notes?: string | null;
+  signer1Id?: number | null;
   signer2Id?: number | null;
   signer3Id?: number | null;
   signer1?: LetterSigner | null;

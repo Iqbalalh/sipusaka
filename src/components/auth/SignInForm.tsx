@@ -12,7 +12,8 @@ import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 export default function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const isDev = process.env.NODE_ENV === "development";
+  const callbackUrl = isDev ? "/" : (searchParams.get("callbackUrl") || "/");
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

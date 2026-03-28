@@ -126,6 +126,13 @@ export const publishLetter = async (
   });
 };
 
+export const createArchiveLetter = async (fd: FormData) => {
+  return await fetchWithAuth(`${API_LETTERS}/archive`, {
+    method: "POST",
+    body: fd,
+  });
+};
+
 export const verifyLetterByToken = async (token: string) => {
   const res = await fetch(`${API_LETTERS}/verify/${token}`);
   const json = await res.json();
