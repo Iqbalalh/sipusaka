@@ -552,11 +552,13 @@ export default function FamilyTable() {
                       <EyeOutlined />
                     </Button>
                   </Link>
-                  <Link href={`family/edit/${home.id}`}>
-                    <Button size="xs">
-                      <EditOutlined />
-                    </Button>
-                  </Link>
+                  {isAdmin && (
+                    <Link href={`family/edit/${home.id}`}>
+                      <Button size="xs">
+                        <EditOutlined />
+                      </Button>
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Button
                       size="xs"

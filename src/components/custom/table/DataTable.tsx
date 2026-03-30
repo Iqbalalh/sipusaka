@@ -65,6 +65,9 @@ export interface DataTableProps<T> {
     openDeleteModal: (id: number) => void
   ) => React.ReactNode;
 
+  // Extra header actions (rendered on the right side of the header)
+  headerActions?: React.ReactNode;
+
   // Delete configuration
   deleteConfirmTitle?: string;
   deleteConfirmMessage?: string;
@@ -88,6 +91,7 @@ export default function DataTable<T extends Record<string, any>>({
   scrollY = 500,
   serverSidePagination = false,
   renderActions,
+  headerActions,
   deleteConfirmTitle = "Konfirmasi Hapus",
   deleteConfirmMessage = "Apakah Anda yakin ingin menghapus data ini?",
   deleteSuccessMessage = "Data berhasil dihapus",
@@ -361,6 +365,8 @@ export default function DataTable<T extends Record<string, any>>({
               Export Excel
             </Button>
           )}
+
+          {headerActions}
 
           {createPath && (
             <Link href={createPath}>

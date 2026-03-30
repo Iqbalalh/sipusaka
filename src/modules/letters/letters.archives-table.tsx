@@ -15,27 +15,25 @@ export default function ArchivesTable() {
   const isAdmin = role === "admin" || role === "superadmin";
 
   return (
-    <div>
-      {isAdmin && (
-        <div className="flex justify-end mb-4">
+    <DataTable<Letter>
+      fetchData={getLetters}
+      deleteItem={isAdmin ? deleteLetter : undefined}
+      columns={getArchiveColumns(true, role)}
+      rowKey="id"
+      title="Arsip Surat"
+      deleteConfirmTitle="Hapus Surat"
+      deleteConfirmMessage="Apakah Anda yakin ingin menghapus surat ini? Semua data dan dokumen terkait akan dihapus permanen."
+      deleteSuccessMessage="Surat berhasil dihapus"
+      headerActions={
+        isAdmin ? (
           <Link href="/letters/archives/upload">
             <Button size="sm">
               <UploadOutlined className="mr-1" />
               Upload Arsip
             </Button>
           </Link>
-        </div>
-      )}
-      <DataTable<Letter>
-        fetchData={getLetters}
-        deleteItem={isAdmin ? deleteLetter : undefined}
-        columns={getArchiveColumns(true, role)}
-        rowKey="id"
-        title="Arsip Surat"
-        deleteConfirmTitle="Hapus Surat"
-        deleteConfirmMessage="Apakah Anda yakin ingin menghapus surat ini? Semua data dan dokumen terkait akan dihapus permanen."
-        deleteSuccessMessage="Surat berhasil dihapus"
-      />
-    </div>
+        ) : undefined
+      }
+    />
   );
 }

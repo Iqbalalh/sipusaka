@@ -108,6 +108,8 @@ export default function CreateWaliModal({
       title="Buat Wali Baru"
       open={visible}
       onCancel={onCancel}
+      maskClosable={false}
+      destroyOnClose={false}
       footer={
         <div className="flex gap-3">
           <Button onClick={onCancel} variant="outline">

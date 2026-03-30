@@ -84,6 +84,16 @@ export default function LetterApprovalView() {
         )?.signatureUrl
       : null;
 
+  // Check if current user is the active signer for the current pending level
+  const isCurrentSigner = (() => {
+    if (!data) return false;
+    const userId = Number(currentUserId);
+    if (data.status === "pending1") return data.signer1?.userId === userId;
+    if (data.status === "pending2") return data.signer2?.userId === userId;
+    if (data.status === "pending3") return data.signer3?.userId === userId;
+    return false;
+  })();
+
   const handleApproveClick = () => {
     // If document is PDF and signer has a signature, enter placement mode
     if (
@@ -412,7 +422,7 @@ export default function LetterApprovalView() {
       )}
 
       {/* Action Buttons */}
-      {isAdmin && (
+      {(isAdmin || isCurrentSigner) && (
         <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
           <Button
             onClick={handleApproveClick}
@@ -421,21 +431,25 @@ export default function LetterApprovalView() {
           >
             Setujui
           </Button>
-          <Button
-            onClick={() => setRejectModalOpen(true)}
-            disabled={actionLoading}
-            variant="outline"
-            className="min-w-[120px]"
-          >
-            Revisi
-          </Button>
-          <Button
-            onClick={() => setCancelModalOpen(true)}
-            disabled={actionLoading}
-            className="bg-red-600 text-white min-w-[120px]"
-          >
-            Batalkan
-          </Button>
+          {isAdmin && (
+            <>
+              <Button
+                onClick={() => setRejectModalOpen(true)}
+                disabled={actionLoading}
+                variant="outline"
+                className="min-w-[120px]"
+              >
+                Revisi
+              </Button>
+              <Button
+                onClick={() => setCancelModalOpen(true)}
+                disabled={actionLoading}
+                className="bg-red-600 text-white min-w-[120px]"
+              >
+                Batalkan
+              </Button>
+            </>
+          )}
         </div>
       )}
 

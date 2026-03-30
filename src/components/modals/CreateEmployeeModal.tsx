@@ -121,6 +121,8 @@ export default function CreateEmployeeModal({
       title="Buat Pegawai Baru"
       open={visible}
       onCancel={onCancel}
+      maskClosable={false}
+      destroyOnClose={false}
       footer={
         <div className="flex gap-3">
           <Button onClick={onCancel} variant="outline">
