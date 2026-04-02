@@ -75,14 +75,15 @@ export default function LetterApprovalView() {
     init();
   }, [id, notify]);
 
-  // Find the current signer's signature URL
+  // Find the current signer's signature URLs
   const currentUserId = (session?.user as any)?.id;
-  const currentSignerSignatureUrl =
-    data
-      ? [data.signer1, data.signer2, data.signer3].find(
-          (s) => s && s.userId === Number(currentUserId)
-        )?.signatureUrl
-      : null;
+  const currentSigner = data
+    ? [data.signer1, data.signer2, data.signer3].find(
+        (s) => s && s.userId === Number(currentUserId)
+      )
+    : null;
+  const currentSignerSignatureUrl = currentSigner?.signatureUrl ?? null;
+  const currentSignerParafUrl = currentSigner?.parafUrl ?? null;
 
   // Check if current user is the active signer for the current pending level
   const isCurrentSigner = (() => {
@@ -112,6 +113,9 @@ export default function LetterApprovalView() {
     page: number;
     x: number;
     y: number;
+    signatureType?: "ttd" | "paraf";
+    signatureWidth?: number;
+    signatureHeight?: number;
   }) => {
     try {
       setActionLoading(true);
@@ -119,6 +123,9 @@ export default function LetterApprovalView() {
         signaturePage: placement.page,
         signatureX: placement.x,
         signatureY: placement.y,
+        signatureType: placement.signatureType,
+        signatureWidth: placement.signatureWidth,
+        signatureHeight: placement.signatureHeight,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -212,8 +219,13 @@ export default function LetterApprovalView() {
         <PdfSignaturePlacer
           url={data.documentUrl}
           signatureImageUrl={currentSignerSignatureUrl}
+          parafImageUrl={currentSignerParafUrl}
           onConfirm={handleApproveWithPlacement}
           onCancel={() => setSignatureMode(false)}
+          onApproveWithoutSign={() => {
+            setSignatureMode(false);
+            handleApproveSimple();
+          }}
           loading={actionLoading}
         />
       </div>

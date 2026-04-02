@@ -96,6 +96,8 @@ export default function UmkmView() {
   const [deletingMonitoringId, setDeletingMonitoringId] = useState<
     number | null
   >(null);
+  const [submitVisitLoading, setSubmitVisitLoading] = useState(false);
+  const [submitMonitoringLoading, setSubmitMonitoringLoading] = useState(false);
 
   // ==========================
   // FETCH INITIAL DATA
@@ -240,6 +242,7 @@ export default function UmkmView() {
 
   const handleSubmitVisit = async () => {
     try {
+      setSubmitVisitLoading(true);
       const values = await form.validateFields();
       const formData = new FormData();
 
@@ -285,6 +288,8 @@ export default function UmkmView() {
       fetchVisits();
     } catch (error) {
       notifyFromResult(notify, { error });
+    } finally {
+      setSubmitVisitLoading(false);
     }
   };
 
@@ -368,6 +373,7 @@ export default function UmkmView() {
 
   const handleSubmitMonitoring = async () => {
     try {
+      setSubmitMonitoringLoading(true);
       const values = await monitoringForm.validateFields();
       const formData = new FormData();
 
@@ -457,6 +463,8 @@ export default function UmkmView() {
       fetchMonitoring();
     } catch (error) {
       notifyFromResult(notify, { error });
+    } finally {
+      setSubmitMonitoringLoading(false);
     }
   };
 
@@ -514,11 +522,27 @@ export default function UmkmView() {
       <Modal
         title={editingVisit ? "Edit Bantuan UMKM" : "Tambah Bantuan UMKM"}
         open={modalVisible}
-        onOk={handleSubmitVisit}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => !submitVisitLoading && setModalVisible(false)}
         width={700}
-        okText="Simpan"
-        cancelText="Batal"
+        footer={
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setModalVisible(false)}
+              disabled={submitVisitLoading}
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSubmitVisit}
+              disabled={submitVisitLoading}
+            >
+              {submitVisitLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        }
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -680,11 +704,27 @@ export default function UmkmView() {
           editingMonitoring ? "Edit Monitoring UMKM" : "Tambah Monitoring UMKM"
         }
         open={monitoringModalVisible}
-        onOk={handleSubmitMonitoring}
-        onCancel={() => setMonitoringModalVisible(false)}
+        onCancel={() => !submitMonitoringLoading && setMonitoringModalVisible(false)}
         width={800}
-        okText="Simpan"
-        cancelText="Batal"
+        footer={
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMonitoringModalVisible(false)}
+              disabled={submitMonitoringLoading}
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSubmitMonitoring}
+              disabled={submitMonitoringLoading}
+            >
+              {submitMonitoringLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        }
       >
         <Form form={monitoringForm} layout="vertical">
           <Form.Item

@@ -12,14 +12,6 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 export const getCategoryColumns = (role?: string): TableColumn<Category>[] => [
   {
-    title: "ID",
-    dataIndex: "id",
-    key: "id",
-    render: (text) => text || "-",
-    exportRender: (value: number) => value ?? "-",
-  },
-
-  {
     title: "Nama Kategori",
     dataIndex: "name",
     key: "name",
@@ -39,20 +31,16 @@ export const getCategoryColumns = (role?: string): TableColumn<Category>[] => [
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text) =>
-      text ? formatDate(text) : "-",
-    exportRender: (value: string) =>
-      value ? formatDate(value) : "-",
+    render: (text) => (text ? formatDate(text) : "-"),
+    exportRender: (value: string) => (value ? formatDate(value) : "-"),
   },
 
   {
     title: "Diperbarui Pada",
     dataIndex: "updatedAt",
     key: "updatedAt",
-    render: (text) =>
-      text ? formatDate(text) : "-",
-    exportRender: (value: string) =>
-      value ? formatDate(value) : "-",
+    render: (text) => (text ? formatDate(text) : "-"),
+    exportRender: (value: string) => (value ? formatDate(value) : "-"),
     hidden: true,
   },
 
@@ -60,16 +48,21 @@ export const getCategoryColumns = (role?: string): TableColumn<Category>[] => [
     title: "Dibuat Oleh",
     dataIndex: "createdBy",
     key: "createdBy",
-    render: (_: any, record: any) => (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
-    exportRender: (_: any, record: any) => ((record as any)?.createdByStaffName || (record as any)?.createdBy) ?? "-",
+    render: (_: any, record: any) =>
+      (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
+    exportRender: (_: any, record: any) =>
+      ((record as any)?.createdByStaffName || (record as any)?.createdBy) ??
+      "-",
   },
 
   {
     title: "Diedit Oleh",
     dataIndex: "editedBy",
     key: "editedBy",
-    render: (_: any, record: any) => (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
-    exportRender: (_: any, record: any) => ((record as any)?.editedByStaffName || (record as any)?.editedBy) ?? "-",
+    render: (_: any, record: any) =>
+      (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
+    exportRender: (_: any, record: any) =>
+      ((record as any)?.editedByStaffName || (record as any)?.editedBy) ?? "-",
   },
 
   {

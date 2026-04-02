@@ -78,6 +78,7 @@ export default function FamilyView() {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
   const [deletingVisitId, setDeletingVisitId] = useState<number | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   // ==========================
   // FETCH INITIAL DATA
@@ -201,6 +202,7 @@ export default function FamilyView() {
 
   const handleSubmitVisit = async () => {
     try {
+      setSubmitLoading(true);
       const values = await form.validateFields();
       const formData = new FormData();
 
@@ -239,6 +241,8 @@ export default function FamilyView() {
       fetchVisits();
     } catch (error) {
       notifyFromResult(notify, { error });
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -1032,11 +1036,27 @@ export default function FamilyView() {
           editingVisit ? "Edit Kunjungan Keluarga" : "Tambah Kunjungan Keluarga"
         }
         open={modalVisible}
-        onOk={handleSubmitVisit}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => !submitLoading && setModalVisible(false)}
         width={600}
-        okText="Simpan"
-        cancelText="Batal"
+        footer={
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setModalVisible(false)}
+              disabled={submitLoading}
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSubmitVisit}
+              disabled={submitLoading}
+            >
+              {submitLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        }
       >
         <Form form={form} layout="vertical">
           <Form.Item

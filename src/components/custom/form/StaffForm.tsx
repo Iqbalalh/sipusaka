@@ -44,6 +44,7 @@ interface BaseStaff {
   position: string | null;
   staffPict: string | null;
   signaturePath: string | null;
+  parafPath: string | null;
 }
 
 const INITIAL_FORM_STATE: BaseStaff = {
@@ -59,6 +60,7 @@ const INITIAL_FORM_STATE: BaseStaff = {
   position: null,
   staffPict: null,
   signaturePath: null,
+  parafPath: null,
 };
 
 // ==============================================
@@ -106,6 +108,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
   const { file: photoFile, preview, selectFile, clearFile } = useFilePreview();
   const { file: signatureFile, preview: sigPreview, selectFile: selectSigFile, clearFile: clearSigFile } = useFilePreview();
+  const { file: parafFile, preview: parafPreview, selectFile: selectParafFile, clearFile: clearParafFile } = useFilePreview();
 
   // ==============================================
   // SUBMIT HOOK
@@ -200,6 +203,22 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     }
   };
 
+  const handleDeleteParaf = async () => {
+    if (!form?.parafPath)
+      return notify("warning", "Tidak ada paraf untuk dihapus.");
+
+    try {
+      notify("info", "Sedang menghapus paraf dari server...");
+
+      await hardDeleteFile(form.parafPath);
+      setForm((prev) => ({ ...prev, parafPath: null }));
+      clearParafFile();
+      notify("success", "Paraf berhasil dihapus!");
+    } catch (err: any) {
+      notify("error", err.message || "Gagal menghapus paraf.");
+    }
+  };
+
   // ==============================================
   // EVENT HANDLERS
   // ==============================================
@@ -238,6 +257,20 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     [selectSigFile, notify]
   );
 
+  const handleSelectParaf = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        selectParafFile(file);
+      } catch (error) {
+        notifyFromResult(notify, { error });
+      }
+    },
+    [selectParafFile, notify]
+  );
+
   const handleSubmit = useCallback(async () => {
     const validation = validateForm(form);
     if (!validation.isValid) {
@@ -251,13 +284,16 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
     if (signatureFile) {
       extraData.append("signature", signatureFile);
     }
+    if (parafFile) {
+      extraData.append("paraf", parafFile);
+    }
 
     const { success, error } = await submit(form, extraData);
 
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, photoFile, signatureFile, submit, notify]);
+  }, [form, photoFile, signatureFile, parafFile, submit, notify]);
 
   const handleGoBack = useCallback(() => {
     if (mode === "create") {
@@ -441,7 +477,7 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
               <hr className="border-gray-100" />
 
-              <FormField label="Tanda Tangan Digital">
+              <FormField label="Tanda Tangan Digital (TTD)">
                 {mode === "edit" && form.signaturePath ? (
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="relative inline-block">
@@ -485,6 +521,57 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                     )}
                     <p className="text-xs text-gray-400 mt-1">
                       Upload gambar tanda tangan (PNG transparan disarankan)
+                    </p>
+                  </div>
+                )}
+              </FormField>
+
+              <hr className="border-gray-100" />
+
+              <FormField label="Paraf Digital">
+                {mode === "edit" && form.parafPath ? (
+                  <div className="flex flex-col gap-3 mt-2">
+                    <div className="relative inline-block">
+                      <Image
+                        src={form.parafPath}
+                        alt="Paraf"
+                        className="object-contain rounded-lg w-24 h-24 border shadow-sm bg-white"
+                      />
+                      <Popconfirm
+                        title="Hapus paraf permanen?"
+                        description="Paraf akan langsung dihapus dari server."
+                        onConfirm={handleDeleteParaf}
+                        okText="Hapus"
+                        cancelText="Batal"
+                        okButtonProps={{ danger: true }}
+                      >
+                        <button className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg">
+                          <DeleteOutlined />
+                        </button>
+                      </Popconfirm>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    {parafPreview ? (
+                      <div className="relative inline-block">
+                        <Image
+                          src={parafPreview}
+                          className="object-contain rounded-lg w-24 h-24 border border-primary-200 bg-white"
+                          alt="Preview Paraf"
+                        />
+                        <button
+                          onClick={clearParafFile}
+                          className="absolute -top-3 -right-3 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-600 shadow-md"
+                        >
+                          <DeleteOutlined />
+                        </button>
+                      </div>
+                    ) : (
+                      <FileInput onChange={handleSelectParaf} />
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      Upload gambar paraf (PNG transparan disarankan)
                     </p>
                   </div>
                 )}

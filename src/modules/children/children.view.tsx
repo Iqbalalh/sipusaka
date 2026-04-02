@@ -68,6 +68,7 @@ export default function ChildrenView() {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
   const [deletingAssistanceId, setDeletingAssistanceId] = useState<number | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   // ==========================
   // FETCH INITIAL DATA
@@ -190,6 +191,7 @@ export default function ChildrenView() {
 
   const handleSubmitAssistance = async () => {
     try {
+      setSubmitLoading(true);
       const values = await form.validateFields();
       const formData = new FormData();
 
@@ -242,6 +244,8 @@ export default function ChildrenView() {
       fetchAssistance();
     } catch (error) {
       notifyFromResult(notify, { error });
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -530,11 +534,27 @@ export default function ChildrenView() {
       <Modal
         title={editingAssistance ? "Edit Bantuan Anak" : "Tambah Bantuan Anak"}
         open={modalVisible}
-        onOk={handleSubmitAssistance}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => !submitLoading && setModalVisible(false)}
         width={700}
-        okText="Simpan"
-        cancelText="Batal"
+        footer={
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setModalVisible(false)}
+              disabled={submitLoading}
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSubmitAssistance}
+              disabled={submitLoading}
+            >
+              {submitLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        }
       >
         <Form form={form} layout="vertical">
           <Form.Item

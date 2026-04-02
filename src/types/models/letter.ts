@@ -6,6 +6,7 @@ export interface LetterSigner {
   staffName?: string | null;
   position?: string | null;
   signatureUrl?: string | null;
+  parafUrl?: string | null;
 }
 
 export interface LetterApproval {

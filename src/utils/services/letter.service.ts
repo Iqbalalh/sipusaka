@@ -95,7 +95,14 @@ export const submitLetter = async (id: number) => {
 
 export const approveLetter = async (
   id: number,
-  placement?: { signaturePage: number; signatureX: number; signatureY: number }
+  placement?: {
+    signaturePage: number;
+    signatureX: number;
+    signatureY: number;
+    signatureType?: "ttd" | "paraf";
+    signatureWidth?: number;
+    signatureHeight?: number;
+  }
 ) => {
   return await fetchWithAuth(`${API_LETTERS}/${id}/approve`, {
     method: "POST",
@@ -118,7 +125,7 @@ export const cancelLetter = async (id: number) => {
 
 export const publishLetter = async (
   id: number,
-  placement?: { qrPage: number; qrX: number; qrY: number }
+  placement?: { qrPage: number; qrX: number; qrY: number; qrSize?: number }
 ) => {
   return await fetchWithAuth(`${API_LETTERS}/${id}/publish`, {
     method: "POST",

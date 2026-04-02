@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Viewer, Worker, RenderPage, RenderPageProps } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { Spin, Flex } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import Button from "@/components/ui/button/Button";
 
-// QR code size in PDF points (must match backend QR_SIZE)
-const QR_SIZE = 80;
+// Default QR code size in PDF points (must match backend QR_SIZE)
+const QR_DEFAULT_SIZE = 80;
 
 interface QrPlacement {
   page: number;
@@ -17,12 +17,13 @@ interface QrPlacement {
   displayX: number;
   displayY: number;
   displaySize: number;
+  pdfSize: number;
 }
 
 interface PdfQrPlacerProps {
   url: string;
-  qrDataUrl: string; // QR code as data URL for preview
-  onConfirm: (placement: { page: number; x: number; y: number }) => void;
+  qrDataUrl: string;
+  onConfirm: (placement: { page: number; x: number; y: number; qrSize?: number }) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -39,6 +40,11 @@ export default function PdfQrPlacer({
   loading = false,
 }: PdfQrPlacerProps) {
   const [placement, setPlacement] = useState<QrPlacement | null>(null);
+  const [sizePercent, setSizePercent] = useState(100);
+
+  const getQrSize = useCallback(() => {
+    return QR_DEFAULT_SIZE * (sizePercent / 100);
+  }, [sizePercent]);
 
   const handlePageClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, pageIndex: number, scale: number, pageWidthScaled: number, pageHeightScaled: number) => {
@@ -46,38 +52,28 @@ export default function PdfQrPlacer({
       const clickRelX = e.clientX - rect.left;
       const clickRelY = e.clientY - rect.top;
 
-      // RenderPageProps width/height are scaled CSS pixels — convert to PDF points
+      const qrSize = getQrSize();
       const pageWidthPts = pageWidthScaled / scale;
       const pageHeightPts = pageHeightScaled / scale;
 
-      // Convert to PDF coordinates (bottom-left origin), centered on click
-      let pdfX = (clickRelX / scale) - (QR_SIZE / 2);
-      let pdfY = pageHeightPts - (clickRelY / scale) - (QR_SIZE / 2);
+      let pdfX = clickRelX / scale - qrSize / 2;
+      let pdfY = pageHeightPts - clickRelY / scale - qrSize / 2;
 
-      // Clamp to page bounds
-      pdfX = clamp(pdfX, 0, pageWidthPts - QR_SIZE);
-      pdfY = clamp(pdfY, 0, pageHeightPts - QR_SIZE);
+      pdfX = clamp(pdfX, 0, pageWidthPts - qrSize);
+      pdfY = clamp(pdfY, 0, pageHeightPts - qrSize);
 
-      // Convert back to display coordinates for preview
       const displayX = pdfX * scale;
-      const displayY = (pageHeightPts - pdfY - QR_SIZE) * scale;
-      const displaySize = QR_SIZE * scale;
+      const displayY = (pageHeightPts - pdfY - qrSize) * scale;
+      const displaySize = qrSize * scale;
 
-      setPlacement({
-        page: pageIndex,
-        x: pdfX,
-        y: pdfY,
-        displayX,
-        displayY,
-        displaySize,
-      });
+      setPlacement({ page: pageIndex, x: pdfX, y: pdfY, displayX, displayY, displaySize, pdfSize: qrSize });
     },
-    []
+    [getQrSize]
   );
 
   const handleConfirm = useCallback(() => {
     if (!placement) return;
-    onConfirm({ page: placement.page, x: placement.x, y: placement.y });
+    onConfirm({ page: placement.page, x: placement.x, y: placement.y, qrSize: placement.pdfSize });
   }, [placement, onConfirm]);
 
   const renderPage: RenderPage = useCallback(
@@ -87,17 +83,11 @@ export default function PdfQrPlacer({
         {props.textLayer.children}
         {props.annotationLayer.children}
         <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            cursor: "crosshair",
-            zIndex: 10,
-          }}
-          onClick={(e) =>
-            handlePageClick(e, props.pageIndex, props.scale, props.width, props.height)
-          }
+          style={{ position: "absolute", inset: 0, cursor: "crosshair", zIndex: 10 }}
+          onClick={(e) => handlePageClick(e, props.pageIndex, props.scale, props.width, props.height)}
         >
           {placement?.page === props.pageIndex && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={qrDataUrl}
               alt="QR Preview"
@@ -122,6 +112,20 @@ export default function PdfQrPlacer({
 
   return (
     <div>
+      {/* Size slider */}
+      <div className="mb-3 flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <span className="text-sm font-medium text-gray-700 shrink-0">Ukuran QR:</span>
+        <input
+          type="range"
+          min={40}
+          max={200}
+          value={sizePercent}
+          onChange={(e) => { setSizePercent(Number(e.target.value)); setPlacement(null); }}
+          className="flex-1 accent-purple-600"
+        />
+        <span className="text-sm text-gray-600 w-12 text-right">{sizePercent}%</span>
+      </div>
+
       {/* Instruction banner */}
       <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 text-sm">
         Klik pada dokumen untuk menempatkan QR code verifikasi. Klik lagi untuk mengubah posisi.
@@ -140,9 +144,7 @@ export default function PdfQrPlacer({
               </Flex>
             )}
             renderError={() => (
-              <div className="p-6 text-center text-red-500">
-                Gagal memuat dokumen PDF.
-              </div>
+              <div className="p-6 text-center text-red-500">Gagal memuat dokumen PDF.</div>
             )}
           />
         </Worker>
@@ -150,7 +152,7 @@ export default function PdfQrPlacer({
 
       {/* Action buttons */}
       <div className="flex justify-between items-center mt-4">
-        <Button onClick={onCancel} disabled={loading}>
+        <Button variant="outline" onClick={onCancel} disabled={loading}>
           Batal
         </Button>
         <Button

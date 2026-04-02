@@ -133,6 +133,7 @@ export default function LetterView() {
     page: number;
     x: number;
     y: number;
+    qrSize?: number;
   }) => {
     try {
       setPublishLoading(true);
@@ -140,6 +141,7 @@ export default function LetterView() {
         qrPage: placement.page,
         qrX: placement.x,
         qrY: placement.y,
+        qrSize: placement.qrSize,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

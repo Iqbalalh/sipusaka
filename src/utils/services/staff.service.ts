@@ -23,6 +23,7 @@ export interface Staff {
   staffPict: string | null;
   signaturePath: string | null;
   signatureUrl: string | null;
+  parafPath: string | null;
 }
 
 export const getStaffs = async (): Promise<Staff[]> => {

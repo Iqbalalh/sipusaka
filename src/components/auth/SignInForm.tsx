@@ -35,7 +35,7 @@ export default function SignInForm() {
       if (res?.error) {
         setErrorMsg("Username atau password salah.");
       } else {
-        router.replace(callbackUrl);
+        window.location.href = callbackUrl;
       }
     } catch (err) {
       console.error("Login error:", err);

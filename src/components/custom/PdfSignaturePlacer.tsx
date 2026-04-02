@@ -7,26 +7,38 @@ import { Spin, Flex } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import Button from "@/components/ui/button/Button";
 
-// Signature size in PDF points (must match backend constants)
-const SIG_MAX_WIDTH = 150;
-const SIG_MAX_HEIGHT = 60;
+// Default signature size in PDF points (must match backend constants)
+const SIG_DEFAULT_WIDTH = 150;
+const SIG_DEFAULT_HEIGHT = 60;
+
+type SignatureType = "ttd" | "paraf";
 
 interface SignaturePlacement {
   page: number;
   x: number;
   y: number;
-  // Display coordinates for preview (CSS pixels, top-left origin)
   displayX: number;
   displayY: number;
   displayWidth: number;
   displayHeight: number;
+  pdfWidth: number;
+  pdfHeight: number;
 }
 
 interface PdfSignaturePlacerProps {
   url: string;
   signatureImageUrl: string;
-  onConfirm: (placement: { page: number; x: number; y: number }) => void;
+  parafImageUrl?: string | null;
+  onConfirm: (placement: {
+    page: number;
+    x: number;
+    y: number;
+    signatureType: SignatureType;
+    signatureWidth: number;
+    signatureHeight: number;
+  }) => void;
   onCancel: () => void;
+  onApproveWithoutSign?: () => void;
   loading?: boolean;
 }
 
@@ -37,76 +49,98 @@ function clamp(value: number, min: number, max: number) {
 export default function PdfSignaturePlacer({
   url,
   signatureImageUrl,
+  parafImageUrl,
   onConfirm,
   onCancel,
+  onApproveWithoutSign,
   loading = false,
 }: PdfSignaturePlacerProps) {
   const [placement, setPlacement] = useState<SignaturePlacement | null>(null);
-  const sigAspectRef = useRef<number>(SIG_MAX_WIDTH / SIG_MAX_HEIGHT);
+  const [sigType, setSigType] = useState<SignatureType>("ttd");
+  // Size scale 50–150% relative to default
+  const [sizePercent, setSizePercent] = useState(100);
 
-  // Load signature image to get aspect ratio
-  const onSigLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+  const sigAspectRef = useRef<number>(SIG_DEFAULT_WIDTH / SIG_DEFAULT_HEIGHT);
+  const parafAspectRef = useRef<number>(1);
+
+  const activeImageUrl = sigType === "paraf" && parafImageUrl ? parafImageUrl : signatureImageUrl;
+
+  const onSigLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>, type: SignatureType) => {
     const img = e.currentTarget;
     if (img.naturalWidth && img.naturalHeight) {
-      sigAspectRef.current = img.naturalWidth / img.naturalHeight;
+      const aspect = img.naturalWidth / img.naturalHeight;
+      if (type === "ttd") sigAspectRef.current = aspect;
+      else parafAspectRef.current = aspect;
     }
   }, []);
 
-  // Calculate actual signature dimensions in PDF points
   const getSigDimensions = useCallback(() => {
-    const aspect = sigAspectRef.current;
-    let w = SIG_MAX_WIDTH;
-    let h = SIG_MAX_WIDTH / aspect;
-    if (h > SIG_MAX_HEIGHT) {
-      h = SIG_MAX_HEIGHT;
-      w = SIG_MAX_HEIGHT * aspect;
+    const aspect = sigType === "paraf" && parafImageUrl
+      ? parafAspectRef.current
+      : sigAspectRef.current;
+    const scale = sizePercent / 100;
+    const maxW = SIG_DEFAULT_WIDTH * scale;
+    const maxH = SIG_DEFAULT_HEIGHT * scale;
+    let w = maxW;
+    let h = maxW / aspect;
+    if (h > maxH) {
+      h = maxH;
+      w = maxH * aspect;
     }
     return { w, h };
-  }, []);
+  }, [sigType, parafImageUrl, sizePercent]);
+
+  const recalcPlacement = useCallback(
+    (
+      clickRelX: number,
+      clickRelY: number,
+      pageIndex: number,
+      scale: number,
+      pageWidthScaled: number,
+      pageHeightScaled: number,
+    ) => {
+      const { w: sigW, h: sigH } = getSigDimensions();
+      const pageWidthPts = pageWidthScaled / scale;
+      const pageHeightPts = pageHeightScaled / scale;
+
+      let pdfX = clickRelX / scale - sigW / 2;
+      let pdfY = pageHeightPts - clickRelY / scale - sigH / 2;
+
+      pdfX = clamp(pdfX, 0, pageWidthPts - sigW);
+      pdfY = clamp(pdfY, 0, pageHeightPts - sigH);
+
+      const displayX = pdfX * scale;
+      const displayY = (pageHeightPts - pdfY - sigH) * scale;
+      const displayWidth = sigW * scale;
+      const displayHeight = sigH * scale;
+
+      return { page: pageIndex, x: pdfX, y: pdfY, displayX, displayY, displayWidth, displayHeight, pdfWidth: sigW, pdfHeight: sigH };
+    },
+    [getSigDimensions]
+  );
 
   const handlePageClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, pageIndex: number, scale: number, pageWidthScaled: number, pageHeightScaled: number) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const clickRelX = e.clientX - rect.left;
       const clickRelY = e.clientY - rect.top;
-
-      const { w: sigW, h: sigH } = getSigDimensions();
-
-      // RenderPageProps width/height are already scaled CSS pixels — convert to PDF points
-      const pageWidthPts = pageWidthScaled / scale;
-      const pageHeightPts = pageHeightScaled / scale;
-
-      // Convert to PDF coordinates (bottom-left origin), centered on click
-      let pdfX = (clickRelX / scale) - (sigW / 2);
-      let pdfY = pageHeightPts - (clickRelY / scale) - (sigH / 2);
-
-      // Clamp to page bounds
-      pdfX = clamp(pdfX, 0, pageWidthPts - sigW);
-      pdfY = clamp(pdfY, 0, pageHeightPts - sigH);
-
-      // Convert back to display coordinates for preview
-      const displayX = pdfX * scale;
-      const displayY = (pageHeightPts - pdfY - sigH) * scale;
-      const displayWidth = sigW * scale;
-      const displayHeight = sigH * scale;
-
-      setPlacement({
-        page: pageIndex,
-        x: pdfX,
-        y: pdfY,
-        displayX,
-        displayY,
-        displayWidth,
-        displayHeight,
-      });
+      const p = recalcPlacement(clickRelX, clickRelY, pageIndex, scale, pageWidthScaled, pageHeightScaled);
+      setPlacement(p);
     },
-    [getSigDimensions]
+    [recalcPlacement]
   );
 
   const handleConfirm = useCallback(() => {
     if (!placement) return;
-    onConfirm({ page: placement.page, x: placement.x, y: placement.y });
-  }, [placement, onConfirm]);
+    onConfirm({
+      page: placement.page,
+      x: placement.x,
+      y: placement.y,
+      signatureType: sigType,
+      signatureWidth: placement.pdfWidth,
+      signatureHeight: placement.pdfHeight,
+    });
+  }, [placement, onConfirm, sigType]);
 
   const renderPage: RenderPage = useCallback(
     (props: RenderPageProps) => (
@@ -115,20 +149,14 @@ export default function PdfSignaturePlacer({
         {props.textLayer.children}
         {props.annotationLayer.children}
         <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            cursor: "crosshair",
-            zIndex: 10,
-          }}
-          onClick={(e) =>
-            handlePageClick(e, props.pageIndex, props.scale, props.width, props.height)
-          }
+          style={{ position: "absolute", inset: 0, cursor: "crosshair", zIndex: 10 }}
+          onClick={(e) => handlePageClick(e, props.pageIndex, props.scale, props.width, props.height)}
         >
           {placement?.page === props.pageIndex && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={signatureImageUrl}
-              alt="TTD Preview"
+              src={activeImageUrl}
+              alt="Preview TTD"
               style={{
                 position: "absolute",
                 left: placement.displayX,
@@ -145,14 +173,76 @@ export default function PdfSignaturePlacer({
         </div>
       </>
     ),
-    [handlePageClick, placement, signatureImageUrl]
+    [handlePageClick, placement, activeImageUrl]
   );
+
+  const hasParaf = !!parafImageUrl;
 
   return (
     <div>
+      {/* Signature type selector */}
+      {hasParaf && (
+        <div className="mb-3 flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="text-sm font-medium text-gray-700">Jenis tanda tangan:</span>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name="sigType"
+              value="ttd"
+              checked={sigType === "ttd"}
+              onChange={() => { setSigType("ttd"); setPlacement(null); }}
+              className="accent-blue-600"
+            />
+            <span className="text-sm text-gray-700">Tanda Tangan (TTD)</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name="sigType"
+              value="paraf"
+              checked={sigType === "paraf"}
+              onChange={() => { setSigType("paraf"); setPlacement(null); }}
+              className="accent-blue-600"
+            />
+            <span className="text-sm text-gray-700">Paraf</span>
+          </label>
+          {/* Signature previews */}
+          <div className="ml-auto flex items-center gap-3">
+            {signatureImageUrl && (
+              <div className="text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={signatureImageUrl} alt="TTD" className="h-8 object-contain border border-gray-200 rounded px-1" />
+                <span className="text-xs text-gray-400 block">TTD</span>
+              </div>
+            )}
+            {parafImageUrl && (
+              <div className="text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={parafImageUrl} alt="Paraf" className="h-8 object-contain border border-gray-200 rounded px-1" />
+                <span className="text-xs text-gray-400 block">Paraf</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Size slider */}
+      <div className="mb-3 flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <span className="text-sm font-medium text-gray-700 shrink-0">Ukuran:</span>
+        <input
+          type="range"
+          min={40}
+          max={200}
+          value={sizePercent}
+          onChange={(e) => { setSizePercent(Number(e.target.value)); setPlacement(null); }}
+          className="flex-1 accent-blue-600"
+        />
+        <span className="text-sm text-gray-600 w-12 text-right">{sizePercent}%</span>
+      </div>
+
       {/* Instruction banner */}
       <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
-        Klik pada dokumen untuk menempatkan tanda tangan Anda. Klik lagi untuk mengubah posisi.
+        Klik pada dokumen untuk menempatkan {sigType === "paraf" ? "paraf" : "tanda tangan"} Anda. Klik lagi untuk mengubah posisi.
       </div>
 
       {/* PDF Viewer */}
@@ -168,36 +258,44 @@ export default function PdfSignaturePlacer({
               </Flex>
             )}
             renderError={() => (
-              <div className="p-6 text-center text-red-500">
-                Gagal memuat dokumen PDF.
-              </div>
+              <div className="p-6 text-center text-red-500">Gagal memuat dokumen PDF.</div>
             )}
           />
         </Worker>
       </div>
 
       {/* Action buttons */}
-      <div className="flex justify-between items-center mt-4">
-        <Button onClick={onCancel} disabled={loading}>
-          Batal
-        </Button>
+      <div className="flex justify-between items-center mt-4 gap-3">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={loading}>
+            Batal
+          </Button>
+          {onApproveWithoutSign && (
+            <Button
+              variant="outline"
+              onClick={onApproveWithoutSign}
+              disabled={loading}
+            >
+              {loading ? "Memproses..." : "Setujui tanpa TTD"}
+            </Button>
+          )}
+        </div>
         <Button
           onClick={handleConfirm}
           disabled={!placement || loading}
-          className="bg-green-600 text-white min-w-[180px]"
+          className="bg-green-600 text-white min-w-[200px]"
         >
-          {loading ? "Memproses..." : "Konfirmasi Posisi TTD"}
+          {loading ? "Memproses..." : `Konfirmasi Posisi ${sigType === "paraf" ? "Paraf" : "TTD"}`}
         </Button>
       </div>
 
-      {/* Hidden image to detect aspect ratio */}
+      {/* Hidden images to detect aspect ratios */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={signatureImageUrl}
-        alt=""
-        onLoad={onSigLoad}
-        style={{ display: "none" }}
-      />
+      <img src={signatureImageUrl} alt="" onLoad={(e) => onSigLoad(e, "ttd")} style={{ display: "none" }} />
+      {parafImageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={parafImageUrl} alt="" onLoad={(e) => onSigLoad(e, "paraf")} style={{ display: "none" }} />
+      )}
     </div>
   );
 }
