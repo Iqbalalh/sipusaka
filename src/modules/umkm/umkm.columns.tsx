@@ -80,6 +80,21 @@ export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Um
   } as any,
 
   {
+    title: "Bantuan",
+    dataIndex: "_count",
+    key: "umkmVisitsCount",
+    align: "center",
+    render: (_: any, record: any) => {
+      const count = record._count?.umkmVisits ?? 0;
+      return count === 0 ? "Belum pernah" : count;
+    },
+    exportRender: (_: any, record: any) => {
+      const count = record._count?.umkmVisits ?? 0;
+      return count === 0 ? "Belum pernah" : String(count);
+    },
+  } as any,
+
+  {
     title: "Status",
     dataIndex: "isActive",
     key: "isActive",

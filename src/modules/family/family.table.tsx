@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Spin, Modal, Input, Progress } from "antd";
@@ -30,6 +30,7 @@ import { saveAs } from "file-saver";
 // EXCEL EXPORT FUNCTION WITH PROGRESS
 // ==============================================
 const exportFamilyToExcel = async (
+  exportData: HomeTable[],
   setShowProgress: (show: boolean) => void,
   setProgress: (progress: number) => void
 ) => {
@@ -37,21 +38,12 @@ const exportFamilyToExcel = async (
     setShowProgress(true);
     setProgress(10);
 
-    // Fetch data from export API (includes children and regions)
-    let exportData: HomeTable[] = [];
-    try {
-      exportData = await getHomesForExport();
-      setProgress(30);
-    } catch (error) {
-      console.error("Failed to fetch export data:", error);
-      setShowProgress(false);
-      return;
-    }
-
     if (!exportData || exportData.length === 0) {
       setShowProgress(false);
       return;
     }
+
+    setProgress(30);
 
     // Create workbook
     const workbook = new ExcelJS.Workbook();
@@ -304,6 +296,7 @@ export default function FamilyTable() {
   
   // Data State
   const [data, setData] = useState<HomeTable[]>([]);
+  const [filteredData, setFilteredData] = useState<HomeTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   
@@ -327,6 +320,14 @@ export default function FamilyTable() {
 
   // Regions State
   const [regions, setRegions] = useState<Region[]>([]);
+  const isFirstSearchRender = useRef(true);
+
+  // Column Filters State (for export)
+  const [activeTableFilters, setActiveTableFilters] = useState<Record<string, any[] | null>>({});
+  const hasActiveColumnFilters = useMemo(
+    () => Object.values(activeTableFilters).some((v) => v !== null && (v as any[]).length > 0),
+    [activeTableFilters]
+  );
 
   // Fetch regions for column filters
   useEffect(() => {
@@ -352,6 +353,7 @@ export default function FamilyTable() {
       const response = await getHomesOptimized(page, pageSize, search);
       
       setData(response.data);
+      setFilteredData(response.data);
       setTotal(response.pagination.total);
       setTotalPages(response.pagination.totalPages);
       setCurrentPage(response.pagination.page);
@@ -359,6 +361,7 @@ export default function FamilyTable() {
       console.error("Error fetching family data:", err);
       notifyFromResult(notify, { error: err });
       setData([]);
+      setFilteredData([]);
       setTotal(0);
       setTotalPages(1);
     } finally {
@@ -382,16 +385,21 @@ export default function FamilyTable() {
   // SEARCH WITH DEBOUNCE
   // ==========================
   useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false;
+      return;
+    }
+
     if (searchTimer) {
       clearTimeout(searchTimer);
     }
-    
+
     const timer = setTimeout(() => {
       fetchData(1, searchQuery);
     }, 500);
-    
+
     setSearchTimer(timer);
-    
+
     return () => {
       if (timer) {
         clearTimeout(timer);
@@ -441,7 +449,40 @@ export default function FamilyTable() {
   // EXPORT HANDLER
   // ==========================
   const handleExportWithProgress = async () => {
-    await exportFamilyToExcel(setShowProgress, setProgress);
+    // Always fetch all data from server, then apply active column filters client-side
+    let allData = await getHomesForExport();
+
+    if (hasActiveColumnFilters) {
+      allData = allData.filter((record) => {
+        const regionFilters = activeTableFilters.regionId as number[] | null;
+        if (regionFilters?.length && !regionFilters.includes(record.regionId as number)) return false;
+
+        const isActiveFilters = activeTableFilters.isActive as boolean[] | null;
+        if (isActiveFilters?.length && !isActiveFilters.includes(record.partners?.isActive ?? false)) return false;
+
+        const empNameFilters = activeTableFilters.employeeName as string[] | null;
+        if (empNameFilters?.length) {
+          const term = empNameFilters[0].toLowerCase();
+          if (!record.employees?.employeeName?.toLowerCase().includes(term)) return false;
+        }
+
+        const partnerNameFilters = activeTableFilters.partnerName as string[] | null;
+        if (partnerNameFilters?.length) {
+          const term = partnerNameFilters[0].toLowerCase();
+          if (!record.partners?.partnerName?.toLowerCase().includes(term)) return false;
+        }
+
+        const waliNameFilters = activeTableFilters.waliName as string[] | null;
+        if (waliNameFilters?.length) {
+          const term = waliNameFilters[0].toLowerCase();
+          if (!record.wali?.waliName?.toLowerCase().includes(term)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    await exportFamilyToExcel(allData, setShowProgress, setProgress);
   };
 
   // Generate columns with regions
@@ -506,7 +547,13 @@ export default function FamilyTable() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-col gap-4 w-full sm:w-auto">
           <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
-            Jumlah Data Keluarga: {total}
+            Jumlah Data Keluarga:{" "}
+            <span>
+              {total}
+              {hasActiveColumnFilters && (
+                <span className="ml-1 text-xs font-normal text-blue-500">(filter aktif)</span>
+              )}
+            </span>
           </h3>
           <div className="w-full">
             <Input
@@ -591,6 +638,10 @@ export default function FamilyTable() {
         }}
         scroll={{ x: "max-content", y: 500 }}
         loading={loading}
+        onChange={(_, filters, __, extra) => {
+          setFilteredData(extra.currentDataSource as HomeTable[]);
+          setActiveTableFilters(filters as Record<string, any[] | null>);
+        }}
       />
     </div>
   );

@@ -42,6 +42,7 @@ interface BaseStaff {
   nik: string;
   roleId: number | null;
   position: string | null;
+  isActive: boolean;
   staffPict: string | null;
   signaturePath: string | null;
   parafPath: string | null;
@@ -58,6 +59,7 @@ const INITIAL_FORM_STATE: BaseStaff = {
   nik: "",
   roleId: null,
   position: null,
+  isActive: true,
   staffPict: null,
   signaturePath: null,
   parafPath: null,
@@ -362,6 +364,18 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
                   onChange={(value) => handleFieldChange("roleId", value)}
                   options={roles}
                   placeholder="Pilih role"
+                />
+              </FormField>
+
+              <FormField label="Status">
+                <SelectInput
+                  value={form.isActive}
+                  onChange={(value) => handleFieldChange("isActive", value)}
+                  options={[
+                    { value: true, label: "Aktif" },
+                    { value: false, label: "Tidak Aktif" },
+                  ]}
+                  placeholder="Pilih status"
                 />
               </FormField>
 

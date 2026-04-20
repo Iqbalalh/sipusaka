@@ -76,6 +76,23 @@ export const getStaffColumns = (role?: string): TableColumn<Staff>[] => [
   },
 
   {
+    title: "Status",
+    dataIndex: "isActive",
+    key: "isActive",
+    filters: [
+      { text: "Aktif", value: true },
+      { text: "Tidak Aktif", value: false },
+    ],
+    onFilter: (value, record) => record.isActive === value,
+    render: (isActive: boolean) => (
+      <Badge size="sm" color={isActive ? "success" : "error"}>
+        {isActive ? "Aktif" : "Tidak Aktif"}
+      </Badge>
+    ),
+    exportRender: (value: boolean) => (value ? "Aktif" : "Tidak Aktif"),
+  },
+
+  {
     title: "Tempat Lahir",
     dataIndex: "birthplace",
     key: "birthplace",

@@ -100,6 +100,7 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     title: "Pegawai",
     dataIndex: "employeeName",
     key: "employeeName",
+    ...getColumnSearchProps("employeeName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.employees?.employeePict ? (
@@ -135,6 +136,7 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     title: "Pasangan",
     dataIndex: "partnerName",
     key: "partnerName",
+    ...getColumnSearchProps("partnerName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.partners?.partnerPict ? (
@@ -172,6 +174,7 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     title: "Wali",
     dataIndex: "waliName",
     key: "waliName",
+    ...getColumnSearchProps("waliName"),
     render: (_, home) => home.wali?.waliName || "-",
   },
   {
@@ -180,6 +183,16 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     key: "_count",
     align: "center",
     render: (_, home) => home._count?.children || 0,
+  },
+  {
+    title: "Bantuan",
+    dataIndex: "_count",
+    key: "familyVisits",
+    align: "center",
+    render: (_, home) => {
+      const count = (home._count as any)?.familyVisits ?? 0;
+      return count === 0 ? "Belum pernah" : count;
+    },
   },
   {
     title: "Wilayah",

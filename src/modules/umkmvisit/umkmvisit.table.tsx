@@ -14,7 +14,6 @@ import { UmkmVisit } from "@/utils/services/umkmvisit.service";
 // Utils
 import {
   getUmkmVisits,
-  getAllUmkmVisits,
   deleteUmkmVisit,
 } from "@/utils/services/umkmvisit.service";
 import { getUmkmVisitColumns } from "./umkmvisit.columns";
@@ -26,6 +25,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // EXCEL EXPORT FUNCTION WITH PROGRESS BAR
 // ==============================================
 const exportUmkmVisitToExcel = async (
+  filteredData: UmkmVisit[],
   setShowProgress: (show: boolean) => void,
   setProgress: (progress: number) => void
 ) => {
@@ -33,8 +33,7 @@ const exportUmkmVisitToExcel = async (
     setShowProgress(true);
     setProgress(10);
 
-    // Fetch all data
-    const allData = await getAllUmkmVisits();
+    const allData = filteredData;
     setProgress(30);
 
     if (!allData || allData.length === 0) {
@@ -223,7 +222,7 @@ export default function UmkmVisitTable() {
         deleteConfirmTitle="Konfirmasi Hapus"
         deleteConfirmMessage="Apakah Anda yakin ingin menghapus bantuan UMKM ini?"
         deleteSuccessMessage="Bantuan UMKM berhasil dihapus"
-        onExport={() => exportUmkmVisitToExcel(setShowProgress, setProgress)}
+        onExport={(filteredData) => exportUmkmVisitToExcel(filteredData as UmkmVisit[], setShowProgress, setProgress)}
         exportConfig={{
           filename: "data-bantuan-umkm",
           sheetName: "Bantuan UMKM",

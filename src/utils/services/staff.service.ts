@@ -20,6 +20,7 @@ export interface Staff {
   nik: string;
   roleId: number | null;
   position: string | null;
+  isActive: boolean;
   staffPict: string | null;
   signaturePath: string | null;
   signatureUrl: string | null;

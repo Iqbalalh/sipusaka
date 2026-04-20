@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Progress, Select, Form } from "antd";
-import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, FilterOutlined, PlusOutlined } from "@ant-design/icons";
+import { Table, Spin, Modal, Input, Progress } from "antd";
+import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import Link from "next/link";
@@ -19,7 +19,6 @@ import {
   deleteChildren,
   getChildrenOptimized,
   getChildrenForExport,
-  type ChildrenFilters,
 } from "@/utils/services/children.service";
 import { getRegionsList } from "@/utils/services/region.service";
 import { getChildrenColumns } from "./children.columns";
@@ -33,21 +32,27 @@ import { saveAs } from "file-saver";
 const exportChildrenToExcel = async (
   filters: ChildrenFilters | undefined,
   setShowProgress: (show: boolean) => void,
-  setProgress: (progress: number) => void
+  setProgress: (progress: number) => void,
+  preloadedData?: Children[]
 ) => {
   try {
     setShowProgress(true);
     setProgress(10);
 
-    // Fetch data from export API (includes all fields)
+    // Use preloaded data (from table filters) or fetch from server
     let exportData: Children[] = [];
-    try {
-      exportData = await getChildrenForExport(filters);
+    if (preloadedData && preloadedData.length > 0) {
+      exportData = preloadedData;
       setProgress(30);
-    } catch (error) {
-      console.error("Failed to fetch export data:", error);
-      setShowProgress(false);
-      return;
+    } else {
+      try {
+        exportData = await getChildrenForExport(filters);
+        setProgress(30);
+      } catch (error) {
+        console.error("Failed to fetch export data:", error);
+        setShowProgress(false);
+        return;
+      }
     }
 
     if (!exportData || exportData.length === 0) {
@@ -231,6 +236,7 @@ export default function ChildrenTable() {
   
   // Data State
   const [data, setData] = useState<Children[]>([]);
+  const [filteredData, setFilteredData] = useState<Children[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   
@@ -238,6 +244,7 @@ export default function ChildrenTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
+  const isFirstSearchRender = useRef(true);
   
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -251,11 +258,16 @@ export default function ChildrenTable() {
   // Export State
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [exportModalVisible, setExportModalVisible] = useState(false);
-  const [exportForm] = Form.useForm();
 
   // Regions State
   const [regions, setRegions] = useState<Region[]>([]);
+
+  // Column Filters State (for export)
+  const [activeTableFilters, setActiveTableFilters] = useState<Record<string, any[] | null>>({});
+  const hasActiveColumnFilters = useMemo(
+    () => Object.values(activeTableFilters).some((v) => v !== null && (v as any[]).length > 0),
+    [activeTableFilters]
+  );
 
   // Fetch regions for column filters
   useEffect(() => {
@@ -281,6 +293,7 @@ export default function ChildrenTable() {
       const response = await getChildrenOptimized(page, pageSize, search);
       
       setData(response.data);
+      setFilteredData(response.data);
       setTotal(response.pagination.total);
       setTotalPages(response.pagination.totalPages);
       setCurrentPage(response.pagination.page);
@@ -288,6 +301,7 @@ export default function ChildrenTable() {
       console.error("Error fetching children data:", err);
       notifyFromResult(notify, { error: err });
       setData([]);
+      setFilteredData([]);
       setTotal(0);
       setTotalPages(1);
     } finally {
@@ -313,16 +327,21 @@ export default function ChildrenTable() {
   // SEARCH WITH DEBOUNCE
   // ==========================
   useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false;
+      return;
+    }
+
     if (searchTimer) {
       clearTimeout(searchTimer);
     }
-    
+
     const timer = setTimeout(() => {
       fetchData(1, searchQuery);
     }, 500);
-    
+
     setSearchTimer(timer);
-    
+
     return () => {
       if (timer) {
         clearTimeout(timer);
@@ -346,24 +365,49 @@ export default function ChildrenTable() {
   };
 
   // ==========================
-  // EXPORT FILTER HANDLERS
+  // EXPORT HANDLER
   // ==========================
   const handleExportWithFilters = async () => {
     try {
-      const values = await exportForm.validateFields();
-      const exportFilters: ChildrenFilters = {};
-      
-      if (values.educationLevel) exportFilters.educationLevel = values.educationLevel;
-      if (values.yatimStatus) exportFilters.yatimStatus = values.yatimStatus;
-      if (values.regionId) exportFilters.regionId = values.regionId;
-      if (values.isActive !== undefined) exportFilters.isActive = values.isActive;
-      if (values.isCondition !== undefined) exportFilters.isCondition = values.isCondition;
-      if (values.ageSort) exportFilters.ageSort = values.ageSort;
-      
-      setExportModalVisible(false);
-      await exportChildrenToExcel(exportFilters, setShowProgress, setProgress);
+      let allChildren = await getChildrenForExport();
+
+      if (hasActiveColumnFilters) {
+        allChildren = allChildren.filter((record) => {
+          const genderFilters = activeTableFilters.childrenGender as string[] | null;
+          if (genderFilters?.length && !genderFilters.includes(record.childrenGender)) return false;
+
+          const edFilters = activeTableFilters.educationLevel as string[] | null;
+          if (edFilters?.length && !edFilters.includes(record.educationLevel ?? "")) return false;
+
+          const yatimFilters = activeTableFilters.yatimStatus as string[] | null;
+          if (yatimFilters?.length) {
+            const f = record.isFatherAlive;
+            const m = record.isMotherAlive;
+            const matched = yatimFilters.some((v) => {
+              if (v === "yatim") return !f && !!m;
+              if (v === "piatu") return !!f && !m;
+              if (v === "yatim-piatu") return !f && !m;
+              return false;
+            });
+            if (!matched) return false;
+          }
+
+          const regionFilters = activeTableFilters.regionId as number[] | null;
+          if (regionFilters?.length && !regionFilters.includes((record as any).homes?.employees?.regionId ?? 0)) return false;
+
+          const isActiveFilters = activeTableFilters.isActive as boolean[] | null;
+          if (isActiveFilters?.length && !isActiveFilters.includes(record.isActive ?? true)) return false;
+
+          const isCondFilters = activeTableFilters.isCondition as boolean[] | null;
+          if (isCondFilters?.length && !isCondFilters.includes(record.isCondition ?? true)) return false;
+
+          return true;
+        });
+      }
+
+      await exportChildrenToExcel(undefined, setShowProgress, setProgress, allChildren);
     } catch (error) {
-      console.error("Export validation failed:", error);
+      console.error("Export failed:", error);
     }
   };
 
@@ -395,8 +439,7 @@ export default function ChildrenTable() {
   // EXPORT HANDLER
   // ==========================
   const handleExportClick = () => {
-    exportForm.resetFields();
-    setExportModalVisible(true);
+    handleExportWithFilters();
   };
 
   // Generate columns with regions and inject openDeleteModal
@@ -484,7 +527,13 @@ export default function ChildrenTable() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-col gap-4 w-full sm:w-auto">
           <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
-            Jumlah Data Anak Asuh: {total}
+            Jumlah Data Anak Asuh:{" "}
+            <span>
+              {total}
+              {hasActiveColumnFilters && (
+                <span className="ml-1 text-xs font-normal text-blue-500">(filter aktif)</span>
+              )}
+            </span>
           </h3>
           <div className="w-full">
             <Input
@@ -506,7 +555,7 @@ export default function ChildrenTable() {
             className="bg-blue-600 hover:bg-blue-700"
           >
             <DownloadOutlined className="mr-2" />
-            Export Excel
+            Export Excel{hasActiveColumnFilters ? " (filter aktif)" : ""}
           </Button>
           {isAdmin && (
             <Link href="/children/create">
@@ -536,95 +585,12 @@ export default function ChildrenTable() {
         }}
         scroll={{ x: "max-content", y: 500 }}
         loading={loading}
+        onChange={(_, filters, __, extra) => {
+          setFilteredData(extra.currentDataSource as Children[]);
+          setActiveTableFilters(filters as Record<string, any[] | null>);
+        }}
       />
 
-      {/* EXPORT FILTER MODAL */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2">
-            <FilterOutlined />
-            <span>Filter Export Excel</span>
-          </div>
-        }
-        open={exportModalVisible}
-        onOk={handleExportWithFilters}
-        onCancel={() => setExportModalVisible(false)}
-        okText="Export"
-        cancelText="Batal"
-        width={600}
-      >
-        <Form form={exportForm} layout="vertical">
-          <Form.Item name="educationLevel" label="Jenjang Pendidikan">
-            <Select
-              placeholder="Pilih Jenjang Pendidikan"
-              allowClear
-              options={[
-                { label: 'TK', value: 'TK' },
-                { label: 'SD/Sederajat', value: 'SD/Sederajat' },
-                { label: 'SMP/Sederajat', value: 'SMP/Sederajat' },
-                { label: 'SMA/Sederajat', value: 'SMA/Sederajat' },
-                { label: 'Diploma', value: 'Diploma' },
-                { label: 'Sarjana', value: 'Sarjana' },
-                { label: 'Magister', value: 'Magister' },
-                { label: 'Doktor', value: 'Doktor' },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item name="yatimStatus" label="Yatim/Piatu">
-            <Select
-              placeholder="Pilih Status Yatim/Piatu"
-              allowClear
-              options={[
-                { label: 'Yatim', value: 'yatim' },
-                { label: 'Piatu', value: 'piatu' },
-                { label: 'Yatim Piatu', value: 'yatim-piatu' },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item name="regionId" label="Wilayah">
-            <Select
-              placeholder="Pilih Wilayah"
-              allowClear
-              options={regions.map(r => ({ label: r.regionName, value: r.regionId }))}
-            />
-          </Form.Item>
-
-          <Form.Item name="isActive" label="Status">
-            <Select
-              placeholder="Pilih Status"
-              allowClear
-              options={[
-                { label: 'Aktif', value: true },
-                { label: 'Tidak Aktif', value: false },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item name="isCondition" label="Kondisi">
-            <Select
-              placeholder="Pilih Kondisi"
-              allowClear
-              options={[
-                { label: 'Normal', value: true },
-                { label: 'ABK', value: false },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item name="ageSort" label="Urutkan Usia">
-            <Select
-              placeholder="Pilih Urutan"
-              allowClear
-              options={[
-                { label: 'Termuda', value: 'asc' },
-                { label: 'Tertua', value: 'desc' },
-              ]}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 }

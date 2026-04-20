@@ -246,6 +246,15 @@ export const getChildAssistanceColumns = (router: any, role?: string): ColumnsTy
     ),
   },
   {
+    title: "Wilayah",
+    dataIndex: "regionName",
+    key: "regionName",
+    width: 120,
+    render: (_, record) => (
+      <Tag color="purple">{record.children?.homes?.regions?.regionName || "-"}</Tag>
+    ),
+  },
+  {
     title: "Usia",
     dataIndex: "age",
     key: "age",

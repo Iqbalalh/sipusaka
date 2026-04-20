@@ -269,6 +269,21 @@ export const getChildrenColumns = (
   },
 
   {
+    title: "Bantuan",
+    dataIndex: "_count",
+    key: "childAssistanceCount",
+    align: "center",
+    render: (_: any, record: any) => {
+      const count = record._count?.childAssistance ?? 0;
+      return count === 0 ? "Belum pernah" : count;
+    },
+    exportRender: (_: any, record: any) => {
+      const count = record._count?.childAssistance ?? 0;
+      return count === 0 ? "Belum pernah" : String(count);
+    },
+  },
+
+  {
     title: "Status",
     dataIndex: "isActive",
     key: "isActive",

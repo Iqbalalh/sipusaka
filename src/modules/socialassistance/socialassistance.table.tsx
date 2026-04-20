@@ -29,6 +29,7 @@ import ImportModal from "./components/ImportModal";
 // EXCEL EXPORT FUNCTION WITH PROGRESS
 // ==============================================
 const exportSocialAssistanceToExcel = async (
+  exportData: SocialAssistance[],
   setShowProgress: (show: boolean) => void,
   setProgress: (progress: number) => void
 ) => {
@@ -36,22 +37,12 @@ const exportSocialAssistanceToExcel = async (
     setShowProgress(true);
     setProgress(10);
 
-    // Fetch all data for export
-    let exportData: SocialAssistance[] = [];
-    try {
-      const response = await getAllSocialAssistanceOptimized(1, 9999, "");
-      exportData = response.data;
-      setProgress(30);
-    } catch (error) {
-      console.error("Failed to fetch export data:", error);
-      setShowProgress(false);
-      return;
-    }
-
     if (!exportData || exportData.length === 0) {
       setShowProgress(false);
       return;
     }
+
+    setProgress(30);
 
     // Create workbook
     const workbook = new ExcelJS.Workbook();
@@ -207,6 +198,7 @@ export default function SocialAssistanceTable() {
   
   // Data State
   const [data, setData] = useState<SocialAssistance[]>([]);
+  const [filteredData, setFilteredData] = useState<SocialAssistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   
@@ -240,12 +232,14 @@ export default function SocialAssistanceTable() {
       const response = await getAllSocialAssistanceOptimized(page, pageSize, search);
       
       setData(response.data);
+      setFilteredData(response.data);
       setTotal(response.pagination.total);
       setCurrentPage(response.pagination.page);
     } catch (err) {
       console.error("Error fetching social assistance data:", err);
       notifyFromResult(notify, { error: err });
       setData([]);
+      setFilteredData([]);
       setTotal(0);
     } finally {
       setLoading(false);
@@ -329,7 +323,7 @@ export default function SocialAssistanceTable() {
   // EXPORT HANDLER
   // ==========================
   const handleExportWithProgress = async () => {
-    await exportSocialAssistanceToExcel(setShowProgress, setProgress);
+    await exportSocialAssistanceToExcel(filteredData, setShowProgress, setProgress);
   };
 
   // Generate columns
@@ -401,7 +395,14 @@ export default function SocialAssistanceTable() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-col gap-4 w-full sm:w-auto">
           <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
-            Jumlah Data Bantuan Sosial: {total}
+            Jumlah Data Bantuan Sosial:{" "}
+            {filteredData.length < data.length ? (
+              <span className="text-blue-600 dark:text-blue-400">
+                {filteredData.length} <span className="text-xs font-normal text-gray-500">(difilter dari {total})</span>
+              </span>
+            ) : (
+              total
+            )}
           </h3>
           <div className="w-full">
             <Input
@@ -431,7 +432,7 @@ export default function SocialAssistanceTable() {
             className="bg-blue-600 hover:bg-blue-700"
           >
             <DownloadOutlined className="mr-2" />
-            Export Excel
+            Export Excel ({filteredData.length})
           </Button>
           {isAdmin && (
             <Link href="/socialassistance/create">
@@ -495,6 +496,9 @@ export default function SocialAssistanceTable() {
         }}
         scroll={{ x: "max-content", y: 500 }}
         loading={loading}
+        onChange={(_, __, ___, extra) => {
+          setFilteredData(extra.currentDataSource as SocialAssistance[]);
+        }}
       />
     </>
   );
