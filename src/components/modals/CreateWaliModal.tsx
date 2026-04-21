@@ -34,7 +34,7 @@ export default function CreateWaliModal({
 
   const validateFile = (file: File): boolean => {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    const maxSize = 1 * 5120 * 5120;
+    const maxSize = 20 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
       message.error("Format tidak valid. Hanya JPG, PNG, atau WEBP.");
@@ -42,7 +42,7 @@ export default function CreateWaliModal({
     }
 
     if (file.size > maxSize) {
-      message.error("Ukuran file maksimal 1MB.");
+      message.error("Ukuran file maksimal 20MB.");
       return false;
     }
 

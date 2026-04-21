@@ -1,7 +1,7 @@
 export const validateImage = (
   file: File,
   opts = {
-    maxSizeMB: 5,
+    maxSizeMB: 20,
     types: ["image/jpeg", "image/png", "image/webp"],
   }
 ) => {
@@ -9,7 +9,7 @@ export const validateImage = (
     return "Format file tidak valid";
   }
 
-  if (file.size > opts.maxSizeMB * 5120 * 5120) {
+  if (file.size > opts.maxSizeMB * 1024 * 1024) {
     return `Ukuran maksimal ${opts.maxSizeMB}MB`;
   }
 

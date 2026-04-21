@@ -111,7 +111,7 @@ function ChartCard({ title, categories, series, colors, height = 280 }: ChartCar
     plotOptions: {
       bar: {
         horizontal: true,
-        barHeight: "55%",
+        columnWidth: "55%",
         borderRadius: 4,
         borderRadiusApplication: "end",
       },
@@ -121,10 +121,11 @@ function ChartCard({ title, categories, series, colors, height = 280 }: ChartCar
       categories,
       axisBorder: { show: false },
       axisTicks: { show: false },
+      labels: { style: { fontSize: "11px" }, rotate: -30 },
     },
-    yaxis: { labels: { style: { fontSize: "12px" } } },
+    yaxis: { labels: { style: { fontSize: "11px" } } },
     legend: { show: series.length > 1, position: "top", horizontalAlign: "left", fontFamily: "Outfit" },
-    grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    grid: { xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
     tooltip: { y: { formatter: (v) => `${v}` } },
   };
 
@@ -191,11 +192,63 @@ function RegionDetailCard({ stat }: { stat: RegionStat }) {
 }
 
 // ==============================================
+// EDUCATION STATS OVERVIEW
+// ==============================================
+function EducationStatsOverview({ stats }: { stats: RegionStat[] }) {
+  const eduCounts = EDU_LEVELS.map((k) => ({
+    level: k,
+    count: stats.reduce((sum, s) => sum + ((s.educationLevels as any)?.[k] ?? 0), 0),
+    badgeColor: EDU_BADGE_COLORS[k],
+    barColor: EDU_COLORS[k],
+  }));
+  const maxCount = Math.max(...eduCounts.map((d) => d.count), 1);
+  const grandTotal = eduCounts.reduce((s, d) => s + d.count, 0);
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-5 bg-blue-600 rounded-full" />
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+            Statistik Jenjang Pendidikan Keseluruhan
+          </h3>
+        </div>
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          Total: <span className="text-gray-800 dark:text-white font-bold">{grandTotal}</span> anak
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+        {eduCounts.map(({ level, count, badgeColor, barColor }) => (
+          <div
+            key={level}
+            className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+          >
+            <span className={`self-start rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>
+              {level}
+            </span>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {grandTotal > 0 ? ((count / grandTotal) * 100).toFixed(1) : "0"}%
+            </p>
+            <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: barColor }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==============================================
 // SUMMARY TAB (ALL REGIONS)
 // ==============================================
 function SummaryView({ stats }: { stats: RegionStat[] }) {
   const names = stats.map((s) => s.regionName);
-  const heightBase = Math.max(240, stats.length * 52);
+  const chartHeight = Math.max(300, stats.length * 120);
 
   // Overall education totals
   const overallEduData = EDU_LEVELS.map((k) =>
@@ -204,98 +257,64 @@ function SummaryView({ stats }: { stats: RegionStat[] }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <ChartCard
-          title="Keluarga & Anak per Wilayah"
-          categories={names}
-          height={heightBase}
-          series={[
-            { name: "Keluarga", data: stats.map((s) => s.families) },
-            { name: "Anak Asuh", data: stats.map((s) => s.children.total) },
-          ]}
-          colors={["#465fff", "#6366f1"]}
-        />
-        <ChartCard
-          title="Kategori Anak per Wilayah"
-          categories={names}
-          height={heightBase}
-          series={[
-            { name: "Yatim", data: stats.map((s) => s.children.yatim) },
-            { name: "Piatu", data: stats.map((s) => s.children.piatu) },
-            { name: "Yatim Piatu", data: stats.map((s) => s.children.yatimPiatu) },
-            { name: "ABK", data: stats.map((s) => s.children.abk) },
-          ]}
-          colors={["#f59e0b", "#f97316", "#ef4444", "#a855f7"]}
-        />
-      </div>
+      {/* Education level stats cards */}
+      <EducationStatsOverview stats={stats} />
 
-      {/* Education level charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <ChartCard
-          title="Tingkat Pendidikan Keseluruhan"
-          categories={[...EDU_LEVELS]}
-          height={Math.max(240, EDU_LEVELS.length * 40)}
-          series={[{ name: "Jumlah Anak", data: overallEduData }]}
-          colors={EDU_LEVELS.map((k) => EDU_COLORS[k])}
-        />
-        <ChartCard
-          title="Tingkat Pendidikan per Wilayah"
-          categories={names}
-          height={heightBase}
-          series={EDU_LEVELS.map((k) => ({
-            name: k,
-            data: stats.map((s) => (s.educationLevels as any)?.[k] ?? 0),
-          }))}
-          colors={EDU_LEVELS.map((k) => EDU_COLORS[k])}
-        />
-      </div>
+      {/* Charts — one per row, vertical bars */}
+      <ChartCard
+        title="Keluarga & Anak per Wilayah"
+        categories={names}
+        height={chartHeight}
+        series={[
+          { name: "Keluarga", data: stats.map((s) => s.families) },
+          { name: "Anak Asuh", data: stats.map((s) => s.children.total) },
+        ]}
+        colors={["#465fff", "#6366f1"]}
+      />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <ChartCard
-          title="UMKM per Wilayah"
-          categories={names}
-          height={heightBase}
-          series={[
-            { name: "UMKM Aktif", data: stats.map((s) => s.umkm.active) },
-            { name: "UMKM Tidak Aktif", data: stats.map((s) => s.umkm.inactive) },
-          ]}
-          colors={["#22c55e", "#d1d5db"]}
-        />
-        <ChartCard
-          title="Bantuan per Wilayah"
-          categories={names}
-          height={heightBase}
-          series={[
-            { name: "Bantuan Anak", data: stats.map((s) => s.childAssistance.total) },
-            { name: "Bantuan UMKM", data: stats.map((s) => s.umkmVisits.total) },
-            { name: "Bantuan Sosial", data: stats.map((s) => s.socialAssistance.total) },
-          ]}
-          colors={["#22c55e", "#f97316", "#ec4899"]}
-        />
-      </div>
-    </div>
-  );
-}
+      <ChartCard
+        title="Kategori Anak per Wilayah"
+        categories={names}
+        height={chartHeight}
+        series={[
+          { name: "Yatim", data: stats.map((s) => s.children.yatim) },
+          { name: "Piatu", data: stats.map((s) => s.children.piatu) },
+          { name: "Yatim Piatu", data: stats.map((s) => s.children.yatimPiatu) },
+          { name: "ABK", data: stats.map((s) => s.children.abk) },
+        ]}
+        colors={["#f59e0b", "#f97316", "#ef4444", "#a855f7"]}
+      />
 
-// ==============================================
-// SUMMARY TOTALS ROW
-// ==============================================
-function TotalRow({ stats }: { stats: RegionStat[] }) {
-  const totalFamilies = stats.reduce((a, s) => a + s.families, 0);
-  const totalChildren = stats.reduce((a, s) => a + s.children.total, 0);
-  const totalUmkm = stats.reduce((a, s) => a + s.umkm.total, 0);
-  const totalChildAss = stats.reduce((a, s) => a + s.childAssistance.total, 0);
-  const totalUmkmAss = stats.reduce((a, s) => a + s.umkmVisits.total, 0);
-  const totalSocAss = stats.reduce((a, s) => a + s.socialAssistance.total, 0);
+      <ChartCard
+        title="Jenjang Pendidikan Keseluruhan"
+        categories={[...EDU_LEVELS]}
+        height={320}
+        series={[{ name: "Jumlah Anak", data: overallEduData }]}
+        colors={EDU_LEVELS.map((k) => EDU_COLORS[k])}
+      />
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
-      <StatCard icon={<FaHouseChimney />} label="Total Keluarga" value={totalFamilies} color="bg-blue-500" />
-      <StatCard icon={<FaChildReaching />} label="Total Anak Asuh" value={totalChildren} color="bg-indigo-500" />
-      <StatCard icon={<FaShop />} label="Total UMKM" value={totalUmkm} color="bg-orange-500" />
-      <StatCard icon={<FaHandHoldingHeart />} label="Bantuan Anak" value={totalChildAss} color="bg-green-500" />
-      <StatCard icon={<FaHandHoldingHeart />} label="Bantuan UMKM" value={totalUmkmAss} color="bg-purple-500" />
-      <StatCard icon={<FaUsers />} label="Bantuan Sosial" value={totalSocAss} color="bg-rose-500" />
+      <ChartCard
+        title="UMKM per Wilayah"
+        categories={names}
+        height={chartHeight}
+        series={[
+          { name: "UMKM Aktif", data: stats.map((s) => s.umkm.active) },
+          { name: "UMKM Tidak Aktif", data: stats.map((s) => s.umkm.inactive) },
+        ]}
+        colors={["#22c55e", "#d1d5db"]}
+      />
+
+      <ChartCard
+        title="Bantuan per Wilayah"
+        categories={names}
+        height={chartHeight}
+        series={[
+          { name: "Bantuan Anak", data: stats.map((s) => s.childAssistance.total) },
+          { name: "Bantuan UMKM", data: stats.map((s) => s.umkmVisits.total) },
+          { name: "Bantuan Sosial", data: stats.map((s) => s.socialAssistance.total) },
+        ]}
+        colors={["#22c55e", "#f97316", "#ec4899"]}
+      />
     </div>
   );
 }
@@ -330,8 +349,6 @@ export default function WilayahPage() {
 
   return (
     <div className="space-y-5">
-      <TotalRow stats={stats} />
-
       {/* Region tabs */}
       <div className="flex flex-wrap gap-2">
         <button

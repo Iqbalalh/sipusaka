@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Progress } from "antd";
+import { Spin, Modal, Input, Progress } from "antd";
+import CustomTable from "@/components/custom/table/CustomTable";
 import { LoadingOutlined, SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -139,9 +140,11 @@ const exportChildAssistanceToExcel = async (
 
 export default function ChildAssistanceTable() {
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
 
   const { notify } = useNotify();
+  const notifyRef = useRef(notify);
+  notifyRef.current = notify;
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -157,7 +160,8 @@ export default function ChildAssistanceTable() {
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstSearchRender = useRef(true);
 
   // Delete State
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -170,120 +174,113 @@ export default function ChildAssistanceTable() {
   const [progress, setProgress] = useState(0);
 
   // ==========================
-  // FETCH DATA WITH PAGINATION
+  // FETCH DATA
   // ==========================
   const fetchData = useCallback(async (page: number, search: string) => {
     try {
       setLoading(true);
-
       const response = await getAllChildAssistanceOptimized(page, pageSize, search);
-
-      const sortedData = response.data.sort((a, b) =>
+      const rawData = Array.isArray(response.data) ? response.data : [];
+      const sortedData = [...rawData].sort((a, b) =>
         new Date(b.assistanceDate).getTime() - new Date(a.assistanceDate).getTime()
       );
-
       setData(sortedData);
       setFilteredData(sortedData);
-      setTotal(response.pagination.total);
-      setCurrentPage(response.pagination.page);
+      setTotal(response.pagination?.total ?? 0);
+      setCurrentPage(response.pagination?.page ?? page);
     } catch (err) {
       console.error("Error fetching child assistance data:", err);
-      notifyFromResult(notify, { error: err });
+      notifyFromResult(notifyRef.current, { error: err });
       setData([]);
       setFilteredData([]);
       setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [notify, pageSize]);
+  }, [pageSize]);
 
   // ==========================
-  // INITIAL FETCH FROM URL
+  // INITIAL FETCH (once on mount)
   // ==========================
   useEffect(() => {
-    const pageParam = searchParams.get('page');
-    const searchParam = searchParams.get('search') || '';
+    const pageParam = searchParams.get("page");
+    const searchParam = searchParams.get("search") || "";
     const initialPage = pageParam ? parseInt(pageParam, 10) : 1;
     setCurrentPage(initialPage);
     setSearchQuery(searchParam);
     fetchData(initialPage, searchParam);
-  }, [fetchData, searchParams]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ==========================
   // SEARCH WITH DEBOUNCE
   // ==========================
   useEffect(() => {
-    if (searchTimer) clearTimeout(searchTimer);
-
-    const timer = setTimeout(() => {
-      fetchData(1, searchQuery);
-    }, 500);
-
-    setSearchTimer(timer);
-
-    return () => { if (timer) clearTimeout(timer); };
-  }, [fetchData, searchQuery]);
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false;
+      return;
+    }
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    const timer = setTimeout(() => fetchData(1, searchQuery), 500);
+    searchTimerRef.current = timer;
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchData]);
 
   // ==========================
-  // UPDATE URL WITH PAGE AND SEARCH PARAMETERS
+  // UPDATE URL
   // ==========================
   const updatePageUrl = (page: number, search: string = searchQuery) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('page', page.toString());
-    if (search && search.trim()) {
-      params.set('search', search);
+    params.set("page", page.toString());
+    if (search.trim()) {
+      params.set("search", search);
     } else {
-      params.delete('search');
+      params.delete("search");
     }
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
   // ==========================
-  // DELETE HANDLER
-  // ==========================
-  const handleDelete = async () => {
-    if (!deleteId) return;
-
-    setDeleteLoading(true);
-    try {
-      await deleteChildAssistance(deleteId);
-      await fetchData(currentPage, searchQuery);
-      setIsDeleteModalOpen(false);
-      notifyFromResult(notify, { successMessage: "Data bantuan anak berhasil dihapus" });
-    } catch (err) {
-      notifyFromResult(notify, { error: err });
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  // ==========================
-  // EXPORT HANDLER
-  // ==========================
-  const handleExport = async () => {
-    setExportLoading(true);
-    try {
-      await exportChildAssistanceToExcel(filteredData, setShowProgress, setProgress);
-      notifyFromResult(notify, {
-        successMessage: `Export ${filteredData.length} data bantuan anak berhasil!`,
-      });
-    } catch (err) {
-      notifyFromResult(notify, { error: err });
-    } finally {
-      setExportLoading(false);
-    }
-  };
-
-  // ==========================
-  // OPEN DELETE MODAL
+  // DELETE
   // ==========================
   const openDeleteModal = useCallback((id: number) => {
     setDeleteId(id);
     setIsDeleteModalOpen(true);
   }, []);
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteChildAssistance(deleteId);
+      await fetchData(currentPage, searchQuery);
+      setIsDeleteModalOpen(false);
+      notifyFromResult(notifyRef.current, { successMessage: "Data bantuan anak berhasil dihapus" });
+    } catch (err) {
+      notifyFromResult(notifyRef.current, { error: err });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   // ==========================
-  // BUILD COLUMNS
+  // EXPORT
+  // ==========================
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      await exportChildAssistanceToExcel(filteredData, setShowProgress, setProgress);
+      notifyFromResult(notifyRef.current, {
+        successMessage: `Export ${filteredData.length} data bantuan anak berhasil!`,
+      });
+    } catch (err) {
+      notifyFromResult(notifyRef.current, { error: err });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // ==========================
+  // COLUMNS
   // ==========================
   const columns = useMemo(() => {
     const base = getChildAssistanceColumns(router, session?.user?.role);
@@ -292,10 +289,8 @@ export default function ChildAssistanceTable() {
         const originalRender = col.render;
         return {
           ...col,
-          render: (_: any, record: ChildAssistance, index: number) => {
-            const recordWithHandler = { ...record, _openDeleteModal: openDeleteModal };
-            return originalRender(_, recordWithHandler as ChildAssistance, index);
-          },
+          render: (_: any, record: ChildAssistance, index: number) =>
+            originalRender(_, { ...record, _openDeleteModal: openDeleteModal } as ChildAssistance, index),
         };
       }
       return col;
@@ -349,9 +344,7 @@ export default function ChildAssistanceTable() {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Sedang mengekspor data...
             </span>
-            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-              {progress}%
-            </span>
+            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
           </div>
           <Progress percent={progress} status="active" strokeColor="#2563EB" />
         </div>
@@ -364,22 +357,21 @@ export default function ChildAssistanceTable() {
             Jumlah Data Bantuan Anak:{" "}
             {filteredData.length < data.length ? (
               <span className="text-blue-600 dark:text-blue-400">
-                {filteredData.length} <span className="text-xs font-normal text-gray-500">(difilter dari {total})</span>
+                {filteredData.length}{" "}
+                <span className="text-xs font-normal text-gray-500">(difilter dari {total})</span>
               </span>
             ) : (
               total
             )}
           </h3>
-          <div className="w-full">
-            <Input
-              placeholder="Cari data..."
-              prefix={<SearchOutlined />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              allowClear
-              className="w-full"
-            />
-          </div>
+          <Input
+            placeholder="Cari data..."
+            prefix={<SearchOutlined />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            className="w-full"
+          />
         </div>
         <Button
           variant="primary"
@@ -394,9 +386,9 @@ export default function ChildAssistanceTable() {
       </div>
 
       {/* TABLE */}
-      <Table
+      <CustomTable
         columns={columns}
-        dataSource={data}
+        dataSource={Array.isArray(data) ? data : []}
         rowKey="id"
         bordered
         pagination={{

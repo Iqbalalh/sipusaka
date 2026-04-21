@@ -14,7 +14,7 @@ export const useMultipleFilePreview = () => {
     const validFiles: FileWithPreview[] = [];
 
     for (const file of fileArray) {
-      const error = validateImage(file, { maxSizeMB: 5, types: ["image/jpeg", "image/png", "image/webp"] });
+      const error = validateImage(file, { maxSizeMB: 20, types: ["image/jpeg", "image/png", "image/webp"] });
       if (error) {
         console.warn(`File ${file.name} skipped: ${error}`);
         continue;

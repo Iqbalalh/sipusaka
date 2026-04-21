@@ -14,7 +14,6 @@ import {
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
-import type { InputRef } from "antd";
 
 // ==============================================
 // SEARCH CONFIGURATION
@@ -189,10 +188,15 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     dataIndex: "_count",
     key: "familyVisits",
     align: "center",
-    render: (_, home) => {
-      const count = (home._count as any)?.familyVisits ?? 0;
-      return count === 0 ? "Belum pernah" : count;
+    filters: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ({
+      text: n === 10 ? "10+" : String(n),
+      value: n,
+    })),
+    onFilter: (value, record) => {
+      const count = (record._count as any)?.familyVisits ?? 0;
+      return value === 10 ? count >= 10 : count === value;
     },
+    render: (_, home) => (home._count as any)?.familyVisits ?? 0,
   },
   {
     title: "Wilayah",

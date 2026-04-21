@@ -68,6 +68,9 @@ const validateForm = (
   if (!form.businessName?.trim()) {
     return { isValid: false, error: "Nama usaha wajib diisi!" };
   }
+  if (!form.regionId) {
+    return { isValid: false, error: "Wilayah wajib dipilih!" };
+  }
   return { isValid: true };
 };
 
@@ -309,7 +312,7 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
         <div className="space-y-6">
           <ComponentCard title="Informasi Tambahan">
             <div className="space-y-5">
-              <FormField label="Wilayah">
+              <FormField label="Wilayah" required>
                 <SelectInput
                   value={form.regionId}
                   onChange={(value) => handleFieldChange("regionId", value)}

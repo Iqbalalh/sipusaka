@@ -55,6 +55,7 @@ export interface DataTableProps<T> {
   createPath?: string;
   pageSize?: number;
   scrollY?: number;
+  showSearch?: boolean;
 
   // Server-side pagination
   serverSidePagination?: boolean;
@@ -89,6 +90,7 @@ export default function DataTable<T extends Record<string, any>>({
   createPath,
   pageSize = 50,
   scrollY = 500,
+  showSearch = true,
   serverSidePagination = false,
   renderActions,
   headerActions,
@@ -212,13 +214,11 @@ export default function DataTable<T extends Record<string, any>>({
 
       const query = searchQuery.toLowerCase();
       const filtered = data.filter((record) => {
-        return Object.entries(record).some(([key, value]) => {
-          // Skip non-string values and null/undefined
+        return Object.entries(record).some(([, value]) => {
           if (value === null || value === undefined) return false;
-
-          // Check if value is a string or can be converted to string
-          const strValue = String(value).toLowerCase();
-          return strValue.includes(query);
+          // Skip objects and arrays to avoid "[object Object]" matches
+          if (typeof value === "object") return false;
+          return String(value).toLowerCase().includes(query);
         });
       });
 
@@ -345,16 +345,18 @@ export default function DataTable<T extends Record<string, any>>({
               {title}: {count}
             </h3>
           )}
-          <div className="w-full">
-            <Input
-              placeholder="Cari data..."
-              prefix={<SearchOutlined />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              allowClear
-              className="w-full"
-            />
-          </div>
+          {showSearch && (
+            <div className="w-full">
+              <Input
+                placeholder="Cari data..."
+                prefix={<SearchOutlined />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                allowClear
+                className="w-full"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">

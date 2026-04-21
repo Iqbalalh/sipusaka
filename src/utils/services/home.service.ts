@@ -124,3 +124,13 @@ export const getHomesForExport = async (): Promise<HomeTable[]> => {
     throw error;
   }
 };
+
+// Loads all homes using the optimized endpoint (same data structure as table display)
+export const getAllHomes = async (): Promise<HomeTable[]> => {
+  try {
+    const response = await getHomesOptimized(1, 9999, "");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

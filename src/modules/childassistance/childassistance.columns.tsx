@@ -4,10 +4,9 @@ import { Input, Tag, DatePicker, Button, Select } from "antd";
 import ButtonUI from "@/components/ui/button/Button";
 import { DeleteOutlined, SearchOutlined, FilterOutlined, EditOutlined } from "@ant-design/icons";
 import { ChildAssistance } from "@/utils/services/childassistance.service";
-import type { ColumnsType } from "antd/es/table";
+import type { TableColumnType } from "@/components/custom/table/CustomTable";
 import { formatDate } from "@/utils/formatter/formatDate";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -170,7 +169,7 @@ const DateFilter = ({
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getChildAssistanceColumns = (router: any, role?: string): ColumnsType<ChildAssistance> => [
+export const getChildAssistanceColumns = (router: any, role?: string): TableColumnType<ChildAssistance>[] => [
   {
     title: "Bantuan Ke-",
     dataIndex: "assistanceNumber",
@@ -192,7 +191,7 @@ export const getChildAssistanceColumns = (router: any, role?: string): ColumnsTy
     key: "assistanceDate",
     width: 150,
     sorter: (a, b) => new Date(b.assistanceDate).getTime() - new Date(a.assistanceDate).getTime(),
-    filterDropdown: DateFilter,
+    filterDropdown: (props: any) => <DateFilter {...props} />,
     filterIcon: (filtered: boolean) => (
       <FilterOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
     ),
