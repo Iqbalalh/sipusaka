@@ -13,6 +13,7 @@ export const API_HOME_OPTIMIZED = `${baseUrl}/api/homes/optimized`;
 
 // Regions
 export const API_REGION = `${baseUrl}/api/regions`;
+export const API_REGION_STATS = `${baseUrl}/api/regions/stats`;
 
 // Employees
 export const API_EMPLOYEE = `${baseUrl}/api/employees`;
