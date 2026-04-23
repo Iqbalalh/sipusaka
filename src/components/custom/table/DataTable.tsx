@@ -213,14 +213,17 @@ export default function DataTable<T extends Record<string, any>>({
       }
 
       const query = searchQuery.toLowerCase();
-      const filtered = data.filter((record) => {
-        return Object.entries(record).some(([, value]) => {
-          if (value === null || value === undefined) return false;
-          // Skip objects and arrays to avoid "[object Object]" matches
-          if (typeof value === "object") return false;
-          return String(value).toLowerCase().includes(query);
-        });
-      });
+      const SKIP_KEYS = new Set(["createdBy", "editedBy", "created_by", "edited_by"]);
+      const matchesQuery = (value: unknown, key?: string): boolean => {
+        if (key && SKIP_KEYS.has(key)) return false;
+        if (value === null || value === undefined) return false;
+        if (typeof value === "object")
+          return Object.entries(value as Record<string, unknown>).some(([k, v]) =>
+            matchesQuery(v, k)
+          );
+        return String(value).toLowerCase().includes(query);
+      };
+      const filtered = data.filter((record) => matchesQuery(record));
 
       setFilteredData(filtered);
       setCount(filtered.length);

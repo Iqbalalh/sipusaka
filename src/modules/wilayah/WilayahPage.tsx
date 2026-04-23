@@ -269,7 +269,7 @@ function SummaryView({ stats }: { stats: RegionStat[] }) {
           { name: "Keluarga", data: stats.map((s) => s.families) },
           { name: "Anak Asuh", data: stats.map((s) => s.children.total) },
         ]}
-        colors={["#465fff", "#6366f1"]}
+        colors={["#465fff", "#22c55e"]}
       />
 
       <ChartCard

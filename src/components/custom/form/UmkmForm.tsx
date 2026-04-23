@@ -71,6 +71,9 @@ const validateForm = (
   if (!form.regionId) {
     return { isValid: false, error: "Wilayah wajib dipilih!" };
   }
+  if (!form.umkmCoordinate?.trim()) {
+    return { isValid: false, error: "Koordinat UMKM wajib diisi! (format: lat,lng)" };
+  }
   return { isValid: true };
 };
 

@@ -273,14 +273,9 @@ export const getChildrenColumns = (
     dataIndex: "_count",
     key: "childAssistanceCount",
     align: "center",
-    render: (_: any, record: any) => {
-      const count = record._count?.childAssistance ?? 0;
-      return count === 0 ? "Belum pernah" : count;
-    },
-    exportRender: (_: any, record: any) => {
-      const count = record._count?.childAssistance ?? 0;
-      return count === 0 ? "Belum pernah" : String(count);
-    },
+    render: (_: any, record: any) => record._count?.childAssistance ?? 0,
+    exportRender: (_: any, record: any) =>
+      String(record._count?.childAssistance ?? 0),
   },
 
   {
