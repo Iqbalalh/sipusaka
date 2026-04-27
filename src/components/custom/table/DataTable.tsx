@@ -213,7 +213,30 @@ export default function DataTable<T extends Record<string, any>>({
       }
 
       const query = searchQuery.toLowerCase();
-      const SKIP_KEYS = new Set(["createdBy", "editedBy", "created_by", "edited_by"]);
+      const SKIP_KEYS = new Set([
+        // Audit fields
+        "createdBy", "editedBy", "created_by", "edited_by",
+        "createdByStaffName", "editedByStaffName", "createdAt", "updatedAt",
+        // Region / wilayah
+        "regionId", "regionName",
+        // Status / boolean
+        "isActive", "isAlive", "isUmkm",
+        // Photos / media
+        "staffPict", "staffPictKey", "signaturePath", "parafPath",
+        "employeePict", "partnerPict",
+        "umkmPict", "umkmPict2", "umkmPict3", "umkmPict4", "umkmPict5",
+        // Numeric IDs
+        "id", "userId", "staffId", "partnerId", "waliId", "childrenId",
+        "employeeId", "roleId", "homeId", "regionId",
+        // Category / gender / type
+        "gender", "type", "role",
+        // Dates
+        "birthdate", "assistanceDate",
+        // Location
+        "address", "businessAddress", "postalCode", "homeCoordinate", "umkmCoordinate",
+        // Numeric values
+        "assistanceNumber", "assistanceAmount", "age",
+      ]);
       const matchesQuery = (value: unknown, key?: string): boolean => {
         if (key && SKIP_KEYS.has(key)) return false;
         if (value === null || value === undefined) return false;
@@ -221,6 +244,7 @@ export default function DataTable<T extends Record<string, any>>({
           return Object.entries(value as Record<string, unknown>).some(([k, v]) =>
             matchesQuery(v, k)
           );
+        if (typeof value === "boolean" || typeof value === "number") return false;
         return String(value).toLowerCase().includes(query);
       };
       const filtered = data.filter((record) => matchesQuery(record));

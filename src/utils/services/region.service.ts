@@ -1,5 +1,5 @@
 import { Region } from "@/types/models/region";
-import { API_REGION, API_REGION_STATS } from "@/constants/endpoint";
+import { API_REGION, API_REGION_STATS, API_DASHBOARD } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
 import { ApiResponseList } from "@/types/generic/api-response";
 import { apiClient } from "../fetch/apiClient";
@@ -61,6 +61,28 @@ export const getRegionStats = async (): Promise<RegionStat[]> => {
     const res = await fetchWithAuth(API_REGION_STATS);
     const json = await res.json();
     return camelcaseKeys(json.data ?? [], { deep: true }) as RegionStat[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export interface GlobalEducationLevels {
+  TK: number;
+  SD: number;
+  SMP: number;
+  SMA: number;
+  Diploma: number;
+  Sarjana: number;
+  Magister: number;
+  Doktor: number;
+}
+
+export const getGlobalEducationLevels = async (): Promise<GlobalEducationLevels> => {
+  try {
+    const res = await fetchWithAuth(API_DASHBOARD);
+    const json = await res.json();
+    const edu = json.data?.educationLevels ?? {};
+    return camelcaseKeys(edu, { deep: false }) as GlobalEducationLevels;
   } catch (error) {
     throw error;
   }

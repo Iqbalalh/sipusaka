@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
 import { Spin, Flex } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
-import { getRegionStats, RegionStat } from "@/utils/services/region.service";
+import { getRegionStats, getGlobalEducationLevels, GlobalEducationLevels, RegionStat } from "@/utils/services/region.service";
 import {
   FaHouseChimney,
   FaChildReaching,

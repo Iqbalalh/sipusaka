@@ -309,7 +309,7 @@ export default function FamilyTable() {
         exportConfig={{ filename: "data-keluarga", sheetName: "Keluarga" }}
         onExport={handleExport}
         title="Jumlah Data Keluarga"
-        showSearch={false}
+        showSearch={true}
         createPath={isAdmin ? "/family/create" : undefined}
         pageSize={50}
         scrollY={500}

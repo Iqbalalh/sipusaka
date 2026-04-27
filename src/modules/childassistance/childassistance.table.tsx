@@ -3,18 +3,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Spin, Modal, Input, Progress } from "antd";
-import CustomTable from "@/components/custom/table/CustomTable";
+import { Table, Modal, Input, Progress, Spin, Button } from "antd";
 import { LoadingOutlined, SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
-import { ChildAssistance } from "@/utils/services/childassistance.service";
-import { deleteChildAssistance, getAllChildAssistanceOptimized } from "@/utils/services/childassistance.service";
+import { ChildAssistance, deleteChildAssistance, getAllChildAssistanceOptimized } from "@/utils/services/childassistance.service";
 import { getChildAssistanceColumns } from "./childassistance.columns";
 import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import Button from "@/components/ui/button/Button";
 
 // ==============================================
 // EXCEL EXPORT FUNCTION WITH PROGRESS
@@ -138,6 +135,9 @@ const exportChildAssistanceToExcel = async (
   }
 };
 
+// ==============================================
+// MAIN COMPONENT
+// ==============================================
 export default function ChildAssistanceTable() {
   const { data: session } = useSession();
 
@@ -200,7 +200,7 @@ export default function ChildAssistanceTable() {
   }, [pageSize]);
 
   // ==========================
-  // INITIAL FETCH (once on mount)
+  // INITIAL FETCH
   // ==========================
   useEffect(() => {
     const pageParam = searchParams.get("page");
@@ -293,21 +293,11 @@ export default function ChildAssistanceTable() {
             originalRender(_, { ...record, _openDeleteModal: openDeleteModal } as ChildAssistance, index),
         };
       }
+      console.log("BASE:", base);
+console.log("IS ARRAY:", Array.isArray(base));
       return col;
     });
   }, [router, session?.user?.role, openDeleteModal]);
-
-  // ==========================
-  // LOADING STATE
-  // ==========================
-  if (loading && data.length === 0) {
-    return (
-      <div className="flex justify-center items-center gap-4 h-40 text-gray-500">
-        <Spin indicator={<LoadingOutlined spin />} size="large" />
-        Memuat data...
-      </div>
-    );
-  }
 
   // ==========================
   // RENDER
@@ -319,20 +309,11 @@ export default function ChildAssistanceTable() {
         title="Konfirmasi Hapus"
         open={isDeleteModalOpen}
         onCancel={() => setIsDeleteModalOpen(false)}
-        footer={[
-          <Button key="cancel" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={deleteLoading}>
-            Batal
-          </Button>,
-          <Button
-            key="delete"
-            variant="primary"
-            onClick={handleDelete}
-            disabled={deleteLoading}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            {deleteLoading ? "Menghapus..." : "Hapus"}
-          </Button>,
-        ]}
+        confirmLoading={deleteLoading}
+        okText="Hapus"
+        okButtonProps={{ danger: true }}
+        cancelText="Batal"
+        onOk={handleDelete}
       >
         <p>Apakah Anda yakin ingin menghapus data bantuan anak ini?</p>
       </Modal>
@@ -344,7 +325,7 @@ export default function ChildAssistanceTable() {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Sedang mengekspor data...
             </span>
-            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
+            <span className="text-sm font-bold text-blue-600">{progress}%</span>
           </div>
           <Progress percent={progress} status="active" strokeColor="#2563EB" />
         </div>
@@ -352,7 +333,7 @@ export default function ChildAssistanceTable() {
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-col gap-4 w-full sm:w-auto">
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
           <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
             Jumlah Data Bantuan Anak:{" "}
             {filteredData.length < data.length ? (
@@ -366,46 +347,50 @@ export default function ChildAssistanceTable() {
           </h3>
           <Input
             placeholder="Cari data..."
-            prefix={<SearchOutlined />}
+            prefix={<SearchOutlined className="text-gray-400" />}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             allowClear
-            className="w-full"
+            style={{ width: 280 }}
           />
         </div>
         <Button
-          variant="primary"
-          size="sm"
+          type="primary"
+          icon={<DownloadOutlined />}
           onClick={handleExport}
-          disabled={exportLoading || filteredData.length === 0}
-          className="bg-blue-600 hover:bg-blue-700"
+          loading={exportLoading}
+          disabled={filteredData.length === 0}
         >
-          <DownloadOutlined className="mr-2" />
           Export Excel ({filteredData.length})
         </Button>
       </div>
 
       {/* TABLE */}
-      <CustomTable
-        columns={columns}
-        dataSource={Array.isArray(data) ? data : []}
+      <Table
+        columns={columns as any}
+        dataSource={data}
         rowKey="id"
         bordered
+        loading={{
+          spinning: loading,
+          indicator: <Spin indicator={<LoadingOutlined spin />} size="large" />,
+        }}
+        scroll={{ x: "max-content", y: 500 }}
         pagination={{
           pageSize,
           current: currentPage,
           total,
           showSizeChanger: false,
+          showTotal: (tot) => `Total ${tot} data`,
           onChange: (page) => {
             updatePageUrl(page, searchQuery);
             fetchData(page, searchQuery);
           },
         }}
-        scroll={{ x: "max-content", y: 500 }}
-        loading={loading}
         onChange={(_, __, ___, extra) => {
           setFilteredData(extra.currentDataSource as ChildAssistance[]);
         }}
+        size="small"
       />
     </>
   );

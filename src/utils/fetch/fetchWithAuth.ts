@@ -68,5 +68,10 @@ export async function fetchWithAuth(
 
   console.log("fetchWithAuth - response status:", res.status);
 
+  // Dispatch session expired event so the UI can show a non-closeable logout modal
+  if ((res.status === 401 || res.status === 403) && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("session_expired"));
+  }
+
   return res;
 }

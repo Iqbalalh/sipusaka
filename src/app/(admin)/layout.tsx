@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { App } from "antd";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { SessionExpiredModal } from "@/components/auth/SessionExpiredModal";
 
 export default function AdminLayout({
   children,
@@ -62,6 +63,7 @@ export default function AdminLayout({
             <div className="p-4 mx-auto w-full max-w-[100vw] md:p-6 overflow-x-hidden">
               <App>
                 <NotificationProvider>{children}</NotificationProvider>
+                <SessionExpiredModal />
               </App>
             </div>
           </div>
