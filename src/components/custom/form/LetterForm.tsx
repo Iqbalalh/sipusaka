@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Flex, Spin, DatePicker, Alert } from "antd";
-import { LoadingOutlined, FileOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Flex, Spin, DatePicker, Alert, Segmented, Select } from "antd";
+import { LoadingOutlined, FileOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import dayjs, { Dayjs } from "dayjs";
 
@@ -14,6 +14,7 @@ import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
 import { TextInput } from "@/components/custom/TextInput";
+import DocumentViewer from "@/components/custom/DocumentViewer";
 
 // Hooks & Utils
 import { useFormSubmit } from "@/hooks/useFormSubmit";
@@ -22,8 +23,10 @@ import { notifyFromResult } from "@/utils/fetch/notify";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
 import { API_LETTERS } from "@/constants/endpoint";
 import { getLetter } from "@/utils/services/letter.service";
+import { getActiveLetterTypes, generatePreview } from "@/utils/services/letterType.service";
 import { getUsers, User } from "@/utils/services/user.service";
 import { LetterFormData } from "@/types/models/letter";
+import { LetterType } from "@/types/models/letterType";
 import { Option } from "@/types/generic/select-option";
 
 // ==============================================
@@ -50,6 +53,8 @@ interface LetterFormProps {
   letterId?: string;
 }
 
+type CreationMode = "upload" | "template";
+
 // ==============================================
 // MAIN COMPONENT
 // ==============================================
@@ -64,6 +69,16 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
   const [existingDocName, setExistingDocName] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Template mode state
+  const [creationMode, setCreationMode] = useState<CreationMode>("upload");
+  const [letterTypeOptions, setLetterTypeOptions] = useState<Option[]>([]);
+  const [activeLetterTypes, setActiveLetterTypes] = useState<LetterType[]>([]);
+  const [selectedLetterType, setSelectedLetterType] = useState<LetterType | null>(null);
+  const [templateFieldValues, setTemplateFieldValues] = useState<Record<string, string>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
 
   // ==============================================
   // SUBMIT HOOK
@@ -92,8 +107,11 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       try {
         setLoading(true);
 
-        // Fetch users for signer options
-        const users = await getUsers();
+        const [users, activeTypes] = await Promise.all([
+          getUsers(),
+          getActiveLetterTypes(),
+        ]);
+
         setUserOptions(
           users.map((u: User) => ({
             value: u.userId,
@@ -101,7 +119,14 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
           }))
         );
 
-        // Load existing letter data for edit mode
+        setActiveLetterTypes(activeTypes);
+        setLetterTypeOptions(
+          activeTypes.map((lt) => ({
+            value: lt.id,
+            label: `${lt.jenisSurat} (${lt.kodeSurat1}${lt.kodeSurat2 ? "/" + lt.kodeSurat2 : ""})`,
+          }))
+        );
+
         if (mode === "edit" && letterId) {
           const letter = await getLetter(letterId);
           setForm({
@@ -135,6 +160,15 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
 
     init();
   }, [mode, letterId, notify]);
+
+  // Cleanup preview object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   // ==============================================
   // EVENT HANDLERS
@@ -177,13 +211,92 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
     setDocumentFile(null);
   }, []);
 
+  const handleLetterTypeChange = useCallback(
+    async (value: number) => {
+      const found = activeLetterTypes.find((lt) => lt.id === value) || null;
+      setSelectedLetterType(found);
+      setTemplateFieldValues({});
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+        setPreviewUrl(null);
+      }
+      if (found) {
+        if (found.perihal) handleFieldChange("subject", found.perihal);
+        handleFieldChange("letterType", found.jenisSurat);
+      }
+    },
+    [activeLetterTypes, handleFieldChange]
+  );
+
+  const handleGeneratePreview = useCallback(async () => {
+    if (!selectedLetterType) return;
+    setPreviewLoading(true);
+    try {
+      const blob = await generatePreview(selectedLetterType.id, templateFieldValues);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      const url = URL.createObjectURL(blob);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [selectedLetterType, templateFieldValues, notify]);
+
+  const handleModeChange = useCallback((val: string | number) => {
+    setCreationMode(val as CreationMode);
+    setSelectedLetterType(null);
+    setTemplateFieldValues({});
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+      setPreviewUrl(null);
+    }
+    setDocumentFile(null);
+    setForm(INITIAL_FORM_STATE);
+    setLetterDate(null);
+  }, []);
+
   const handleSubmit = useCallback(async () => {
-    // Validation
+    if (!form.letterDate) return notify("warning", "Tanggal pembuatan wajib diisi!");
+    if (!form.signer1Id) return notify("warning", "Penandatangan 1 wajib diisi!");
+
+    if (creationMode === "template") {
+      if (!selectedLetterType) return notify("warning", "Pilih Template Surat terlebih dahulu!");
+
+      const missingRequired = selectedLetterType.templateFields
+        .filter((f) => f.required && !templateFieldValues[f.key]?.trim())
+        .map((f) => f.label);
+      if (missingRequired.length > 0) {
+        return notify("warning", `Field wajib belum diisi: ${missingRequired.join(", ")}`);
+      }
+
+      const fd = new FormData();
+      fd.append("letterTypeId", String(selectedLetterType.id));
+      fd.append("templateFieldData", JSON.stringify(templateFieldValues));
+      fd.append("letterDate", form.letterDate!);
+      fd.append("signer1Id", String(form.signer1Id));
+      if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
+      if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
+
+      const res = await fetchWithAuth(API_LETTERS, { method: "POST", body: fd });
+      let result;
+      try { result = await res.json(); } catch { result = {}; }
+      if (!res.ok) {
+        notifyFromResult(notify, { error: new Error(result.message || "Gagal membuat surat") });
+        return;
+      }
+      notifyFromResult(notify, { successMessage: "Surat berhasil dibuat dari template!" });
+      router.push("/letters/drafts");
+      return;
+    }
+
+    // Upload mode
     if (!form.letterType) return notify("warning", "Jenis surat wajib diisi!");
     if (!form.subject) return notify("warning", "Perihal wajib diisi!");
-    if (!form.letterDate) return notify("warning", "Tanggal pembuatan wajib diisi!");
     if (!form.destination) return notify("warning", "Tujuan surat wajib diisi!");
-    if (!form.signer1Id) return notify("warning", "Penandatangan 1 wajib diisi!");
 
     const extraData = new FormData();
     if (documentFile) {
@@ -194,11 +307,19 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, documentFile, submit, notify]);
+  }, [form, documentFile, creationMode, selectedLetterType, templateFieldValues, submit, notify, router]);
 
   const handleGoBack = useCallback(() => {
     router.push("/letters/drafts");
   }, [router]);
+
+  // ==============================================
+  // COMPUTED
+  // ==============================================
+  const predictedLetterNumber =
+    selectedLetterType
+      ? `${String(selectedLetterType.currentCounter + 1).padStart(3, "0")}/${selectedLetterType.kodeSurat1}${selectedLetterType.kodeSurat2 ? "/" + selectedLetterType.kodeSurat2 : ""}/…/….`
+      : null;
 
   // ==============================================
   // RENDER LOADING STATE
@@ -232,45 +353,181 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
         </div>
       )}
 
+      {/* MODE SELECTOR — only in create mode */}
+      {mode === "create" && (
+        <div className="mb-6 flex justify-center">
+          <Segmented
+            size="large"
+            value={creationMode}
+            onChange={handleModeChange}
+            options={[
+              { label: "Upload Dokumen Sendiri", value: "upload" },
+              { label: "Gunakan Template", value: "template" },
+            ]}
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* LEFT COLUMN - Main Data */}
+        {/* LEFT COLUMN */}
         <div className="space-y-6">
-          <ComponentCard title="Data Surat">
-            <div className="space-y-5">
-              <FormField label="Jenis Surat" required>
-                <TextInput
-                  value={form.letterType}
-                  onChange={(value) => handleFieldChange("letterType", value)}
-                  placeholder="Contoh: Surat Keterangan, Surat Tugas"
-                />
-              </FormField>
+          {creationMode === "template" && mode === "create" ? (
+            /* ── TEMPLATE MODE ─── */
+            <>
+              <ComponentCard title="Pilih Template Surat">
+                <div className="space-y-4">
+                  <FormField label="Template Surat" required>
+                    <Select
+                      size="large"
+                      style={{ width: "100%" }}
+                      placeholder="Pilih Template Surat..."
+                      options={letterTypeOptions}
+                      value={selectedLetterType?.id ?? null}
+                      onChange={handleLetterTypeChange}
+                      showSearch={{
+                        filterOption: (input: string, opt: any) =>
+                          String(opt?.label ?? "").toLowerCase().includes(input.toLowerCase()),
+                      }}
+                      allowClear
+                      onClear={() => {
+                        setSelectedLetterType(null);
+                        setTemplateFieldValues({});
+                      }}
+                    />
+                  </FormField>
 
-              <FormField label="Nomor Surat">
-                <TextInput
-                  value={form.letterNumber}
-                  onChange={(value) => handleFieldChange("letterNumber", value)}
-                  placeholder="Masukkan nomor surat"
-                />
-              </FormField>
+                  {selectedLetterType && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-500 mb-1">Nomor surat yang akan digenerate (prediksi)</p>
+                      <p className="font-mono font-semibold text-blue-700">{predictedLetterNumber}</p>
+                      <p className="text-xs text-gray-400 mt-1">Nomor final dikonfirmasi saat surat disimpan</p>
+                    </div>
+                  )}
+                </div>
+              </ComponentCard>
 
-              <FormField label="Lampiran">
-                <TextInput
-                  value={form.attachment}
-                  onChange={(value) => handleFieldChange("attachment", value)}
-                  placeholder="Contoh: 1 (satu) berkas"
-                />
-              </FormField>
+              {selectedLetterType && selectedLetterType.templateFields.length > 0 && (
+                <ComponentCard title="Isi Data Template">
+                  <div className="space-y-4">
+                    {selectedLetterType.templateFields.map((field) => (
+                      <FormField key={field.key} label={field.label} required={field.required}>
+                        <TextInput
+                          value={templateFieldValues[field.key] || ""}
+                          onChange={(v) =>
+                            setTemplateFieldValues((prev) => ({ ...prev, [field.key]: v }))
+                          }
+                          placeholder={`Masukkan ${field.label.toLowerCase()}`}
+                          required={field.required}
+                        />
+                      </FormField>
+                    ))}
 
-              <FormField label="Perihal" required>
-                <TextArea
-                  size="large"
-                  rows={3}
-                  value={form.subject}
-                  onChange={(e) => handleFieldChange("subject", e.target.value)}
-                  placeholder="Masukkan perihal surat"
-                />
-              </FormField>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGeneratePreview}
+                      disabled={previewLoading}
+                      className="w-full"
+                    >
+                      {previewLoading ? (
+                        <span className="flex items-center gap-2 justify-center">
+                          <Spin indicator={<LoadingOutlined spin />} size="small" />
+                          Membuat pratinjau...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2 justify-center">
+                          <EyeOutlined /> Pratinjau Dokumen
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </ComponentCard>
+              )}
 
+              {selectedLetterType && selectedLetterType.templateFields.length === 0 && (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                  Template Surat ini tidak memiliki field template. Dokumen akan di-generate langsung dari template tanpa substitusi variabel.
+                </div>
+              )}
+            </>
+          ) : (
+            /* ── UPLOAD MODE ─── */
+            <ComponentCard title="Data Surat">
+              <div className="space-y-5">
+                <FormField label="Jenis Surat" required>
+                  <TextInput
+                    value={form.letterType}
+                    onChange={(value) => handleFieldChange("letterType", value)}
+                    placeholder="Contoh: Surat Keterangan, Surat Tugas"
+                  />
+                </FormField>
+
+                <FormField label="Nomor Surat">
+                  <TextInput
+                    value={form.letterNumber}
+                    onChange={(value) => handleFieldChange("letterNumber", value)}
+                    placeholder="Masukkan nomor surat"
+                  />
+                </FormField>
+
+                <FormField label="Lampiran">
+                  <TextInput
+                    value={form.attachment}
+                    onChange={(value) => handleFieldChange("attachment", value)}
+                    placeholder="Contoh: 1 (satu) berkas"
+                  />
+                </FormField>
+
+                <FormField label="Perihal" required>
+                  <TextArea
+                    size="large"
+                    rows={3}
+                    value={form.subject}
+                    onChange={(e) => handleFieldChange("subject", e.target.value)}
+                    placeholder="Masukkan perihal surat"
+                  />
+                </FormField>
+
+                <FormField label="Tanggal Pembuatan" required>
+                  <DatePicker
+                    size="large"
+                    style={{ width: "100%" }}
+                    value={letterDate}
+                    onChange={(date) => {
+                      setLetterDate(date);
+                      handleFieldChange("letterDate", date ? date.format("YYYY-MM-DD") : null);
+                    }}
+                    placeholder="Pilih tanggal"
+                    format="DD/MM/YYYY"
+                  />
+                </FormField>
+
+                <FormField label="Tujuan Surat" required>
+                  <TextArea
+                    size="large"
+                    rows={2}
+                    value={form.destination}
+                    onChange={(e) => handleFieldChange("destination", e.target.value)}
+                    placeholder="Masukkan tujuan surat"
+                  />
+                </FormField>
+
+                <FormField label="Tembusan">
+                  <TextArea
+                    size="large"
+                    rows={2}
+                    value={form.carbonCopy}
+                    onChange={(e) => handleFieldChange("carbonCopy", e.target.value)}
+                    placeholder="Masukkan tembusan (opsional)"
+                  />
+                </FormField>
+              </div>
+            </ComponentCard>
+          )}
+
+          {/* Template mode: only date picker */}
+          {creationMode === "template" && mode === "create" && (
+            <ComponentCard title="Tanggal Surat">
               <FormField label="Tanggal Pembuatan" required>
                 <DatePicker
                   size="large"
@@ -278,91 +535,66 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
                   value={letterDate}
                   onChange={(date) => {
                     setLetterDate(date);
-                    handleFieldChange(
-                      "letterDate",
-                      date ? date.format("YYYY-MM-DD") : null
-                    );
+                    handleFieldChange("letterDate", date ? date.format("YYYY-MM-DD") : null);
                   }}
                   placeholder="Pilih tanggal"
                   format="DD/MM/YYYY"
                 />
               </FormField>
-
-              <FormField label="Tujuan Surat" required>
-                <TextArea
-                  size="large"
-                  rows={2}
-                  value={form.destination}
-                  onChange={(e) =>
-                    handleFieldChange("destination", e.target.value)
-                  }
-                  placeholder="Masukkan tujuan surat"
-                />
-              </FormField>
-
-              <FormField label="Tembusan">
-                <TextArea
-                  size="large"
-                  rows={2}
-                  value={form.carbonCopy}
-                  onChange={(e) =>
-                    handleFieldChange("carbonCopy", e.target.value)
-                  }
-                  placeholder="Masukkan tembusan (opsional)"
-                />
-              </FormField>
-            </div>
-          </ComponentCard>
+              <p className="text-xs text-gray-400 mt-2">
+                Tanggal ini digunakan untuk menentukan bulan dan tahun pada nomor surat.
+              </p>
+            </ComponentCard>
+          )}
         </div>
 
-        {/* RIGHT COLUMN - Document & Signers */}
+        {/* RIGHT COLUMN */}
         <div className="space-y-6">
-          <ComponentCard title="Dokumen">
-            <div className="space-y-5">
-              <FormField label="Unggah Dokumen (.pdf / .docx)">
-                {documentFile ? (
-                  <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg mt-2">
-                    <FileOutlined className="text-xl text-blue-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {documentFile.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {(documentFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+          {creationMode === "upload" && (
+            <ComponentCard title="Dokumen">
+              <div className="space-y-5">
+                <FormField label="Unggah Dokumen (.pdf / .docx)">
+                  {documentFile ? (
+                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg mt-2">
+                      <FileOutlined className="text-xl text-blue-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{documentFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(documentFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <button onClick={handleRemoveFile} className="text-red-500 hover:text-red-600">
+                        <DeleteOutlined />
+                      </button>
                     </div>
-                    <button
-                      onClick={handleRemoveFile}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <DeleteOutlined />
-                    </button>
-                  </div>
-                ) : existingDocName ? (
-                  <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg mt-2">
-                    <FileOutlined className="text-xl text-green-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {existingDocName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Dokumen sudah diunggah
-                      </p>
+                  ) : existingDocName ? (
+                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg mt-2">
+                      <FileOutlined className="text-xl text-green-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{existingDocName}</p>
+                        <p className="text-xs text-gray-500">Dokumen sudah diunggah</p>
+                      </div>
                     </div>
+                  ) : null}
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.doc"
+                      onChange={handleFileChange}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+                    />
                   </div>
-                ) : null}
+                </FormField>
+              </div>
+            </ComponentCard>
+          )}
 
-                <div className="mt-2">
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.doc"
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
-                  />
-                </div>
-              </FormField>
-            </div>
-          </ComponentCard>
+          {/* Preview DOCX hasil generate template */}
+          {creationMode === "template" && previewUrl && (
+            <ComponentCard title="Pratinjau Dokumen">
+              <DocumentViewer url={previewUrl} fileName="preview.docx" />
+            </ComponentCard>
+          )}
 
           <ComponentCard title="Penandatangan">
             <div className="space-y-5">
@@ -398,7 +630,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
               <Button onClick={handleGoBack}>Batal</Button>
               <Button
                 onClick={handleSubmit}
-                disabled={submitLoading}
+                disabled={submitLoading || previewLoading}
                 className="bg-primary-600 text-white min-w-[150px]"
               >
                 {submitLoading ? "Menyimpan..." : submitButtonText}

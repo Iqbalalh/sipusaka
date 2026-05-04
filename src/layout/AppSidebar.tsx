@@ -78,6 +78,7 @@ const othersItems: NavItem[] = [
       { name: "Arsip", path: "/letters/archives", pro: false },
       { name: "Draft", path: "/letters/drafts", pro: false },
       { name: "Persetujuan", path: "/letters/approvals", pro: false },
+      { name: "Template Surat", path: "/letters/types", pro: false },
     ],
   },
   {

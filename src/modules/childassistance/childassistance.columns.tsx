@@ -134,7 +134,11 @@ const DateFilter = ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: an
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getChildAssistanceColumns = (router: any, role?: string): TableColumnsType<ChildAssistance> => [
+export const getChildAssistanceColumns = (
+  router: any,
+  role?: string,
+  openDeleteModal?: (id: number) => void
+): TableColumnsType<ChildAssistance> => [
   {
     title: "Bantuan Ke-",
     dataIndex: "assistanceNumber",
@@ -255,8 +259,7 @@ export const getChildAssistanceColumns = (router: any, role?: string): TableColu
             size="xs"
             onClick={() => {
               if (!record.id) return;
-              // @ts-ignore
-              record._openDeleteModal(record.id);
+              openDeleteModal?.(record.id);
             }}
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">

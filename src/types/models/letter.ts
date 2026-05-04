@@ -26,7 +26,9 @@ export interface LetterApproval {
 export interface Letter {
   id: number;
   letterType: string;
+  letterTypeId?: number | null;
   letterNumber?: string | null;
+  templateFieldData?: Record<string, string> | null;
   attachment?: string | null;
   subject: string;
   letterDate: string;

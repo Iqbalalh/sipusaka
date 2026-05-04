@@ -67,3 +67,4 @@ export const API_USERS = `${baseUrl}/api/users`;
 
 // Letters
 export const API_LETTERS = `${baseUrl}/api/letters`;
+export const API_LETTER_TYPES = `${baseUrl}/api/letter-types`;

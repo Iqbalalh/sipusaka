@@ -282,22 +282,10 @@ export default function ChildAssistanceTable() {
   // ==========================
   // COLUMNS
   // ==========================
-  const columns = useMemo(() => {
-    const base = getChildAssistanceColumns(router, session?.user?.role);
-    return base.map((col) => {
-      if (col.key === "actions" && col.render) {
-        const originalRender = col.render;
-        return {
-          ...col,
-          render: (_: any, record: ChildAssistance, index: number) =>
-            originalRender(_, { ...record, _openDeleteModal: openDeleteModal } as ChildAssistance, index),
-        };
-      }
-      console.log("BASE:", base);
-console.log("IS ARRAY:", Array.isArray(base));
-      return col;
-    });
-  }, [router, session?.user?.role, openDeleteModal]);
+  const columns = useMemo(
+    () => getChildAssistanceColumns(router, session?.user?.role, openDeleteModal),
+    [router, session?.user?.role, openDeleteModal]
+  );
 
   // ==========================
   // RENDER
