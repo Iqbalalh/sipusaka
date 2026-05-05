@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Switch, Upload, InputNumber, Spin, Button as AntButton, Segmented } from "antd";
+import { Switch, Upload, InputNumber, Spin, Button as AntButton } from "antd";
 import {
   LoadingOutlined,
   UploadOutlined,
   PlusOutlined,
   DeleteOutlined,
   FileWordOutlined,
-  EditOutlined,
 } from "@ant-design/icons";
 import type { UploadFile } from "antd";
 
@@ -25,17 +23,10 @@ import { notifyFromResult } from "@/utils/fetch/notify";
 import { getLetterType, createLetterType, updateLetterType, updateLetterTypeCounter } from "@/utils/services/letterType.service";
 import { TemplateField } from "@/types/models/letterType";
 
-const RichTextEditor = dynamic(
-  () => import("@/components/custom/RichTextEditor"),
-  { ssr: false, loading: () => <div className="h-96 border border-gray-200 rounded-lg animate-pulse bg-gray-50" /> }
-);
-
 interface LetterTypesFormProps {
   mode: "create" | "edit";
   letterTypeId?: string;
 }
-
-type TemplateSource = "upload" | "editor";
 
 interface FormState {
   jenisSurat: string;
@@ -62,18 +53,9 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [originalCounter, setOriginalCounter] = useState(0);
   const [templateFields, setTemplateFields] = useState<TemplateField[]>([]);
-
-  // Upload mode
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [existingTemplateName, setExistingTemplateName] = useState<string | null>(null);
-  const [existingTemplateUrl, setExistingTemplateUrl] = useState<string | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
-
-  // Editor mode
-  const [templateSource, setTemplateSource] = useState<TemplateSource>("upload");
-  const [templateHtml, setTemplateHtml] = useState("");
-  const [loadingHtml, setLoadingHtml] = useState(false);
-
   const [loading, setLoading] = useState(mode === "edit");
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -97,9 +79,6 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
             const parts = lt.templatePath.split("/");
             setExistingTemplateName(parts[parts.length - 1]);
           }
-          if (lt.templateUrl) {
-            setExistingTemplateUrl(lt.templateUrl);
-          }
         } catch (err) {
           notifyFromResult(notify, { error: err });
         } finally {
@@ -122,31 +101,10 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
   const removeTemplateField = (index: number) =>
     setTemplateFields((prev) => prev.filter((_, i) => i !== index));
 
-  const handleLoadFromDocx = async () => {
-    if (!existingTemplateUrl) return;
-    setLoadingHtml(true);
-    try {
-      const response = await fetch(existingTemplateUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const mammoth = await import("mammoth");
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      setTemplateHtml(result.value);
-      notifyFromResult(notify, { successMessage: "Template berhasil dimuat ke editor" });
-    } catch (err) {
-      notifyFromResult(notify, { error: new Error("Gagal memuat template dari file .docx") });
-    } finally {
-      setLoadingHtml(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.jenisSurat.trim() || !form.kodeSurat1.trim()) {
       notifyFromResult(notify, { error: new Error("Jenis Surat dan Kode Surat I wajib diisi") });
-      return;
-    }
-    if (templateSource === "editor" && !templateHtml.trim()) {
-      notifyFromResult(notify, { error: new Error("Konten editor tidak boleh kosong") });
       return;
     }
 
@@ -159,36 +117,28 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
       fd.append("kodeSurat2", form.kodeSurat2);
       fd.append("isActive", String(form.isActive));
       fd.append("templateFields", JSON.stringify(templateFields));
-
-      if (templateSource === "upload" && templateFile) {
-        fd.append("template", templateFile);
-      } else if (templateSource === "editor" && templateHtml) {
-        fd.append("templateHtml", templateHtml);
-      }
+      if (templateFile) fd.append("template", templateFile);
 
       let res;
       if (mode === "create") {
         res = await createLetterType(fd);
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.message || "Gagal menyimpan tipe surat");
+        }
+        notifyFromResult(notify, { successMessage: "Tipe surat berhasil dibuat!" });
       } else {
         res = await updateLetterType(letterTypeId!, fd);
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
-          throw new Error(json.message || "Gagal menyimpan Template Surat");
+          throw new Error(json.message || "Gagal menyimpan tipe surat");
         }
         if (form.currentCounter !== originalCounter) {
           await updateLetterTypeCounter(letterTypeId!, form.currentCounter);
         }
-        notifyFromResult(notify, { successMessage: "Template Surat berhasil diperbarui!" });
-        router.push("/letters/types");
-        return;
+        notifyFromResult(notify, { successMessage: "Tipe surat berhasil diperbarui!" });
       }
 
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.message || "Gagal menyimpan Template Surat");
-      }
-
-      notifyFromResult(notify, { successMessage: "Template Surat berhasil dibuat!" });
       router.push("/letters/types");
     } catch (err) {
       notifyFromResult(notify, { error: err });
@@ -208,12 +158,12 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
   return (
     <div>
       <PageBreadcrumb
-        pageTitle={mode === "create" ? "Tambah Template Surat" : "Edit Template Surat"}
+        pageTitle={mode === "create" ? "Tambah Tipe Surat" : "Edit Tipe Surat"}
       />
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">
           {/* INFORMASI DASAR */}
-          <ComponentCard title="Informasi Template Surat">
+          <ComponentCard title="Informasi Tipe Surat">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <FormField label="Jenis Surat" required>
@@ -286,10 +236,10 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
             </p>
             <div className="flex flex-wrap gap-2 mb-4 text-xs">
               <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded font-mono">
-                {"{nomorSurat}"} — auto
+                {"{nomorSurat}"} — auto (nomor urut/kode/bulan/tahun)
               </span>
               <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded font-mono">
-                {"{tanggalSurat}"} — auto
+                {"{tanggalSurat}"} — auto (dari tanggal pembuatan)
               </span>
               <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded font-mono">
                 {"{namaField}"} — diisi pengguna
@@ -346,98 +296,53 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
             </AntButton>
           </ComponentCard>
 
-          {/* TEMPLATE DOKUMEN */}
-          <ComponentCard title="Template Dokumen">
-            <div className="flex justify-center mb-6">
-              <Segmented
-                value={templateSource}
-                onChange={(v) => setTemplateSource(v as TemplateSource)}
-                options={[
-                  { label: "Upload .docx", value: "upload" },
-                  { label: "Edit di Browser", value: "editor" },
-                ]}
-              />
-            </div>
+          {/* UPLOAD TEMPLATE */}
+          <ComponentCard title="Template Dokumen (.docx)">
+            <p className="text-sm text-gray-500 mb-4">
+              Upload file .docx yang berisi template surat. Gunakan{" "}
+              <code className="bg-gray-100 px-1 rounded text-blue-700">{"{namaField}"}</code>{" "}
+              (kurung kurawal tunggal) sebagai variabel.{" "}
+              <code className="bg-green-50 px-1 rounded text-green-700">{"{nomorSurat}"}</code> dan{" "}
+              <code className="bg-green-50 px-1 rounded text-green-700">{"{tanggalSurat}"}</code>{" "}
+              akan diisi otomatis.
+            </p>
 
-            {templateSource === "upload" ? (
-              <>
-                <p className="text-sm text-gray-500 mb-4">
-                  Upload file .docx yang berisi template surat. Gunakan{" "}
-                  <code className="bg-gray-100 px-1 rounded text-blue-700">{"{namaField}"}</code>{" "}
-                  (kurung kurawal tunggal) sebagai variabel.{" "}
-                  <code className="bg-green-50 px-1 rounded text-green-700">{"{nomorSurat}"}</code> dan{" "}
-                  <code className="bg-green-50 px-1 rounded text-green-700">{"{tanggalSurat}"}</code>{" "}
-                  diisi otomatis.
-                </p>
-
-                {existingTemplateName && !templateFile && (
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4">
-                    <FileWordOutlined className="text-blue-500 text-lg" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-700">Template aktif</p>
-                      <p className="text-xs text-blue-500 truncate max-w-xs">{existingTemplateName}</p>
-                    </div>
-                  </div>
-                )}
-
-                <Upload
-                  accept=".docx"
-                  maxCount={1}
-                  fileList={fileList}
-                  beforeUpload={(file) => {
-                    if (file.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-                      notifyFromResult(notify, { error: new Error("Hanya file .docx yang diperbolehkan") });
-                      return Upload.LIST_IGNORE;
-                    }
-                    if (file.size > 10 * 1024 * 1024) {
-                      notifyFromResult(notify, { error: new Error("Ukuran file maksimal 10MB") });
-                      return Upload.LIST_IGNORE;
-                    }
-                    setTemplateFile(file);
-                    setFileList([{ uid: file.uid, name: file.name, status: "done" }]);
-                    return false;
-                  }}
-                  onRemove={() => {
-                    setTemplateFile(null);
-                    setFileList([]);
-                  }}
-                >
-                  <AntButton icon={<UploadOutlined />}>
-                    {existingTemplateName ? "Ganti Template" : "Upload Template .docx"}
-                  </AntButton>
-                </Upload>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-gray-500 mb-3">
-                  Buat template langsung di browser. Ketik{" "}
-                  <code className="bg-green-50 px-1 rounded text-green-700">{"{nomorSurat}"}</code>,{" "}
-                  <code className="bg-green-50 px-1 rounded text-green-700">{"{tanggalSurat}"}</code>, dan{" "}
-                  <code className="bg-blue-50 px-1 rounded text-blue-700">{"{namaField}"}</code>{" "}
-                  sebagai variabel. Saat surat dibuat, variabel akan diganti otomatis.
-                </p>
-
-                {existingTemplateUrl && !templateHtml && (
-                  <AntButton
-                    icon={<EditOutlined />}
-                    onClick={handleLoadFromDocx}
-                    loading={loadingHtml}
-                    className="mb-3"
-                  >
-                    Load dari template .docx yang ada
-                  </AntButton>
-                )}
-
-                <RichTextEditor
-                  value={templateHtml}
-                  onChange={setTemplateHtml}
-                  minHeight={450}
-                />
-                <p className="text-xs text-gray-400 mt-2">
-                  Konten ini akan dikonversi ke file .docx saat disimpan.
-                </p>
-              </>
+            {existingTemplateName && !templateFile && (
+              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+                <FileWordOutlined className="text-blue-500 text-lg" />
+                <div>
+                  <p className="text-sm font-medium text-blue-700">Template aktif</p>
+                  <p className="text-xs text-blue-500 truncate max-w-xs">{existingTemplateName}</p>
+                </div>
+              </div>
             )}
+
+            <Upload
+              accept=".docx"
+              maxCount={1}
+              fileList={fileList}
+              beforeUpload={(file) => {
+                if (file.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+                  notifyFromResult(notify, { error: new Error("Hanya file .docx yang diperbolehkan") });
+                  return Upload.LIST_IGNORE;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                  notifyFromResult(notify, { error: new Error("Ukuran file maksimal 10MB") });
+                  return Upload.LIST_IGNORE;
+                }
+                setTemplateFile(file);
+                setFileList([{ uid: file.uid, name: file.name, status: "done" }]);
+                return false;
+              }}
+              onRemove={() => {
+                setTemplateFile(null);
+                setFileList([]);
+              }}
+            >
+              <AntButton icon={<UploadOutlined />}>
+                {existingTemplateName ? "Ganti Template" : "Upload Template .docx"}
+              </AntButton>
+            </Upload>
           </ComponentCard>
 
           {/* ACTIONS */}
@@ -457,7 +362,7 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
                   Menyimpan...
                 </span>
               ) : mode === "create" ? (
-                "Buat Template Surat"
+                "Buat Tipe Surat"
               ) : (
                 "Simpan Perubahan"
               )}

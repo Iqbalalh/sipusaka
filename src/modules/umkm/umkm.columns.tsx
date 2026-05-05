@@ -84,6 +84,14 @@ export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Um
     dataIndex: "_count",
     key: "umkmVisitsCount",
     align: "center",
+    filters: [
+      { text: "Pernah", value: "pernah" },
+      { text: "Belum pernah", value: "belum" },
+    ],
+    onFilter: (value: any, record: any) => {
+      const count = record._count?.umkmVisits ?? 0;
+      return value === "pernah" ? count > 0 : count === 0;
+    },
     render: (_: any, record: any) => {
       const count = record._count?.umkmVisits ?? 0;
       return count === 0 ? "Belum pernah" : count;

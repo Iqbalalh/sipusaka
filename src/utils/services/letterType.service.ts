@@ -50,11 +50,14 @@ export const deleteLetterType = async (id: number) => {
 
 export const generatePreview = async (
   id: number | string,
-  fields: Record<string, string>
+  fields: Record<string, string>,
+  letterDate?: string
 ): Promise<Blob> => {
+  const body: Record<string, any> = { fields };
+  if (letterDate) body.letterDate = letterDate;
   const res = await fetchWithAuth(`${API_LETTER_TYPES}/${id}/generate`, {
     method: "POST",
-    body: { fields } as any,
+    body: body as any,
   });
   if (!res.ok) {
     const json = await res.json().catch(() => ({}));

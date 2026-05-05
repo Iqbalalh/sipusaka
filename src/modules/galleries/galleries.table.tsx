@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Progress } from "antd";
+import { Table, Spin, Modal, Input, Progress, Select } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -11,11 +11,11 @@ import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 
 // Types
-import { Gallery } from "@/types/models/gallery";
+import { Gallery, Category } from "@/types/models/gallery";
 import { Region } from "@/types/models/region";
 
 // Utils
-import { getGalleries, deleteGallery } from "@/utils/services/gallery.service";
+import { getGalleries, deleteGallery, getCategories } from "@/utils/services/gallery.service";
 import { getRegionsList } from "@/utils/services/region.service";
 import { getGalleryColumns } from "./galleries.columns";
 import { formatDate } from "@/utils/formatter/formatDate";
@@ -178,14 +178,22 @@ export default function GalleriesTable() {
   // Regions State
   const [regions, setRegions] = useState<Region[]>([]);
 
-  // Fetch regions for column filters
+  // Category filter state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+
+  // Fetch regions and categories for filters
   useEffect(() => {
     const init = async () => {
       try {
-        const regionList = await getRegionsList();
+        const [regionList, categoryList] = await Promise.all([
+          getRegionsList(),
+          getCategories(),
+        ]);
         setRegions(regionList);
+        setCategories(categoryList);
       } catch (err) {
-        console.error("Failed to fetch regions:", err);
+        console.error("Failed to fetch filters:", err);
       }
     };
 
@@ -201,16 +209,23 @@ export default function GalleriesTable() {
 
       const response = await getGalleries();
 
-      // Filter data based on search query
+      // Filter data based on search query and selected categories (AND logic)
       let filteredData = response;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        filteredData = response.filter((item: Gallery) => {
+        filteredData = filteredData.filter((item: Gallery) => {
           const caption = item.caption?.toLowerCase() || "";
           const regionName = item.regionName?.toLowerCase() || "";
-          const categories = item.categories?.map((c) => c.name.toLowerCase()).join(", ") || "";
-          return caption.includes(query) || regionName.includes(query) || categories.includes(query);
+          const cats = item.categories?.map((c) => c.name.toLowerCase()).join(", ") || "";
+          return caption.includes(query) || regionName.includes(query) || cats.includes(query);
         });
+      }
+      if (selectedCategories.length > 0) {
+        filteredData = filteredData.filter((item: Gallery) =>
+          selectedCategories.every((catId) =>
+            item.categories?.some((c) => c.id === catId)
+          )
+        );
       }
 
       // Calculate pagination
@@ -245,11 +260,11 @@ export default function GalleriesTable() {
   }, []); // Only run once on mount
 
   // ==========================
-  // FETCH ON SEARCH/PAGE CHANGE
+  // FETCH ON SEARCH/PAGE/CATEGORY CHANGE
   // ==========================
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, selectedCategories]);
 
   // ==========================
   // SEARCH WITH DEBOUNCE
@@ -393,6 +408,23 @@ export default function GalleriesTable() {
               className="w-full"
             />
           </div>
+          {categories.length > 0 && (
+            <div className="w-full sm:w-72">
+              <Select
+                mode="multiple"
+                allowClear
+                style={{ width: "100%" }}
+                placeholder="Filter kategori (AND)..."
+                value={selectedCategories}
+                onChange={(vals: number[]) => {
+                  setSelectedCategories(vals);
+                  setCurrentPage(1);
+                }}
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                maxTagCount="responsive"
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button

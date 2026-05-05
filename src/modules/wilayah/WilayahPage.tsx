@@ -5,13 +5,16 @@ import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
 import { Spin, Flex } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
-import { getRegionStats, getGlobalEducationLevels, GlobalEducationLevels, RegionStat } from "@/utils/services/region.service";
+import { getRegionStats, RegionStat } from "@/utils/services/region.service";
+import { API_DASHBOARD } from "@/constants/endpoint";
+import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
 import {
   FaHouseChimney,
   FaChildReaching,
   FaShop,
   FaHandHoldingHeart,
   FaUsers,
+  FaGraduationCap,
 } from "react-icons/fa6";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -21,17 +24,6 @@ const formatRupiah = (n: number) =>
 
 const EDU_LEVELS = ["TK", "SD", "SMP", "SMA", "Diploma", "Sarjana", "Magister", "Doktor"] as const;
 type EduKey = typeof EDU_LEVELS[number];
-
-const EDU_COLORS: Record<EduKey, string> = {
-  TK: "#f43f5e",
-  SD: "#3b82f6",
-  SMP: "#6366f1",
-  SMA: "#8b5cf6",
-  Diploma: "#22c55e",
-  Sarjana: "#0ea5e9",
-  Magister: "#f97316",
-  Doktor: "#ef4444",
-};
 
 const EDU_BADGE_COLORS: Record<EduKey, string> = {
   TK: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
@@ -43,6 +35,12 @@ const EDU_BADGE_COLORS: Record<EduKey, string> = {
   Magister: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
   Doktor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
+
+const EDU_DYNAMIC_COLORS = [
+  "#f43f5e", "#3b82f6", "#6366f1", "#8b5cf6",
+  "#22c55e", "#0ea5e9", "#f97316", "#ef4444",
+  "#ec4899", "#14b8a6",
+];
 
 // ==============================================
 // STAT CARD
@@ -192,73 +190,78 @@ function RegionDetailCard({ stat }: { stat: RegionStat }) {
 }
 
 // ==============================================
-// EDUCATION STATS OVERVIEW
-// ==============================================
-function EducationStatsOverview({ stats }: { stats: RegionStat[] }) {
-  const eduCounts = EDU_LEVELS.map((k) => ({
-    level: k,
-    count: stats.reduce((sum, s) => sum + ((s.educationLevels as any)?.[k] ?? 0), 0),
-    badgeColor: EDU_BADGE_COLORS[k],
-    barColor: EDU_COLORS[k],
-  }));
-  const maxCount = Math.max(...eduCounts.map((d) => d.count), 1);
-  const grandTotal = eduCounts.reduce((s, d) => s + d.count, 0);
-
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-5 bg-blue-600 rounded-full" />
-          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-            Statistik Jenjang Pendidikan Keseluruhan
-          </h3>
-        </div>
-        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          Total: <span className="text-gray-800 dark:text-white font-bold">{grandTotal}</span> anak
-        </span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        {eduCounts.map(({ level, count, badgeColor, barColor }) => (
-          <div
-            key={level}
-            className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
-          >
-            <span className={`self-start rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>
-              {level}
-            </span>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              {grandTotal > 0 ? ((count / grandTotal) * 100).toFixed(1) : "0"}%
-            </p>
-            <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: barColor }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ==============================================
 // SUMMARY TAB (ALL REGIONS)
 // ==============================================
-function SummaryView({ stats }: { stats: RegionStat[] }) {
+interface SummaryViewProps {
+  stats: RegionStat[];
+  eduData: Record<string, number> | null;
+  eduLoading: boolean;
+}
+
+function SummaryView({ stats, eduData, eduLoading }: SummaryViewProps) {
   const names = stats.map((s) => s.regionName);
   const chartHeight = Math.max(300, stats.length * 120);
 
-  // Overall education totals
-  const overallEduData = EDU_LEVELS.map((k) =>
-    stats.reduce((sum, s) => sum + ((s.educationLevels as any)?.[k] ?? 0), 0)
-  );
+  const eduEntries = eduData ? Object.entries(eduData) : [];
+  const eduGrandTotal = eduEntries.reduce((s, [, v]) => s + v, 0);
+  const eduMaxCount = Math.max(...eduEntries.map(([, v]) => v), 1);
 
   return (
     <div className="space-y-5">
-      {/* Education level stats cards */}
-      <EducationStatsOverview stats={stats} />
+      {/* Dynamic education level section */}
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-5 bg-blue-600 rounded-full" />
+            <FaGraduationCap className="text-blue-600 text-lg" />
+            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+              Jenjang Pendidikan Anak
+            </h3>
+          </div>
+          {!eduLoading && eduData && (
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Total:{" "}
+              <span className="text-gray-800 dark:text-white font-bold">{eduGrandTotal}</span> anak
+            </span>
+          )}
+        </div>
+
+        {eduLoading ? (
+          <div className="flex justify-center py-8">
+            <Spin indicator={<LoadingOutlined spin />} />
+          </div>
+        ) : eduEntries.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+            {eduEntries.map(([level, count], idx) => (
+              <div
+                key={level}
+                className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+              >
+                <span className="self-start rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  {level}
+                </span>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {eduGrandTotal > 0 ? ((count / eduGrandTotal) * 100).toFixed(1) : "0"}%
+                </p>
+                <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${(count / eduMaxCount) * 100}%`,
+                      backgroundColor: EDU_DYNAMIC_COLORS[idx % EDU_DYNAMIC_COLORS.length],
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-4">
+            Data tidak tersedia
+          </p>
+        )}
+      </div>
 
       {/* Charts — one per row, vertical bars */}
       <ChartCard
@@ -283,14 +286,6 @@ function SummaryView({ stats }: { stats: RegionStat[] }) {
           { name: "ABK", data: stats.map((s) => s.children.abk) },
         ]}
         colors={["#f59e0b", "#f97316", "#ef4444", "#a855f7"]}
-      />
-
-      <ChartCard
-        title="Jenjang Pendidikan Keseluruhan"
-        categories={[...EDU_LEVELS]}
-        height={320}
-        series={[{ name: "Jumlah Anak", data: overallEduData }]}
-        colors={EDU_LEVELS.map((k) => EDU_COLORS[k])}
       />
 
       <ChartCard
@@ -326,12 +321,22 @@ export default function WilayahPage() {
   const [stats, setStats] = useState<RegionStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRegionId, setSelectedRegionId] = useState<number | "all">("all");
+  const [eduData, setEduData] = useState<Record<string, number> | null>(null);
+  const [eduLoading, setEduLoading] = useState(true);
 
   useEffect(() => {
     getRegionStats()
       .then(setStats)
       .catch(console.error)
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchWithAuth(`${API_DASHBOARD}/education-levels`)
+      .then((res) => res.json())
+      .then((json) => setEduData(json.data ?? null))
+      .catch(console.error)
+      .finally(() => setEduLoading(false));
   }, []);
 
   if (loading) {
@@ -378,7 +383,7 @@ export default function WilayahPage() {
 
       {/* Content */}
       {selectedRegionId === "all" ? (
-        <SummaryView stats={stats} />
+        <SummaryView stats={stats} eduData={eduData} eduLoading={eduLoading} />
       ) : selectedStat ? (
         <RegionDetailCard stat={selectedStat} />
       ) : null}
