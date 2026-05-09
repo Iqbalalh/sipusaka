@@ -249,13 +249,13 @@ export const getChildrenColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => record.homes?.employees?.regionId === value,
+    onFilter: (value, record) => (record as any).homes?.regionId === value,
     render: (_, child: any) => {
-      const region = regions.find((r) => r.regionId === child.homes?.employees?.regionId);
+      const region = regions.find((r) => r.regionId === child.homes?.regionId);
       return region ? region.regionName : "-";
     },
     exportRender: (_: any, child: any) => {
-      const region = regions.find((r) => r.regionId === child.homes?.employees?.regionId);
+      const region = regions.find((r) => r.regionId === child.homes?.regionId);
       return region?.regionName ?? "-";
     },
   },

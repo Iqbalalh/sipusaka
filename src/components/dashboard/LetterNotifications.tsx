@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Spin } from "antd";
-import { LoadingOutlined, BellOutlined, EditOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { Skeleton } from "antd";
+import { BellOutlined, EditOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { getPendingLetters, getDraftLetters } from "@/utils/services/letter.service";
 import { Letter } from "@/types/models/letter";
 
@@ -84,9 +84,16 @@ export const LetterNotifications = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-        <Spin indicator={<LoadingOutlined spin />} size="small" />
-        <span>Memuat notifikasi surat...</span>
+      <div className="space-y-2">
+        {[0, 1].map((i) => (
+          <div key={i} className="flex items-start gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-white dark:border-gray-700 dark:bg-white/3">
+            <Skeleton.Avatar active size="small" />
+            <div className="flex-1">
+              <Skeleton active title={{ width: "50%" }} paragraph={{ rows: 1, width: "80%" }} />
+            </div>
+            <Skeleton.Button active size="small" style={{ width: 64 }} />
+          </div>
+        ))}
       </div>
     );
   }

@@ -27,16 +27,7 @@ export interface RegionStat {
     yatimPiatu: number;
     abk: number;
   };
-  educationLevels: {
-    TK: number;
-    SD: number;
-    SMP: number;
-    SMA: number;
-    Diploma: number;
-    Sarjana: number;
-    Magister: number;
-    Doktor: number;
-  };
+  educationLevels: Record<string, number>;
   umkm: {
     total: number;
     active: number;

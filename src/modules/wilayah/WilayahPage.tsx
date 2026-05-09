@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
-import { Spin, Flex } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
+import { Skeleton } from "antd";
 import { getRegionStats, RegionStat } from "@/utils/services/region.service";
-import { API_DASHBOARD } from "@/constants/endpoint";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
+import { API_DASHBOARD } from "@/constants/endpoint";
 import {
   FaHouseChimney,
   FaChildReaching,
@@ -15,6 +14,7 @@ import {
   FaHandHoldingHeart,
   FaUsers,
   FaGraduationCap,
+  FaUserXmark,
 } from "react-icons/fa6";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -22,24 +22,19 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false })
 const formatRupiah = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 
-const EDU_LEVELS = ["TK", "SD", "SMP", "SMA", "Diploma", "Sarjana", "Magister", "Doktor"] as const;
-type EduKey = typeof EDU_LEVELS[number];
-
-const EDU_BADGE_COLORS: Record<EduKey, string> = {
-  TK: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-  SD: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  SMP: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-  SMA: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-  Diploma: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  Sarjana: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-  Magister: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  Doktor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-};
-
 const EDU_DYNAMIC_COLORS = [
   "#f43f5e", "#3b82f6", "#6366f1", "#8b5cf6",
   "#22c55e", "#0ea5e9", "#f97316", "#ef4444",
   "#ec4899", "#14b8a6",
+];
+
+const CHILDREN_BREAKDOWN = [
+  { key: "active" as const, label: "Aktif", color: "#22c55e" },
+  { key: "inactive" as const, label: "Tidak Aktif", color: "#9ca3af" },
+  { key: "yatim" as const, label: "Yatim", color: "#f59e0b" },
+  { key: "piatu" as const, label: "Piatu", color: "#f97316" },
+  { key: "yatimPiatu" as const, label: "Yatim Piatu", color: "#ef4444" },
+  { key: "abk" as const, label: "ABK", color: "#a855f7" },
 ];
 
 // ==============================================
@@ -64,24 +59,6 @@ function StatCard({ icon, label, value, sub, color }: StatCardProps) {
         <p className="text-2xl font-bold text-gray-800 dark:text-white/90">{value}</p>
         {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
       </div>
-    </div>
-  );
-}
-
-// ==============================================
-// BADGE ROW
-// ==============================================
-function BadgeRow({ items }: { items: { label: string; value: number; color: string }[] }) {
-  return (
-    <div className="flex flex-wrap gap-2 mt-3">
-      {items.map((item) => (
-        <span
-          key={item.label}
-          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${item.color}`}
-        >
-          {item.label}: <span className="font-bold">{item.value}</span>
-        </span>
-      ))}
     </div>
   );
 }
@@ -138,10 +115,81 @@ function ChartCard({ title, categories, series, colors, height = 280 }: ChartCar
 }
 
 // ==============================================
+// EDU CARDS (reusable)
+// Inactive children are NOT counted in edu levels — shown as separate card
+// ==============================================
+function EduCards({
+  eduLevels,
+  inactiveCount,
+}: {
+  eduLevels: Record<string, number>;
+  inactiveCount: number;
+}) {
+  const entries = Object.entries(eduLevels);
+  const grandTotal = entries.reduce((s, [, v]) => s + v, 0);
+  const maxCount = Math.max(...entries.map(([, v]) => v), inactiveCount, 1);
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+      {/* Tidak Aktif card — shown first, styled differently */}
+      <div className="flex flex-col gap-2 p-3 rounded-xl bg-gray-100 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-1.5">
+          <FaUserXmark className="text-gray-400 text-xs" />
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Tidak Aktif</span>
+        </div>
+        <p className="text-2xl font-bold text-gray-500 dark:text-gray-400">{inactiveCount}</p>
+        <p className="text-xs text-gray-400">Inaktif</p>
+        <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${(inactiveCount / maxCount) * 100}%`, backgroundColor: "#9ca3af" }}
+          />
+        </div>
+      </div>
+
+      {/* Active children by education level */}
+      {entries.map(([level, count], idx) => (
+        <div key={level} className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+          <span
+            className="self-start rounded-full px-2 py-0.5 text-xs font-semibold"
+            style={{
+              backgroundColor: EDU_DYNAMIC_COLORS[idx % EDU_DYNAMIC_COLORS.length] + "22",
+              color: EDU_DYNAMIC_COLORS[idx % EDU_DYNAMIC_COLORS.length],
+            }}
+          >
+            {level}
+          </span>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            {grandTotal > 0 ? ((count / grandTotal) * 100).toFixed(1) : "0"}%
+          </p>
+          <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${(count / maxCount) * 100}%`,
+                backgroundColor: EDU_DYNAMIC_COLORS[idx % EDU_DYNAMIC_COLORS.length],
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ==============================================
 // REGION DETAIL CARD
 // ==============================================
-function RegionDetailCard({ stat }: { stat: RegionStat }) {
-  const edu = stat.educationLevels ?? {};
+function RegionDetailCard({ stat, eduData, eduLoading }: {
+  stat: RegionStat;
+  eduData: Record<string, number>;
+  eduLoading: boolean;
+}) {
+  const children = stat.children;
+  const totalChildren = children.total || 1;
+  const maxChildrenCount = Math.max(...CHILDREN_BREAKDOWN.map((b) => children[b.key] ?? 0), 1);
+
   return (
     <div className="space-y-4">
       {/* Overview row */}
@@ -154,36 +202,45 @@ function RegionDetailCard({ stat }: { stat: RegionStat }) {
         <StatCard icon={<FaUsers />} label="Bantuan Sosial" value={stat.socialAssistance.total} sub={formatRupiah(stat.socialAssistance.totalAmount)} color="bg-rose-500" />
       </div>
 
-      {/* Children breakdown */}
+      {/* Children breakdown — bar grid */}
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
-        <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-1">Rincian Anak Asuh</p>
-        <BadgeRow items={[
-          { label: "Aktif", value: stat.children.active, color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-          { label: "Tidak Aktif", value: stat.children.inactive, color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
-          { label: "Yatim", value: stat.children.yatim, color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-          { label: "Piatu", value: stat.children.piatu, color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-          { label: "Yatim Piatu", value: stat.children.yatimPiatu, color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-          { label: "ABK", value: stat.children.abk, color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
-        ]} />
+        <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-3">Rincian Anak Asuh</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+          {CHILDREN_BREAKDOWN.map((item) => {
+            const count = children[item.key] ?? 0;
+            return (
+              <div key={item.key} className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {totalChildren > 0 ? ((count / totalChildren) * 100).toFixed(1) : "0"}%
+                </p>
+                <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${(count / maxChildrenCount) * 100}%`, backgroundColor: item.color }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Education level breakdown */}
+      {/* Education level breakdown (active children only, from bantuan terakhir) */}
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
-        <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-1">Tingkat Pendidikan</p>
-        <BadgeRow items={EDU_LEVELS.map((k) => ({
-          label: k,
-          value: (edu as any)[k] ?? 0,
-          color: EDU_BADGE_COLORS[k],
-        }))} />
-      </div>
-
-      {/* UMKM breakdown */}
-      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
-        <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-1">Rincian UMKM</p>
-        <BadgeRow items={[
-          { label: "Aktif", value: stat.umkm.active, color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-          { label: "Tidak Aktif", value: stat.umkm.inactive, color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
-        ]} />
+        <div className="flex items-center gap-2 mb-3">
+          <FaGraduationCap className="text-blue-600" />
+          <p className="text-sm font-semibold text-gray-700 dark:text-white/80">
+            Jenjang Pendidikan Anak
+          </p>
+          <span className="ml-auto text-xs text-gray-400">hanya anak aktif · dari bantuan terakhir</span>
+        </div>
+        {eduLoading ? (
+          <p className="text-sm text-gray-400 py-2">Memuat data...</p>
+        ) : (
+          <EduCards eduLevels={eduData} inactiveCount={stat.children.inactive} />
+        )}
       </div>
     </div>
   );
@@ -192,78 +249,40 @@ function RegionDetailCard({ stat }: { stat: RegionStat }) {
 // ==============================================
 // SUMMARY TAB (ALL REGIONS)
 // ==============================================
-interface SummaryViewProps {
+function SummaryView({ stats, globalEduData, globalEduLoading }: {
   stats: RegionStat[];
-  eduData: Record<string, number> | null;
-  eduLoading: boolean;
-}
-
-function SummaryView({ stats, eduData, eduLoading }: SummaryViewProps) {
+  globalEduData: Record<string, number>;
+  globalEduLoading: boolean;
+}) {
   const names = stats.map((s) => s.regionName);
   const chartHeight = Math.max(300, stats.length * 120);
 
-  const eduEntries = eduData ? Object.entries(eduData) : [];
-  const eduGrandTotal = eduEntries.reduce((s, [, v]) => s + v, 0);
-  const eduMaxCount = Math.max(...eduEntries.map(([, v]) => v), 1);
+  const totalInactive = stats.reduce((sum, s) => sum + s.children.inactive, 0);
+  const eduGrandTotal = Object.values(globalEduData).reduce((s, v) => s + v, 0);
 
   return (
     <div className="space-y-5">
-      {/* Dynamic education level section */}
+      {/* Jenjang Pendidikan Anak — aggregated across all regions */}
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-5 bg-blue-600 rounded-full" />
-            <FaGraduationCap className="text-blue-600 text-lg" />
-            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-              Jenjang Pendidikan Anak
-            </h3>
-          </div>
-          {!eduLoading && eduData && (
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Total:{" "}
-              <span className="text-gray-800 dark:text-white font-bold">{eduGrandTotal}</span> anak
-            </span>
-          )}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 bg-blue-600 rounded-full" />
+          <FaGraduationCap className="text-blue-600 text-lg" />
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+            Jenjang Pendidikan Anak
+          </h3>
+          <span className="ml-auto text-sm text-gray-400">
+            Total aktif:{" "}
+            <span className="font-bold text-gray-700 dark:text-white">{eduGrandTotal}</span>
+            <span className="text-xs ml-1">anak · dari bantuan terakhir</span>
+          </span>
         </div>
-
-        {eduLoading ? (
-          <div className="flex justify-center py-8">
-            <Spin indicator={<LoadingOutlined spin />} />
-          </div>
-        ) : eduEntries.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-            {eduEntries.map(([level, count], idx) => (
-              <div
-                key={level}
-                className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
-              >
-                <span className="self-start rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                  {level}
-                </span>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {eduGrandTotal > 0 ? ((count / eduGrandTotal) * 100).toFixed(1) : "0"}%
-                </p>
-                <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${(count / eduMaxCount) * 100}%`,
-                      backgroundColor: EDU_DYNAMIC_COLORS[idx % EDU_DYNAMIC_COLORS.length],
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+        {globalEduLoading ? (
+          <p className="text-sm text-gray-400 py-2">Memuat data...</p>
         ) : (
-          <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-4">
-            Data tidak tersedia
-          </p>
+          <EduCards eduLevels={globalEduData} inactiveCount={totalInactive} />
         )}
       </div>
 
-      {/* Charts — one per row, vertical bars */}
       <ChartCard
         title="Keluarga & Anak per Wilayah"
         categories={names}
@@ -321,8 +340,10 @@ export default function WilayahPage() {
   const [stats, setStats] = useState<RegionStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRegionId, setSelectedRegionId] = useState<number | "all">("all");
-  const [eduData, setEduData] = useState<Record<string, number> | null>(null);
-  const [eduLoading, setEduLoading] = useState(true);
+  const [globalEduData, setGlobalEduData] = useState<Record<string, number>>({});
+  const [globalEduLoading, setGlobalEduLoading] = useState(true);
+  const [regionEduData, setRegionEduData] = useState<Record<string, number>>({});
+  const [regionEduLoading, setRegionEduLoading] = useState(false);
 
   useEffect(() => {
     getRegionStats()
@@ -334,18 +355,58 @@ export default function WilayahPage() {
   useEffect(() => {
     fetchWithAuth(`${API_DASHBOARD}/education-levels`)
       .then((res) => res.json())
-      .then((json) => setEduData(json.data ?? null))
+      .then((json) => setGlobalEduData(json.data ?? {}))
       .catch(console.error)
-      .finally(() => setEduLoading(false));
+      .finally(() => setGlobalEduLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (selectedRegionId === "all") return;
+    const fetchRegionEdu = async () => {
+      setRegionEduLoading(true);
+      try {
+        const res = await fetchWithAuth(`${API_DASHBOARD}/education-levels?regionId=${selectedRegionId}`);
+        const json = await res.json();
+        setRegionEduData(json.data ?? {});
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setRegionEduLoading(false);
+      }
+    };
+    fetchRegionEdu();
+  }, [selectedRegionId]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 text-gray-500 gap-4">
-        <Flex align="center" gap="middle">
-          <Spin indicator={<LoadingOutlined spin />} size="large" />
-        </Flex>
-        Memuat data wilayah...
+      <div className="space-y-5">
+        {/* Tab buttons skeleton */}
+        <div className="flex flex-wrap gap-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton.Button key={i} active size="small" shape="round" style={{ width: 90 }} />
+          ))}
+        </div>
+
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5 flex items-start gap-4">
+              <Skeleton.Avatar active size={48} shape="square" />
+              <div className="flex-1">
+                <Skeleton active title={{ width: "60%" }} paragraph={{ rows: 1, width: "40%" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart skeleton */}
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
+          <Skeleton active title={{ width: "35%" }} paragraph={{ rows: 7 }} />
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
+          <Skeleton active title={{ width: "35%" }} paragraph={{ rows: 7 }} />
+        </div>
       </div>
     );
   }
@@ -383,9 +444,9 @@ export default function WilayahPage() {
 
       {/* Content */}
       {selectedRegionId === "all" ? (
-        <SummaryView stats={stats} eduData={eduData} eduLoading={eduLoading} />
+        <SummaryView stats={stats} globalEduData={globalEduData} globalEduLoading={globalEduLoading} />
       ) : selectedStat ? (
-        <RegionDetailCard stat={selectedStat} />
+        <RegionDetailCard stat={selectedStat} eduData={regionEduData} eduLoading={regionEduLoading} />
       ) : null}
     </div>
   );

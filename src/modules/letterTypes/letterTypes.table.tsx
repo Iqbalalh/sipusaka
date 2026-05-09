@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Table, Modal, Input, Spin, Button } from "antd";
-import { LoadingOutlined, SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import { Table, Modal, Input, Spin } from "antd";
+import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
+import UIButton from "@/components/ui/button/Button";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { LetterType } from "@/types/models/letterType";
@@ -126,13 +127,12 @@ export default function LetterTypesTable() {
           />
         </div>
         {session?.user?.role !== "staff" && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
+          <UIButton
             onClick={() => router.push("/letters/types/create")}
+            className="bg-blue-600 text-white hover:bg-blue-700"
           >
-            Tambah Template Surat
-          </Button>
+            +
+          </UIButton>
         )}
       </div>
 

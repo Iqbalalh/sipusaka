@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Progress, Select } from "antd";
+import { Table, Spin, Modal, Input, Progress } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -155,12 +155,6 @@ export default function GalleriesTable() {
   // Data State
   const [data, setData] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50);
-  const [totalPages, setTotalPages] = useState(1);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,12 +169,9 @@ export default function GalleriesTable() {
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Regions State
+  // Regions & Categories for column filters
   const [regions, setRegions] = useState<Region[]>([]);
-
-  // Category filter state
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
   // Fetch regions and categories for filters
   useEffect(() => {
@@ -203,97 +194,51 @@ export default function GalleriesTable() {
   // ==========================
   // FETCH DATA
   // ==========================
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-
       const response = await getGalleries();
-
-      // Filter data based on search query and selected categories (AND logic)
-      let filteredData = response;
+      let filtered = response;
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredData = filteredData.filter((item: Gallery) => {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter((item: Gallery) => {
           const caption = item.caption?.toLowerCase() || "";
           const regionName = item.regionName?.toLowerCase() || "";
           const cats = item.categories?.map((c) => c.name.toLowerCase()).join(", ") || "";
-          return caption.includes(query) || regionName.includes(query) || cats.includes(query);
+          return caption.includes(q) || regionName.includes(q) || cats.includes(q);
         });
       }
-      if (selectedCategories.length > 0) {
-        filteredData = filteredData.filter((item: Gallery) =>
-          selectedCategories.every((catId) =>
-            item.categories?.some((c) => c.id === catId)
-          )
-        );
-      }
-
-      // Calculate pagination
-      const totalItems = filteredData.length;
-      const totalPagesCalc = Math.ceil(totalItems / pageSize);
-      const startIndex = (currentPage - 1) * pageSize;
-      const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
-
-      setData(paginatedData);
-      setTotal(totalItems);
-      setTotalPages(totalPagesCalc);
+      setData(filtered);
     } catch (err) {
-      console.error("Error fetching gallery data:", err);
       notifyFromResult(notify, { error: err });
       setData([]);
-      setTotal(0);
-      setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, notify]);
 
   // ==========================
-  // INITIAL FETCH FROM URL
+  // INITIAL SEARCH FROM URL
   // ==========================
   useEffect(() => {
-    const pageParam = searchParams.get("page");
     const searchParam = searchParams.get("search") || "";
-    const initialPage = pageParam ? parseInt(pageParam, 10) : 1;
-    setCurrentPage(initialPage);
     setSearchQuery(searchParam);
-  }, []); // Only run once on mount
+  }, []);
 
   // ==========================
-  // FETCH ON SEARCH/PAGE/CATEGORY CHANGE
+  // FETCH ON SEARCH CHANGE
   // ==========================
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchQuery, selectedCategories]);
+  }, [fetchData]);
 
   // ==========================
   // SEARCH WITH DEBOUNCE
   // ==========================
   const handleSearchChange = (value: string) => {
-    if (searchTimer) {
-      clearTimeout(searchTimer);
-    }
-
-    const timer = setTimeout(() => {
-      setSearchQuery(value);
-      setCurrentPage(1); // Reset to first page on search
-    }, 500);
-
+    if (searchTimer) clearTimeout(searchTimer);
+    const timer = setTimeout(() => setSearchQuery(value), 500);
     setSearchTimer(timer);
-  };
-
-  // ==========================
-  // UPDATE URL WITH PAGE AND SEARCH PARAMETERS
-  // ==========================
-  const updatePageUrl = (page: number, search: string = searchQuery) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", page.toString());
-    if (search && search.trim()) {
-      params.set("search", search);
-    } else {
-      params.delete("search");
-    }
-    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   // ==========================
@@ -334,8 +279,7 @@ export default function GalleriesTable() {
     }
   };
 
-  // Generate columns with regions
-  const columns = getGalleryColumns(regions, session?.user?.role);
+  const columns = getGalleryColumns(regions, categories, session?.user?.role);
 
   // ==========================
   // LOADING STATE
@@ -395,9 +339,6 @@ export default function GalleriesTable() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-col gap-4 w-full sm:w-auto">
-          <h3 className="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
-            Jumlah Data Galeri: {total}
-          </h3>
           <div className="w-full">
             <Input
               placeholder="Cari data..."
@@ -408,23 +349,6 @@ export default function GalleriesTable() {
               className="w-full"
             />
           </div>
-          {categories.length > 0 && (
-            <div className="w-full sm:w-72">
-              <Select
-                mode="multiple"
-                allowClear
-                style={{ width: "100%" }}
-                placeholder="Filter kategori (AND)..."
-                value={selectedCategories}
-                onChange={(vals: number[]) => {
-                  setSelectedCategories(vals);
-                  setCurrentPage(1);
-                }}
-                options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                maxTagCount="responsive"
-              />
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
@@ -487,14 +411,9 @@ export default function GalleriesTable() {
         rowKey="id"
         bordered
         pagination={{
-          pageSize,
-          current: currentPage,
-          total,
+          pageSize: 50,
           showSizeChanger: false,
-          onChange: (page) => {
-            updatePageUrl(page, searchQuery);
-            setCurrentPage(page);
-          },
+          showTotal: (t) => `Jumlah Data: ${t}`,
         }}
         scroll={{ x: "max-content", y: 500 }}
         loading={loading}

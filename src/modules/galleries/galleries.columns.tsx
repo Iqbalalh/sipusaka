@@ -4,7 +4,7 @@ import { Image } from "antd";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { EditOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
-import { Gallery } from "@/types/models/gallery";
+import { Gallery, Category } from "@/types/models/gallery";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
 import { formatDate } from "@/utils/formatter/formatDate";
@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getGalleryColumns = (regions: Region[] = [], role?: string): ColumnsType<Gallery> => [
+export const getGalleryColumns = (regions: Region[] = [], categories: Category[] = [], role?: string): ColumnsType<Gallery> => [
   {
     title: "Gambar",
     dataIndex: "s3Path",
@@ -47,16 +47,15 @@ export const getGalleryColumns = (regions: Region[] = [], role?: string): Column
     title: "Kategori",
     key: "categories",
     dataIndex: "categories",
+    filters: categories.map((c) => ({ text: c.name, value: c.id })),
+    onFilter: (value: any, record: Gallery) =>
+      record.categories?.some((c) => c.id === value) ?? false,
     render: (_: any, gallery: Gallery) => {
-      if (!gallery.categories || gallery.categories.length === 0) {
-        return "-";
-      }
+      if (!gallery.categories || gallery.categories.length === 0) return "-";
       return gallery.categories.map((cat) => cat.name).join(", ");
     },
     exportRender: (_: any, gallery: Gallery) => {
-      if (!gallery.categories || gallery.categories.length === 0) {
-        return "-";
-      }
+      if (!gallery.categories || gallery.categories.length === 0) return "-";
       return gallery.categories.map((cat) => cat.name).join(", ");
     },
   },

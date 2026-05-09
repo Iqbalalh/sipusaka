@@ -468,7 +468,7 @@ export default function ChildrenView() {
               Wilayah
             </span>
             <span className="text-sm font-medium text-gray-800 dark:text-white/90 warp-break-words">
-              {data?.homes?.employees?.regions?.regionName || data?.homes?.regions?.regionName || "-"}
+              {data?.homes?.regions?.regionName || "-"}
             </span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">

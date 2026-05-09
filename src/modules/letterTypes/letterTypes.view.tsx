@@ -37,7 +37,7 @@ export default function LetterTypesView({ letterTypeId }: LetterTypesViewProps) 
       }
     };
     fetchData();
-  }, [letterTypeId]);
+  }, [letterTypeId, notify]);
 
   if (loading) {
     return (

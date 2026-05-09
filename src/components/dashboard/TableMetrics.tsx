@@ -6,13 +6,11 @@ import {
   FaChild,
   FaDollarSign,
   FaStore,
-  FaGraduationCap,
 } from "react-icons/fa6";
 import { API_DASHBOARD } from "@/constants/endpoint";
 import { ApiResponseSingle } from "@/types/generic/api-response";
 import camelcaseKeys from "camelcase-keys";
-import { message, Spin } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
+import { message, Skeleton } from "antd";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
 
 interface Dashboard {
@@ -82,25 +80,10 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-// Color palette for dynamic education levels
-const EDU_COLORS = [
-  "bg-blue-100 text-blue-700 border-blue-200",
-  "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "bg-amber-100 text-amber-700 border-amber-200",
-  "bg-purple-100 text-purple-700 border-purple-200",
-  "bg-rose-100 text-rose-700 border-rose-200",
-  "bg-cyan-100 text-cyan-700 border-cyan-200",
-  "bg-orange-100 text-orange-700 border-orange-200",
-  "bg-teal-100 text-teal-700 border-teal-200",
-];
 
 export const TableMetrics = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [dashboardData, setDashboardData] = useState<Dashboard | null>(null);
-
-  // Education level: separate state + loading
-  const [eduData, setEduData] = useState<Record<string, number> | null>(null);
-  const [eduLoading, setEduLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -123,23 +106,58 @@ export const TableMetrics = () => {
     fetchDashboardData();
   }, [messageApi]);
 
-  // Separate fetch for education level stats
-  useEffect(() => {
-    const fetchEduStats = async () => {
-      setEduLoading(true);
-      try {
-        const res = await fetchWithAuth(`${API_DASHBOARD}/education-levels`);
-        if (!res.ok) throw new Error("Failed to fetch education levels");
-        const json = await res.json();
-        setEduData(json.data ?? {});
-      } catch (error) {
-        console.error("Error fetching education levels:", error);
-      } finally {
-        setEduLoading(false);
-      }
-    };
-    fetchEduStats();
-  }, []);
+
+  if (!dashboardData) {
+    return (
+      <div className="space-y-8">
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full" />
+          <div className="pl-4">
+            <Skeleton active title={{ width: "40%" }} paragraph={{ rows: 1, width: "30%" }} />
+          </div>
+        </div>
+
+        {/* Main cards skeleton */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/3">
+              <div className="flex items-center justify-between">
+                <Skeleton.Avatar active size={56} shape="square" />
+                <div className="flex flex-col gap-2 w-28">
+                  <Skeleton.Button active size="small" block />
+                  <Skeleton.Button active size="small" block />
+                </div>
+              </div>
+              <div className="mt-5">
+                <Skeleton active title={{ width: "35%" }} paragraph={{ rows: 2, width: ["55%", "70%"] }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Activity section skeleton */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <Skeleton.Button active size="small" style={{ width: 180 }} />
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div key={i} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/3">
+                <div className="flex items-center justify-between">
+                  <Skeleton.Avatar active size={56} shape="square" />
+                  <Skeleton.Button active size="large" style={{ width: 80 }} />
+                </div>
+                <div className="mt-5">
+                  <Skeleton active title={{ width: "40%" }} paragraph={{ rows: 3, width: ["100%", "60%", "80%"] }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -404,41 +422,6 @@ export const TableMetrics = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Education Level Stats Section */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <FaGraduationCap className="text-indigo-500" />
-            Jenjang Pendidikan Anak
-          </h3>
-          <span className="text-xs text-gray-400 font-normal">(data bantuan terakhir per anak)</span>
-        </div>
-
-        {eduLoading ? (
-          <div className="flex justify-center py-8">
-            <Spin indicator={<LoadingOutlined spin />} />
-          </div>
-        ) : eduData && Object.keys(eduData).length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {Object.entries(eduData)
-              .sort(([, a], [, b]) => b - a)
-              .map(([level, count], idx) => (
-                <div
-                  key={level}
-                  className={`rounded-xl border p-4 flex flex-col gap-1 ${EDU_COLORS[idx % EDU_COLORS.length]}`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide truncate">{level}</p>
-                  <p className="text-2xl font-bold">{count}</p>
-                  <p className="text-xs opacity-70">anak</p>
-                </div>
-              ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400">Belum ada data jenjang pendidikan.</p>
-        )}
       </div>
 
       {/* Yearly Breakdown Section */}

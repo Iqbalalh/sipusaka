@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Detail Template Surat",
 };
 
-export default function LetterTypeViewPage({ params }: { params: { id: string } }) {
-  return <LetterTypesView letterTypeId={params.id} />;
+export default async function LetterTypeViewPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <LetterTypesView letterTypeId={id} />;
 }

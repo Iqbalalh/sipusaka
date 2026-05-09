@@ -24,6 +24,7 @@ export const getActiveLetterTypes = async (): Promise<LetterType[]> => {
 };
 
 export const getLetterType = async (id: number | string): Promise<LetterType> => {
+  if (!id || id === "undefined" || isNaN(Number(id))) throw new Error("ID Template Surat tidak valid");
   const json = await apiClient<ApiResponseSingle<LetterType>>(`${API_LETTER_TYPES}/${id}`);
   return normalizeLetterType(json.data ?? json);
 };

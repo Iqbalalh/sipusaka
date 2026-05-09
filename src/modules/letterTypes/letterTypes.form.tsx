@@ -9,6 +9,7 @@ import {
   PlusOutlined,
   DeleteOutlined,
   FileWordOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 import type { UploadFile } from "antd";
 
@@ -116,6 +117,7 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
       fd.append("kodeSurat1", form.kodeSurat1);
       fd.append("kodeSurat2", form.kodeSurat2);
       fd.append("isActive", String(form.isActive));
+      fd.append("currentCounter", String(form.currentCounter));
       fd.append("templateFields", JSON.stringify(templateFields));
       if (templateFile) fd.append("template", templateFile);
 
@@ -210,42 +212,59 @@ export default function LetterTypesForm({ mode, letterTypeId }: LetterTypesFormP
                   </span>
                 </div>
               </FormField>
-              {mode === "edit" && (
-                <FormField label="Counter Saat Ini">
-                  <InputNumber
-                    size="large"
-                    style={{ width: "100%" }}
-                    value={form.currentCounter}
-                    onChange={(v) => setField("currentCounter", v ?? 0)}
-                    min={0}
-                    addonBefore="#"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Surat berikutnya akan mendapat nomor #{form.currentCounter + 1}
-                  </p>
-                </FormField>
-              )}
+              <FormField
+                label={mode === "create" ? "Mulai Dari Nomor" : "Counter Saat Ini"}
+                required={mode === "create"}
+              >
+                <InputNumber
+                  size="large"
+                  style={{ width: "100%" }}
+                  value={form.currentCounter}
+                  onChange={(v) => setField("currentCounter", v ?? 0)}
+                  min={0}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  {mode === "create"
+                    ? `Surat pertama akan mendapat nomor #${String(form.currentCounter + 1).padStart(3, "0")} — isi 0 untuk mulai dari 001`
+                    : `Surat berikutnya akan mendapat nomor #${String(form.currentCounter + 1).padStart(3, "0")}`}
+                </p>
+              </FormField>
             </div>
           </ComponentCard>
 
           {/* TEMPLATE FIELDS */}
           <ComponentCard title="Field Template Surat">
-            <p className="text-sm text-gray-500 mb-2">
+            <p className="text-sm text-gray-500 mb-4">
               Tentukan variabel yang akan diisi saat membuat surat. Gunakan nama field (case-sensitive)
-              di template dengan kurung kurawal tunggal.
+              di template .docx dengan kurung kurawal tunggal, contoh:{" "}
+              <code className="bg-gray-100 px-1 rounded text-blue-700">{"{namaField}"}</code>
             </p>
-            <div className="flex flex-wrap gap-2 mb-4 text-xs">
-              <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded font-mono">
-                {"{nomorSurat}"} — auto (nomor urut/kode/bulan/tahun)
-              </span>
-              <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded font-mono">
-                {"{tanggalSurat}"} — auto (dari tanggal pembuatan)
-              </span>
-              <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded font-mono">
-                {"{namaField}"} — diisi pengguna
-              </span>
+
+            {/* System fields — always present, non-removable */}
+            <div className="space-y-2 mb-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Field Sistem (otomatis)</p>
+              {[
+                { key: "nomorSurat", label: "Nomor Surat", desc: "Diisi otomatis — nomor urut/kode/bulan/tahun" },
+                { key: "tanggalSurat", label: "Tanggal Surat", desc: "Diisi otomatis — dari tanggal yang dipilih saat buat surat" },
+                { key: "tanggal", label: "Tanggal (alias)", desc: "Alias dari tanggalSurat, tersedia di semua template" },
+              ].map((sf) => (
+                <div
+                  key={sf.key}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-700/40"
+                >
+                  <LockOutlined className="text-amber-500 shrink-0" />
+                  <code className="text-sm font-mono text-amber-700 dark:text-amber-400 min-w-[120px]">
+                    {`{${sf.key}}`}
+                  </code>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{sf.label}</p>
+                    <p className="text-xs text-gray-400">{sf.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Field Kustom (diisi pengguna)</p>
             <div className="space-y-3">
               {templateFields.map((field, index) => (
                 <div key={index} className="flex gap-3 items-start p-3 border border-gray-200 rounded-lg">

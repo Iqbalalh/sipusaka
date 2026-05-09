@@ -16,9 +16,6 @@ export async function fetchWithAuth(
 
   let body = options.body as any;
 
-  console.log("fetchWithAuth - original body:", body);
-  console.log("fetchWithAuth - body type:", typeof body);
-
   // =====================================
   // AUTO-CONVERT BODY
   // =====================================
@@ -27,7 +24,6 @@ export async function fetchWithAuth(
     const hasFile = Object.values(body).some((v) => v instanceof File);
 
     if (hasFile) {
-      // Convert to snake case
       const fd = new FormData();
       const snake = snakecaseKeys(body, { deep: false });
 
@@ -45,28 +41,19 @@ export async function fetchWithAuth(
       headers.delete("Content-Type");
     } else {
       const snakeBody = snakecaseKeys(body, { deep: true });
-      console.log("fetchWithAuth - snakeBody:", snakeBody);
       body = JSON.stringify(snakeBody);
       headers.set("Content-Type", "application/json");
-      console.log("fetchWithAuth - final body:", body);
     }
   } else if (body instanceof FormData) {
-    // FormData is already provided - let the browser set Content-Type with boundary
-    // Ensure Content-Type is not set so browser can set it correctly with boundary
     headers.delete("Content-Type");
   }
-
-  console.log("fetchWithAuth - url:", url);
-  console.log("fetchWithAuth - method:", options.method);
-  console.log("fetchWithAuth - headers:", Object.fromEntries(headers));
 
   const res = await fetch(url, {
     ...options,
     headers,
     body,
+    cache: "no-store",
   });
-
-  console.log("fetchWithAuth - response status:", res.status);
 
   // Dispatch session expired event so the UI can show a non-closeable logout modal
   if ((res.status === 401 || res.status === 403) && typeof window !== "undefined") {

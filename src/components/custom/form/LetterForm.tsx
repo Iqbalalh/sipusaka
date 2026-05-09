@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Flex, Spin, DatePicker, Alert, Segmented, Select, Button as AntButton } from "antd";
-import { LoadingOutlined, FileOutlined, DeleteOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
+import { Flex, Spin, DatePicker, Alert, Segmented, Select } from "antd";
+import { LoadingOutlined, FileOutlined, DeleteOutlined, EyeOutlined, DownloadOutlined, UploadOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import dayjs, { Dayjs } from "dayjs";
-import dynamic from "next/dynamic";
+
+const CollaboraEditor = dynamic(() => import("@/components/custom/CollaboraEditor"), { ssr: false });
 
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -30,7 +32,6 @@ import { LetterFormData } from "@/types/models/letter";
 import { LetterType } from "@/types/models/letterType";
 import { Option } from "@/types/generic/select-option";
 
-const RichTextEditor = dynamic(() => import("@/components/custom/RichTextEditor"), { ssr: false });
 
 // ==============================================
 // INITIAL FORM STATE
@@ -65,33 +66,33 @@ const ROMAN_MONTHS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X
 // ==============================================
 export default function LetterForm({ mode, letterId }: LetterFormProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { notify } = useNotify();
 
   const [form, setForm] = useState<LetterFormData>(INITIAL_FORM_STATE);
   const [letterDate, setLetterDate] = useState<Dayjs | null>(null);
   const [userOptions, setUserOptions] = useState<Option[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [existingDocName, setExistingDocName] = useState<string | null>(null);
-  const [existingDocUrl, setExistingDocUrl] = useState<string | null>(null);
+
   const [revisionNote, setRevisionNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Template mode state
-  // create defaults to "template"; edit defaults to "upload" unless letter has letterTypeId
-  const [creationMode, setCreationMode] = useState<CreationMode>(mode === "create" ? "template" : "upload");
+  // Template mode state — persisted in URL param so navigation away & back restores it
+  const urlMode = searchParams.get("m") as CreationMode | null;
+  const defaultMode: CreationMode = mode === "create"
+    ? (urlMode === "upload" ? "upload" : "template")
+    : "upload";
+  const [creationMode, setCreationMode] = useState<CreationMode>(defaultMode);
   const [letterTypeOptions, setLetterTypeOptions] = useState<Option[]>([]);
   const [activeLetterTypes, setActiveLetterTypes] = useState<LetterType[]>([]);
   const [selectedLetterType, setSelectedLetterType] = useState<LetterType | null>(null);
   const [templateFieldValues, setTemplateFieldValues] = useState<Record<string, string>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
-
-  // Editor state (shown after preview)
-  const [showEditor, setShowEditor] = useState(false);
-  const [editorHtml, setEditorHtml] = useState("");
-  const [editorLoading, setEditorLoading] = useState(false);
+  const [reuploadFile, setReuploadFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ==============================================
   // SUBMIT HOOK (upload mode)
@@ -133,7 +134,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
         setLetterTypeOptions(
           activeTypes.map((lt) => ({
             value: lt.id,
-            label: `${lt.jenisSurat} (${lt.kodeSurat1}${lt.kodeSurat2 ? "/" + lt.kodeSurat2 : ""})`,
+            label: `${lt.jenisSurat} (${lt.kodeSurat1}${lt.kodeSurat2 ? "-" + lt.kodeSurat2 : ""})`,
           }))
         );
 
@@ -154,12 +155,8 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
           if (letter.letterDate) {
             setLetterDate(dayjs(letter.letterDate));
           }
-          if (letter.documentUrl) {
-            setExistingDocUrl(letter.documentUrl);
-          }
-          if (letter.documentPath) {
-            setExistingDocName(letter.documentPath.split("/").pop() || "Dokumen");
-          }
+
+
           if (letter.revisionNote) {
             setRevisionNote(letter.revisionNote);
           }
@@ -238,7 +235,6 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       }
 
       setDocumentFile(file);
-      setExistingDocName(null);
     },
     [notify]
   );
@@ -252,13 +248,11 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       const found = activeLetterTypes.find((lt) => lt.id === value) || null;
       setSelectedLetterType(found);
       setTemplateFieldValues({});
-      setShowEditor(false);
-      setEditorHtml("");
+      setReuploadFile(null);
       if (previewUrlRef.current) {
         URL.revokeObjectURL(previewUrlRef.current);
         previewUrlRef.current = null;
         setPreviewUrl(null);
-        setPreviewBlob(null);
       }
       if (found) {
         if (found.perihal) handleFieldChange("subject", found.perihal);
@@ -275,8 +269,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       return;
     }
     setPreviewLoading(true);
-    setShowEditor(false);
-    setEditorHtml("");
+    setReuploadFile(null);
     try {
       const blob = await generatePreview(
         selectedLetterType.id,
@@ -287,7 +280,6 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       const url = URL.createObjectURL(blob);
       previewUrlRef.current = url;
       setPreviewUrl(url);
-      setPreviewBlob(blob);
     } catch (err) {
       notifyFromResult(notify, { error: err });
     } finally {
@@ -295,107 +287,87 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
     }
   }, [selectedLetterType, templateFieldValues, form.letterDate, notify]);
 
-  const handleEditDocument = useCallback(async () => {
-    // Prefer freshly generated preview blob; fall back to fetching existing document
-    let sourceBlob: Blob | null = previewBlob;
-    if (!sourceBlob && existingDocUrl) {
-      try {
-        const res = await fetch(existingDocUrl);
-        sourceBlob = await res.blob();
-      } catch {
-        notify("error", "Gagal mengunduh dokumen untuk diedit");
-        return;
-      }
-    }
-    if (!sourceBlob) return;
-
-    setEditorLoading(true);
-    try {
-      const mammoth = await import("mammoth");
-      const arrayBuffer = await sourceBlob.arrayBuffer();
-      const result = await mammoth.default.convertToHtml({ arrayBuffer });
-      setEditorHtml(result.value);
-      setShowEditor(true);
-    } catch {
-      notify("error", "Dokumen tidak dapat diedit langsung. Buat pratinjau baru dari template terlebih dahulu.");
-    } finally {
-      setEditorLoading(false);
-    }
-  }, [previewBlob, existingDocUrl, notify]);
-
   const handleModeChange = useCallback((val: string | number) => {
-    setCreationMode(val as CreationMode);
+    const next = val as CreationMode;
+    setCreationMode(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("m", next);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
     setSelectedLetterType(null);
     setTemplateFieldValues({});
-    setShowEditor(false);
-    setEditorHtml("");
+    setReuploadFile(null);
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = null;
       setPreviewUrl(null);
-      setPreviewBlob(null);
     }
     setDocumentFile(null);
     setForm(INITIAL_FORM_STATE);
     setLetterDate(null);
-  }, []);
+  }, [pathname, searchParams, router]);
 
   const handleSubmit = useCallback(async () => {
+    if (isSubmitting || submitLoading) return;
     if (!form.letterDate) return notify("warning", "Tanggal pembuatan wajib diisi!");
     if (!form.signer1Id) return notify("warning", "Penandatangan 1 wajib diisi!");
 
     if (creationMode === "template") {
-      if (mode === "create") {
-        // ── CREATE TEMPLATE PATH ──────────────────────────────────────────────
-        if (!selectedLetterType) return notify("warning", "Pilih Template Surat terlebih dahulu!");
+      setIsSubmitting(true);
+      try {
+        if (mode === "create") {
+          // ── CREATE TEMPLATE PATH ──────────────────────────────────────────────
+          if (!selectedLetterType) return notify("warning", "Pilih Template Surat terlebih dahulu!");
 
-        const missingRequired = selectedLetterType.templateFields
-          .filter((f) => f.required && !templateFieldValues[f.key]?.trim())
-          .map((f) => f.label);
-        if (missingRequired.length > 0) {
-          return notify("warning", `Field wajib belum diisi: ${missingRequired.join(", ")}`);
+          const missingRequired = selectedLetterType.templateFields
+            .filter((f) => f.required && !templateFieldValues[f.key]?.trim())
+            .map((f) => f.label);
+          if (missingRequired.length > 0) {
+            return notify("warning", `Field wajib belum diisi: ${missingRequired.join(", ")}`);
+          }
+
+          const fd = new FormData();
+          fd.append("letterTypeId", String(selectedLetterType.id));
+          fd.append("templateFieldData", JSON.stringify(templateFieldValues));
+          fd.append("letterDate", form.letterDate!);
+          fd.append("signer1Id", String(form.signer1Id));
+          if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
+          if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
+          if (reuploadFile) fd.append("document", reuploadFile);
+
+          const res = await fetchWithAuth(API_LETTERS, { method: "POST", body: fd });
+          let result;
+          try { result = await res.json(); } catch { result = {}; }
+          if (!res.ok) {
+            notifyFromResult(notify, { error: new Error(result.message || "Gagal membuat surat") });
+            return;
+          }
+          notifyFromResult(notify, { successMessage: "Surat berhasil dibuat dari template!" });
+          router.push("/letters/drafts");
+        } else {
+          // ── EDIT TEMPLATE PATH ───────────────────────────────────────────────
+          const fd = new FormData();
+          fd.append("letterDate", form.letterDate!);
+          fd.append("templateFieldData", JSON.stringify(templateFieldValues));
+          fd.append("signer1Id", String(form.signer1Id));
+          if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
+          if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
+          if (reuploadFile) fd.append("document", reuploadFile);
+
+          const res = await fetchWithAuth(`${API_LETTERS}/${letterId}`, { method: "PATCH", body: fd });
+          let result;
+          try { result = await res.json(); } catch { result = {}; }
+          if (!res.ok) {
+            notifyFromResult(notify, { error: new Error(result.message || "Gagal memperbarui surat") });
+            return;
+          }
+          notifyFromResult(notify, { successMessage: "Surat berhasil diperbarui!" });
+          router.push("/letters/drafts");
         }
-
-        const fd = new FormData();
-        fd.append("letterTypeId", String(selectedLetterType.id));
-        fd.append("templateFieldData", JSON.stringify(templateFieldValues));
-        fd.append("letterDate", form.letterDate!);
-        fd.append("signer1Id", String(form.signer1Id));
-        if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
-        if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
-        if (showEditor && editorHtml) fd.append("editedHtml", editorHtml);
-
-        const res = await fetchWithAuth(API_LETTERS, { method: "POST", body: fd });
-        let result;
-        try { result = await res.json(); } catch { result = {}; }
-        if (!res.ok) {
-          notifyFromResult(notify, { error: new Error(result.message || "Gagal membuat surat") });
-          return;
-        }
-        notifyFromResult(notify, { successMessage: "Surat berhasil dibuat dari template!" });
-        router.push("/letters/drafts");
-        return;
-      } else {
-        // ── EDIT TEMPLATE PATH ───────────────────────────────────────────────
-        const fd = new FormData();
-        fd.append("letterDate", form.letterDate!);
-        fd.append("templateFieldData", JSON.stringify(templateFieldValues));
-        fd.append("signer1Id", String(form.signer1Id));
-        if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
-        if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
-        if (showEditor && editorHtml) fd.append("editedHtml", editorHtml);
-
-        const res = await fetchWithAuth(`${API_LETTERS}/${letterId}`, { method: "PATCH", body: fd });
-        let result;
-        try { result = await res.json(); } catch { result = {}; }
-        if (!res.ok) {
-          notifyFromResult(notify, { error: new Error(result.message || "Gagal memperbarui surat") });
-          return;
-        }
-        notifyFromResult(notify, { successMessage: "Surat berhasil diperbarui!" });
-        router.push("/letters/drafts");
-        return;
+      } finally {
+        setIsSubmitting(false);
       }
+      return;
     }
 
     // ── UPLOAD MODE ────────────────────────────────────────────────────────────
@@ -412,7 +384,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [form, documentFile, creationMode, mode, letterId, selectedLetterType, templateFieldValues, showEditor, editorHtml, submit, notify, router]);
+  }, [isSubmitting, submitLoading, form, documentFile, creationMode, mode, letterId, selectedLetterType, templateFieldValues, reuploadFile, submit, notify, router]);
 
   const handleGoBack = useCallback(() => {
     router.push("/letters/drafts");
@@ -422,17 +394,18 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
   // COMPUTED
   // ==============================================
   const predictedLetterNumber = selectedLetterType
-    ? [
-        String(selectedLetterType.currentCounter + 1).padStart(3, "0"),
-        selectedLetterType.kodeSurat1,
-        selectedLetterType.kodeSurat2,
-        letterDate ? ROMAN_MONTHS[letterDate.month()] : "…",
-        letterDate ? String(letterDate.year()) : "…",
-      ].filter(Boolean).join("/")
+    ? (() => {
+        const kode = [selectedLetterType.kodeSurat1, selectedLetterType.kodeSurat2].filter(Boolean).join("-");
+        return [
+          String(selectedLetterType.currentCounter + 1).padStart(3, "0"),
+          kode,
+          letterDate ? ROMAN_MONTHS[letterDate.month()] : "…",
+          letterDate ? String(letterDate.year()) : "…",
+        ].filter(Boolean).join("/");
+      })()
     : null;
 
-  // Whether there is something to show in the preview panel
-  const hasPreview = !!previewUrl || (mode === "edit" && !!existingDocUrl);
+
 
   // ==============================================
   // RENDER LOADING STATE
@@ -507,8 +480,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
                         onClear={() => {
                           setSelectedLetterType(null);
                           setTemplateFieldValues({});
-                          setShowEditor(false);
-                          setEditorHtml("");
+                          setReuploadFile(null);
                         }}
                       />
                     </FormField>
@@ -535,7 +507,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         {selectedLetterType.kodeSurat1}
-                        {selectedLetterType.kodeSurat2 ? "/" + selectedLetterType.kodeSurat2 : ""}
+                        {selectedLetterType.kodeSurat2 ? "-" + selectedLetterType.kodeSurat2 : ""}
                         {form.letterNumber ? ` · ${form.letterNumber}` : ""}
                       </p>
                     </>
@@ -682,7 +654,19 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
 
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
-          {creationMode === "upload" && (
+          {/* Edit mode: always show Collabora editor */}
+          {mode === "edit" && letterId && (
+            <ComponentCard title="Edit Dokumen (Collabora Online)">
+              <CollaboraEditor
+                letterId={letterId}
+                height="600px"
+                className="rounded-lg overflow-hidden border border-gray-200"
+              />
+            </ComponentCard>
+          )}
+
+          {/* Create + Upload mode: file upload */}
+          {mode === "create" && creationMode === "upload" && (
             <ComponentCard title="Dokumen">
               <div className="space-y-5">
                 <FormField label="Unggah Dokumen (.pdf / .docx)">
@@ -699,14 +683,6 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
                         <DeleteOutlined />
                       </button>
                     </div>
-                  ) : existingDocName ? (
-                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg mt-2">
-                      <FileOutlined className="text-xl text-green-500" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{existingDocName}</p>
-                        <p className="text-xs text-gray-500">Dokumen sudah diunggah</p>
-                      </div>
-                    </div>
                   ) : null}
                   <div className="mt-2">
                     <input
@@ -721,36 +697,37 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
             </ComponentCard>
           )}
 
-          {/* Preview panel — new generate or existing document */}
-          {creationMode === "template" && hasPreview && (
+          {/* Create + Template mode: preview after generation */}
+          {mode === "create" && creationMode === "template" && previewUrl && (
             <ComponentCard title="Pratinjau Dokumen">
-              <DocumentViewer url={previewUrl || existingDocUrl!} fileName="preview.docx" />
-              {!showEditor && (
-                <div className="mt-4 flex justify-end">
-                  <AntButton
-                    icon={<EditOutlined />}
-                    loading={editorLoading}
-                    onClick={handleEditDocument}
-                  >
-                    Edit Dokumen
-                  </AntButton>
+              <DocumentViewer url={previewUrl} fileName="preview.docx" />
+              <div className="mt-4 space-y-3">
+                <a
+                  href={previewUrl}
+                  download="dokumen-template.docx"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 w-fit"
+                >
+                  <DownloadOutlined />
+                  Unduh untuk Diedit di Word/LibreOffice
+                </a>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">
+                    Setelah diedit, unggah kembali file .docx yang sudah dimodifikasi:
+                  </p>
+                  <input
+                    type="file"
+                    accept=".docx"
+                    onChange={(e) => setReuploadFile(e.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                  />
+                  {reuploadFile && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <UploadOutlined />
+                      {reuploadFile.name} akan digunakan sebagai dokumen surat
+                    </p>
+                  )}
                 </div>
-              )}
-            </ComponentCard>
-          )}
-
-          {/* Rich text editor */}
-          {creationMode === "template" && showEditor && (
-            <ComponentCard title="Edit Dokumen">
-              <p className="text-xs text-gray-400 mb-3">
-                Edit konten dokumen di bawah ini. Perubahan ini akan menggantikan hasil generate template saat menyimpan.
-              </p>
-              <RichTextEditor
-                value={editorHtml}
-                onChange={setEditorHtml}
-                minHeight={400}
-                placeholder="Konten dokumen..."
-              />
+              </div>
             </ComponentCard>
           )}
 
@@ -788,10 +765,10 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
               <Button onClick={handleGoBack}>Batal</Button>
               <Button
                 onClick={handleSubmit}
-                disabled={submitLoading || previewLoading}
+                disabled={isSubmitting || submitLoading || previewLoading}
                 className="bg-primary-600 text-white min-w-[150px]"
               >
-                {submitLoading ? "Menyimpan..." : submitButtonText}
+                {isSubmitting || submitLoading ? "Menyimpan..." : submitButtonText}
               </Button>
             </div>
           </ComponentCard>

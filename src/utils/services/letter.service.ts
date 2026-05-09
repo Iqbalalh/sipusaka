@@ -123,6 +123,13 @@ export const cancelLetter = async (id: number) => {
   });
 };
 
+export const convertLetterPdf = async (id: number): Promise<{ url: string }> => {
+  const res = await fetchWithAuth(`${API_LETTERS}/${id}/convert-pdf`, { method: "POST" });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((json as any).message || "Gagal mengkonversi dokumen ke PDF");
+  return (json as any).data;
+};
+
 export const publishLetter = async (
   id: number,
   placement?: { qrPage: number; qrX: number; qrY: number; qrSize?: number }

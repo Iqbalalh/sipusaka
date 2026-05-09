@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Image, Popconfirm, Flex, Spin, Checkbox, DatePicker } from "antd";
+import { Image, Popconfirm, Flex, Spin, Checkbox, DatePicker, Progress } from "antd";
 import { LoadingOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { getSession } from "next-auth/react";
 import TextArea from "antd/es/input/TextArea";
 import dayjs, { Dayjs } from "dayjs";
 
@@ -75,6 +76,7 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<BaseGallery>(INITIAL_FORM_STATE);
   const [galleryDate, setGalleryDate] = useState<Dayjs | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // Single file for edit mode
   const { file: imageFile, preview, selectFile, clearFile } = useFilePreview();
@@ -222,41 +224,92 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
     });
   }, []);
 
+  const uploadWithProgress = useCallback(async (url: string, formData: FormData): Promise<void> => {
+    const session = await getSession();
+    const token = (session?.user as any)?.token;
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+
+      xhr.onload = () => {
+        setUploadProgress(null);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          try {
+            const body = JSON.parse(xhr.responseText);
+            reject(new Error(body?.message || `Upload gagal (${xhr.status})`));
+          } catch {
+            reject(new Error(`Upload gagal (${xhr.status})`));
+          }
+        }
+      };
+
+      xhr.onerror = () => {
+        setUploadProgress(null);
+        reject(new Error("Koneksi gagal saat mengunggah."));
+      };
+
+      xhr.send(formData);
+    });
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     // Get files based on mode
     const filesToUpload = mode === "create" ? multipleFiles.map(f => f.file) : (imageFile ? [imageFile] : []);
-    
+
     const validation = validateForm(form, filesToUpload, mode);
     if (!validation.isValid) {
       return notify("warning", validation.error!);
     }
 
     const extraData = new FormData();
-    
+
     // Append files based on mode
     if (mode === "create" && multipleFiles.length > 0) {
-      // Multiple files for create mode
       multipleFiles.forEach((fileWithPreview) => {
         extraData.append("images", fileWithPreview.file);
       });
     } else if (imageFile) {
-      // Single file for edit mode
       extraData.append("image", imageFile);
     }
-    
+
     if (selectedCategories.length > 0) {
       selectedCategories.forEach((catId) => {
         extraData.append("categoryIds", catId.toString());
       });
     }
-    // Note: galleryDate and regionId are already in the form object and will be added by buildFormData
 
-    const { success, error } = await submit(form, extraData);
+    // Append base form fields (camelCase — backend reads req.body as-is)
+    if (form.caption) extraData.append("caption", form.caption);
+    if (form.regionId != null) extraData.append("regionId", String(form.regionId));
+    if (form.galleryDate) extraData.append("galleryDate", String(form.galleryDate));
 
-    if (!success) {
-      notifyFromResult(notify, { error });
+    // Use XHR with progress for multi-file create, regular submit for single/edit
+    if (mode === "create" && multipleFiles.length > 1) {
+      try {
+        setUploadProgress(0);
+        await uploadWithProgress(API_GALLERIES, extraData);
+        notify("success", "Galeri berhasil ditambahkan!");
+        router.push("/galleries");
+      } catch (err: any) {
+        notify("error", err.message || "Gagal mengunggah gambar.");
+      }
+    } else {
+      const { success, error } = await submit(form, extraData);
+      if (!success) {
+        notifyFromResult(notify, { error });
+      }
     }
-  }, [form, imageFile, multipleFiles, mode, selectedCategories, submit, notify]);
+  }, [form, imageFile, multipleFiles, mode, selectedCategories, submit, notify, uploadWithProgress, router]);
 
   const handleGoBack = useCallback(() => {
     if (mode === "create") {
@@ -468,14 +521,24 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
               </FormField>
             </div>
 
+            {uploadProgress !== null && (
+              <div className="mt-4 space-y-1">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span>Mengunggah {fileCount} gambar...</span>
+                  <span className="font-semibold text-blue-600">{uploadProgress}%</span>
+                </div>
+                <Progress percent={uploadProgress} status="active" strokeColor="#2563EB" />
+              </div>
+            )}
+
             <div className="flex justify-between items-center pt-8 mt-4 border-t border-gray-100">
               <Button onClick={handleGoBack}>Batal</Button>
               <Button
                 onClick={handleSubmit}
-                disabled={submitLoading}
+                disabled={submitLoading || uploadProgress !== null}
                 className="bg-primary-600 text-white min-w-[150px]"
               >
-                {submitLoading ? "Menyimpan..." : submitButtonText}
+                {uploadProgress !== null ? `Mengunggah ${uploadProgress}%...` : submitLoading ? "Menyimpan..." : submitButtonText}
               </Button>
             </div>
           </ComponentCard>

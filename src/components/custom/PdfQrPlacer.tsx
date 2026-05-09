@@ -22,7 +22,7 @@ interface QrPlacement {
 
 interface PdfQrPlacerProps {
   url: string;
-  qrDataUrl: string;
+  qrDataUrl?: string;
   onConfirm: (placement: { page: number; x: number; y: number; qrSize?: number }) => void;
   onCancel: () => void;
   loading?: boolean;
@@ -87,22 +87,47 @@ export default function PdfQrPlacer({
           onClick={(e) => handlePageClick(e, props.pageIndex, props.scale, props.width, props.height)}
         >
           {placement?.page === props.pageIndex && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={qrDataUrl}
-              alt="QR Preview"
-              style={{
-                position: "absolute",
-                left: placement.displayX,
-                top: placement.displayY,
-                width: placement.displaySize,
-                height: placement.displaySize,
-                opacity: 0.85,
-                pointerEvents: "none",
-                border: "2px dashed #8b5cf6",
-                borderRadius: 4,
-              }}
-            />
+            qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={qrDataUrl}
+                alt="QR Preview"
+                style={{
+                  position: "absolute",
+                  left: placement.displayX,
+                  top: placement.displayY,
+                  width: placement.displaySize,
+                  height: placement.displaySize,
+                  opacity: 0.85,
+                  pointerEvents: "none",
+                  border: "2px dashed #2563eb",
+                  borderRadius: 4,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  position: "absolute",
+                  left: placement.displayX,
+                  top: placement.displayY,
+                  width: placement.displaySize,
+                  height: placement.displaySize,
+                  opacity: 0.85,
+                  pointerEvents: "none",
+                  border: "2px dashed #2563eb",
+                  borderRadius: 4,
+                  background: "rgba(37,99,235,0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#2563eb",
+                }}
+              >
+                QR
+              </div>
+            )
           )}
         </div>
       </>
@@ -121,13 +146,13 @@ export default function PdfQrPlacer({
           max={200}
           value={sizePercent}
           onChange={(e) => { setSizePercent(Number(e.target.value)); setPlacement(null); }}
-          className="flex-1 accent-purple-600"
+          className="flex-1 accent-blue-600"
         />
         <span className="text-sm text-gray-600 w-12 text-right">{sizePercent}%</span>
       </div>
 
       {/* Instruction banner */}
-      <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 text-sm">
+      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
         Klik pada dokumen untuk menempatkan QR code verifikasi. Klik lagi untuk mengubah posisi.
       </div>
 
@@ -158,7 +183,7 @@ export default function PdfQrPlacer({
         <Button
           onClick={handleConfirm}
           disabled={!placement || loading}
-          className="bg-purple-600 text-white min-w-[200px]"
+          className="bg-blue-600 text-white hover:bg-blue-700 min-w-[200px]"
         >
           {loading ? "Memproses..." : "Konfirmasi & Terbitkan"}
         </Button>
