@@ -11,16 +11,12 @@ import {
   FaHouseChimney,
   FaChildReaching,
   FaShop,
-  FaHandHoldingHeart,
-  FaUsers,
   FaGraduationCap,
   FaUserXmark,
 } from "react-icons/fa6";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-const formatRupiah = (n: number) =>
-  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 
 const EDU_DYNAMIC_COLORS = [
   "#f43f5e", "#3b82f6", "#6366f1", "#8b5cf6",
@@ -96,7 +92,7 @@ function ChartCard({ title, categories, series, colors, height = 280 }: ChartCar
       categories,
       axisBorder: { show: false },
       axisTicks: { show: false },
-      labels: { style: { fontSize: "11px" }, rotate: -30 },
+      labels: { style: { fontSize: "11px" }, rotate: -30, hideOverlappingLabels: false },
     },
     yaxis: { labels: { style: { fontSize: "11px" } } },
     legend: { show: series.length > 1, position: "top", horizontalAlign: "left", fontFamily: "Outfit" },
@@ -125,7 +121,7 @@ function EduCards({
   eduLevels: Record<string, number>;
   inactiveCount: number;
 }) {
-  const entries = Object.entries(eduLevels);
+  const entries = Object.entries(eduLevels).sort(([, a], [, b]) => b - a);
   const grandTotal = entries.reduce((s, [, v]) => s + v, 0);
   const maxCount = Math.max(...entries.map(([, v]) => v), inactiveCount, 1);
 
@@ -190,16 +186,29 @@ function RegionDetailCard({ stat, eduData, eduLoading }: {
   const totalChildren = children.total || 1;
   const maxChildrenCount = Math.max(...CHILDREN_BREAKDOWN.map((b) => children[b.key] ?? 0), 1);
 
+  const eduEntries = Object.entries(eduData).filter(([, v]) => v > 0);
+  const eduPieSeries = eduEntries.map(([, v]) => v);
+  const regionEduPieOptions: ApexOptions = {
+    chart: { type: "donut", fontFamily: "Outfit, sans-serif", toolbar: { show: false } },
+    labels: eduEntries.map(([k]) => k),
+    colors: EDU_DYNAMIC_COLORS.slice(0, eduEntries.length),
+    legend: { position: "bottom", fontFamily: "Outfit", fontSize: "12px" },
+    dataLabels: {
+      enabled: true,
+      formatter: (v: number) => `${v.toFixed(1)}%`,
+      style: { fontSize: "11px" },
+    },
+    tooltip: { y: { formatter: (v: number) => `${v} anak` } },
+    plotOptions: { pie: { donut: { size: "60%" } } },
+  };
+
   return (
     <div className="space-y-4">
       {/* Overview row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard icon={<FaHouseChimney />} label="Keluarga" value={stat.families} color="bg-blue-500" />
-        <StatCard icon={<FaChildReaching />} label="Anak Asuh" value={stat.children.total} sub={`Aktif: ${stat.children.active}`} color="bg-indigo-500" />
-        <StatCard icon={<FaShop />} label="UMKM" value={stat.umkm.total} sub={`Aktif: ${stat.umkm.active}`} color="bg-orange-500" />
-        <StatCard icon={<FaHandHoldingHeart />} label="Bantuan Anak" value={stat.childAssistance.total} sub={formatRupiah(stat.childAssistance.totalAmount)} color="bg-green-500" />
-        <StatCard icon={<FaHandHoldingHeart />} label="Bantuan UMKM" value={stat.umkmVisits.total} sub={formatRupiah(stat.umkmVisits.totalAmount)} color="bg-purple-500" />
-        <StatCard icon={<FaUsers />} label="Bantuan Sosial" value={stat.socialAssistance.total} sub={formatRupiah(stat.socialAssistance.totalAmount)} color="bg-rose-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard icon={<FaHouseChimney />} label="Keluarga" value={stat.familiesActive ?? stat.families} sub={`dari ${stat.families} total`} color="bg-blue-500" />
+        <StatCard icon={<FaChildReaching />} label="Anak Asuh Aktif" value={stat.children.active} color="bg-indigo-500" />
+        <StatCard icon={<FaShop />} label="UMKM Aktif" value={stat.umkm.active} color="bg-orange-500" />
       </div>
 
       {/* Children breakdown — bar grid */}
@@ -239,7 +248,23 @@ function RegionDetailCard({ stat, eduData, eduLoading }: {
         {eduLoading ? (
           <p className="text-sm text-gray-400 py-2">Memuat data...</p>
         ) : (
-          <EduCards eduLevels={eduData} inactiveCount={stat.children.inactive} />
+          <>
+            <EduCards eduLevels={eduData} inactiveCount={stat.children.inactive} />
+            {eduPieSeries.length > 0 && (
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4 mt-4">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 text-center uppercase tracking-wider">
+                  Persentase Jenjang Pendidikan
+                </p>
+                <ReactApexChart
+                  key="region-edu-donut"
+                  options={regionEduPieOptions}
+                  series={eduPieSeries}
+                  type="donut"
+                  height={300}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -254,11 +279,79 @@ function SummaryView({ stats, globalEduData, globalEduLoading }: {
   globalEduData: Record<string, number>;
   globalEduLoading: boolean;
 }) {
-  const names = stats.map((s) => s.regionName);
-  const chartHeight = Math.max(300, stats.length * 120);
+  const sortedStats = [...stats].sort((a, b) => (b.familiesActive ?? b.families) - (a.familiesActive ?? a.families));
+  const names = sortedStats.map((s) => s.regionName);
+  const chartHeight = Math.max(300, sortedStats.length * 120);
 
   const totalInactive = stats.reduce((sum, s) => sum + s.children.inactive, 0);
-  const eduGrandTotal = Object.values(globalEduData).reduce((s, v) => s + v, 0);
+  const eduEntries = Object.entries(globalEduData).filter(([, v]) => v > 0);
+  const eduGrandTotal = eduEntries.reduce((s, [, v]) => s + v, 0);
+
+  // Education pie chart options
+  const eduPieOptions: ApexOptions = {
+    chart: { type: "donut", fontFamily: "Outfit, sans-serif", toolbar: { show: false } },
+    labels: eduEntries.map(([k]) => k),
+    colors: EDU_DYNAMIC_COLORS.slice(0, eduEntries.length),
+    legend: { position: "bottom", fontFamily: "Outfit", fontSize: "12px" },
+    dataLabels: {
+      enabled: true,
+      formatter: (v: number) => `${v.toFixed(1)}%`,
+      style: { fontSize: "11px" },
+    },
+    tooltip: { y: { formatter: (v: number) => `${v} anak` } },
+    plotOptions: { pie: { donut: { size: "60%" } } },
+  };
+  const eduPieSeries = eduEntries.map(([, v]) => v);
+
+  const BANTUAN_COLORS = ["#465fff", "#22c55e", "#f97316", "#a855f7", "#ec4899", "#0ea5e9"];
+  const rupiahFormatter = (v: number) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
+
+  // Unified years across both datasets — same year maps to same color in both charts
+  const allYears = Array.from(
+    new Set([
+      ...stats.flatMap((s) => Object.keys(s.childAssistance.byYear ?? {})),
+      ...stats.flatMap((s) => Object.keys(s.umkmVisits.byYear ?? {})),
+    ])
+  ).map(Number).sort();
+
+  const bantuanSeries: ApexAxisChartSeries = allYears.map((year) => ({
+    name: String(year),
+    data: sortedStats.map((s) => Number(s.childAssistance.byYear?.[year] ?? 0)),
+  }));
+
+  const umkmBantuanSeries: ApexAxisChartSeries = allYears.map((year) => ({
+    name: String(year),
+    data: sortedStats.map((s) => Number(s.umkmVisits.byYear?.[year] ?? 0)),
+  }));
+
+  const sharedBantuanChartOptions: ApexOptions = {
+    chart: { fontFamily: "Outfit, sans-serif", type: "bar", toolbar: { show: false }, stacked: false },
+    colors: BANTUAN_COLORS,
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, borderRadiusApplication: "end", barHeight: "60%" } },
+    dataLabels: { enabled: false },
+    xaxis: {
+      categories: names,
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: {
+        style: { fontSize: "11px" },
+        formatter: (v: string) => {
+          const n = Number(v);
+          if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`;
+          if (n >= 1_000) return `${(n / 1_000).toFixed(0)}rb`;
+          return String(n);
+        },
+      },
+    },
+    yaxis: { labels: { style: { fontSize: "11px" } } },
+    legend: { show: allYears.length > 1, position: "top", horizontalAlign: "left", fontFamily: "Outfit" },
+    grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    tooltip: { y: { formatter: rupiahFormatter } },
+  };
+
+  const bantuanOptions = sharedBantuanChartOptions;
+  const umkmBantuanOptions = sharedBantuanChartOptions;
 
   return (
     <div className="space-y-5">
@@ -279,30 +372,46 @@ function SummaryView({ stats, globalEduData, globalEduLoading }: {
         {globalEduLoading ? (
           <p className="text-sm text-gray-400 py-2">Memuat data...</p>
         ) : (
-          <EduCards eduLevels={globalEduData} inactiveCount={totalInactive} />
+          <div className="space-y-6">
+            <EduCards eduLevels={globalEduData} inactiveCount={totalInactive} />
+            {eduPieSeries.length > 0 && (
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 text-center uppercase tracking-wider">
+                  Persentase Jenjang Pendidikan
+                </p>
+                <ReactApexChart
+                  key="edu-donut"
+                  options={eduPieOptions}
+                  series={eduPieSeries}
+                  type="donut"
+                  height={300}
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
       <ChartCard
-        title="Keluarga & Anak per Wilayah"
+        title="Keluarga & Anak Aktif per Wilayah"
         categories={names}
         height={chartHeight}
         series={[
-          { name: "Keluarga", data: stats.map((s) => s.families) },
-          { name: "Anak Asuh", data: stats.map((s) => s.children.total) },
+          { name: "Keluarga Aktif", data: sortedStats.map((s) => s.familiesActive ?? s.families ?? 0) },
+          { name: "Anak Aktif", data: sortedStats.map((s) => s.children.active ?? 0) },
         ]}
         colors={["#465fff", "#22c55e"]}
       />
 
       <ChartCard
-        title="Kategori Anak per Wilayah"
+        title="Kategori Anak per Wilayah (Aktif)"
         categories={names}
         height={chartHeight}
         series={[
-          { name: "Yatim", data: stats.map((s) => s.children.yatim) },
-          { name: "Piatu", data: stats.map((s) => s.children.piatu) },
-          { name: "Yatim Piatu", data: stats.map((s) => s.children.yatimPiatu) },
-          { name: "ABK", data: stats.map((s) => s.children.abk) },
+          { name: "Yatim", data: sortedStats.map((s) => s.children.yatim) },
+          { name: "Piatu", data: sortedStats.map((s) => s.children.piatu) },
+          { name: "Yatim Piatu", data: sortedStats.map((s) => s.children.yatimPiatu) },
+          { name: "ABK", data: sortedStats.map((s) => s.children.abk) },
         ]}
         colors={["#f59e0b", "#f97316", "#ef4444", "#a855f7"]}
       />
@@ -312,23 +421,35 @@ function SummaryView({ stats, globalEduData, globalEduLoading }: {
         categories={names}
         height={chartHeight}
         series={[
-          { name: "UMKM Aktif", data: stats.map((s) => s.umkm.active) },
-          { name: "UMKM Tidak Aktif", data: stats.map((s) => s.umkm.inactive) },
+          { name: "UMKM Aktif", data: sortedStats.map((s) => s.umkm.active) },
+          { name: "UMKM Tidak Aktif", data: sortedStats.map((s) => s.umkm.inactive) },
         ]}
         colors={["#22c55e", "#d1d5db"]}
       />
 
-      <ChartCard
-        title="Bantuan per Wilayah"
-        categories={names}
-        height={chartHeight}
-        series={[
-          { name: "Bantuan Anak", data: stats.map((s) => s.childAssistance.total) },
-          { name: "Bantuan UMKM", data: stats.map((s) => s.umkmVisits.total) },
-          { name: "Bantuan Sosial", data: stats.map((s) => s.socialAssistance.total) },
-        ]}
-        colors={["#22c55e", "#f97316", "#ec4899"]}
-      />
+      {/* Bantuan Anak per Wilayah per Tahun (nominal) */}
+      {bantuanSeries.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 px-5 pt-5 pb-2">
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 mb-1">
+            Bantuan Anak per Wilayah per Tahun (Nominal)
+          </h3>
+          <div className="overflow-x-auto">
+            <ReactApexChart options={bantuanOptions} series={bantuanSeries} type="bar" height={chartHeight} />
+          </div>
+        </div>
+      )}
+
+      {/* Bantuan UMKM per Wilayah per Tahun (nominal) */}
+      {umkmBantuanSeries.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 px-5 pt-5 pb-2">
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 mb-1">
+            Bantuan UMKM per Wilayah per Tahun (Nominal)
+          </h3>
+          <div className="overflow-x-auto">
+            <ReactApexChart options={umkmBantuanOptions} series={umkmBantuanSeries} type="bar" height={chartHeight} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

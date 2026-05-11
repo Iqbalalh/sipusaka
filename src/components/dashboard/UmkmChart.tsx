@@ -24,7 +24,7 @@ export default function UmkmChart() {
     },
     plotOptions: {
       bar: {
-        horizontal: false,
+        horizontal: true,
         columnWidth: "39%",
         borderRadius: 5,
         borderRadiusApplication: "end",

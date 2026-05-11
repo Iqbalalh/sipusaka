@@ -19,11 +19,14 @@ import type { ColumnsType } from "antd/es/table";
 // ==============================================
 const formatMedicalEquipment = (record: SocialAssistance): string => {
   if (!record.medicalEquipment) return "-";
-  
-  const typeLabel = MEDICAL_EQUIPMENT_OPTIONS.find(opt => opt.value === record.medicalEquipment)?.label || record.medicalEquipment;
+
+  const typeLabel =
+    MEDICAL_EQUIPMENT_OPTIONS.find(
+      (opt) => opt.value === record.medicalEquipment,
+    )?.label || record.medicalEquipment;
   const quantity = record.equipmentQuantity || 1;
   const nominal = record.equipmentNominal || 0;
-  
+
   if (nominal > 0) {
     return `${typeLabel} (${quantity}x Rp ${nominal.toLocaleString("id-ID")})`;
   }
@@ -96,7 +99,9 @@ const getColumnSearchProps = (dataIndex: string): any => ({
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getSocialAssistanceColumns = (role?: string): ColumnsType<SocialAssistance> => [
+export const getSocialAssistanceColumns = (
+  role?: string,
+): ColumnsType<SocialAssistance> => [
   {
     title: "NIP/NIPP",
     dataIndex: "nipNipp",
@@ -132,9 +137,7 @@ export const getSocialAssistanceColumns = (role?: string): ColumnsType<SocialAss
     key: "region",
     width: 120,
     ...getColumnSearchProps("region"),
-    render: (value) => (
-      <Tag color="purple">{value || "-"}</Tag>
-    ),
+    render: (value) => <Tag color="purple">{value || "-"}</Tag>,
   },
   {
     title: "Kondisi/Penyakit",
@@ -158,20 +161,23 @@ export const getSocialAssistanceColumns = (role?: string): ColumnsType<SocialAss
     key: "cashAmount",
     width: 130,
     align: "right",
-    render: (value) => value ? `Rp ${value.toLocaleString("id-ID")}` : "-",
-  },
+    render: (value: number) =>
+      value ? `Rp ${value.toLocaleString("id-ID")}` : "-",
+    exportRender: (value: number) => value ?? "",
+  } as any,
   {
     title: "Total",
     dataIndex: "totalAmount",
     key: "totalAmount",
     width: 130,
     align: "right",
-    render: (value) => (
+    render: (value: { toLocaleString: (arg0: string) => any }) => (
       <span className="font-semibold text-blue-600">
         {value ? `Rp ${value.toLocaleString("id-ID")}` : "-"}
       </span>
     ),
-  },
+    exportRender: (value: number) => value ?? "",
+  } as any,
   {
     title: "Keterangan",
     dataIndex: "notes",

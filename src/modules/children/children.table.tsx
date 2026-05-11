@@ -14,6 +14,8 @@ import { deleteChildren, getChildrenForExport } from "@/utils/services/children.
 import { getRegionsList } from "@/utils/services/region.service";
 import { getChildrenColumns } from "./children.columns";
 import { formatDate } from "@/utils/formatter/formatDate";
+import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
+import { API_DASHBOARD } from "@/constants/endpoint";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
@@ -202,12 +204,23 @@ export default function ChildrenTable() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [eduFilters, setEduFilters] = useState<{ text: string; value: string }[]>([]);
 
   useEffect(() => {
     getRegionsList().then(setRegions).catch(console.error);
   }, []);
 
-  const columns = getChildrenColumns(regions, session?.user?.role);
+  useEffect(() => {
+    fetchWithAuth(`${API_DASHBOARD}/education-levels`)
+      .then((res) => res.json())
+      .then((json) => {
+        const levels = Object.keys(json.data ?? {}).sort();
+        setEduFilters(levels.map((l) => ({ text: l, value: l })));
+      })
+      .catch(console.error);
+  }, []);
+
+  const columns = getChildrenColumns(regions, session?.user?.role, eduFilters);
 
   return (
     <div>

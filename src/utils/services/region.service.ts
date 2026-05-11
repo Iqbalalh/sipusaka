@@ -18,6 +18,7 @@ export interface RegionStat {
   regionId: number;
   regionName: string;
   families: number;
+  familiesActive: number;
   children: {
     total: number;
     active: number;
@@ -36,10 +37,12 @@ export interface RegionStat {
   childAssistance: {
     total: number;
     totalAmount: number;
+    byYear?: Record<number, number>;
   };
   umkmVisits: {
     total: number;
     totalAmount: number;
+    byYear?: Record<number, number>;
   };
   socialAssistance: {
     total: number;

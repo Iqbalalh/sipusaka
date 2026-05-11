@@ -4,20 +4,21 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Flex, Spin, DatePicker, Alert, Segmented, Select } from "antd";
-import { LoadingOutlined, FileOutlined, DeleteOutlined, EyeOutlined, DownloadOutlined, UploadOutlined } from "@ant-design/icons";
+import { LoadingOutlined, FileOutlined, DeleteOutlined, EyeOutlined, DownloadOutlined, EditOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import dayjs, { Dayjs } from "dayjs";
+import type { DocxJsEditorHandle } from "@/components/custom/DocxJsEditor";
 
-const CollaboraEditor = dynamic(() => import("@/components/custom/CollaboraEditor"), { ssr: false });
+const DocxJsEditor = dynamic(() => import("@/components/custom/DocxJsEditor"), { ssr: false });
 
 // Components
+import DocumentViewer from "@/components/custom/DocumentViewer";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
 import { TextInput } from "@/components/custom/TextInput";
-import DocumentViewer from "@/components/custom/DocumentViewer";
 
 // Hooks & Utils
 import { useFormSubmit } from "@/hooks/useFormSubmit";
@@ -75,8 +76,10 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
   const [userOptions, setUserOptions] = useState<Option[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
 
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const editorRef = useRef<DocxJsEditorHandle | null>(null);
 
   // Template mode state — persisted in URL param so navigation away & back restores it
   const urlMode = searchParams.get("m") as CreationMode | null;
@@ -91,8 +94,8 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
-  const [reuploadFile, setReuploadFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDocxEditor, setShowDocxEditor] = useState(false);
 
   // ==============================================
   // SUBMIT HOOK (upload mode)
@@ -156,6 +159,8 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
             setLetterDate(dayjs(letter.letterDate));
           }
 
+
+          setDocumentUrl(letter.documentUrl || null);
 
           if (letter.revisionNote) {
             setRevisionNote(letter.revisionNote);
@@ -248,7 +253,6 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       const found = activeLetterTypes.find((lt) => lt.id === value) || null;
       setSelectedLetterType(found);
       setTemplateFieldValues({});
-      setReuploadFile(null);
       if (previewUrlRef.current) {
         URL.revokeObjectURL(previewUrlRef.current);
         previewUrlRef.current = null;
@@ -269,7 +273,6 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       return;
     }
     setPreviewLoading(true);
-    setReuploadFile(null);
     try {
       const blob = await generatePreview(
         selectedLetterType.id,
@@ -280,6 +283,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
       const url = URL.createObjectURL(blob);
       previewUrlRef.current = url;
       setPreviewUrl(url);
+      setShowDocxEditor(false);
     } catch (err) {
       notifyFromResult(notify, { error: err });
     } finally {
@@ -296,12 +300,12 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
 
     setSelectedLetterType(null);
     setTemplateFieldValues({});
-    setReuploadFile(null);
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = null;
       setPreviewUrl(null);
     }
+    setShowDocxEditor(false);
     setDocumentFile(null);
     setForm(INITIAL_FORM_STATE);
     setLetterDate(null);
@@ -333,7 +337,13 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
           fd.append("signer1Id", String(form.signer1Id));
           if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
           if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
-          if (reuploadFile) fd.append("document", reuploadFile);
+          if (editorRef.current) {
+            const buf = await editorRef.current.save();
+            if (buf) {
+              const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+              fd.append("document", new File([blob], "document.docx", { type: blob.type }));
+            }
+          }
 
           const res = await fetchWithAuth(API_LETTERS, { method: "POST", body: fd });
           let result;
@@ -352,7 +362,13 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
           fd.append("signer1Id", String(form.signer1Id));
           if (form.signer2Id) fd.append("signer2Id", String(form.signer2Id));
           if (form.signer3Id) fd.append("signer3Id", String(form.signer3Id));
-          if (reuploadFile) fd.append("document", reuploadFile);
+          if (editorRef.current) {
+            const buf = await editorRef.current.save();
+            if (buf) {
+              const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+              fd.append("document", new File([blob], "document.docx", { type: blob.type }));
+            }
+          }
 
           const res = await fetchWithAuth(`${API_LETTERS}/${letterId}`, { method: "PATCH", body: fd });
           let result;
@@ -378,13 +394,19 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
     const extraData = new FormData();
     if (documentFile) {
       extraData.append("document", documentFile);
+    } else if (mode === "edit" && editorRef.current) {
+      const buf = await editorRef.current.save();
+      if (buf) {
+        const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+        extraData.append("document", new File([blob], "document.docx", { type: blob.type }));
+      }
     }
 
     const { success, error } = await submit(form, extraData);
     if (!success) {
       notifyFromResult(notify, { error });
     }
-  }, [isSubmitting, submitLoading, form, documentFile, creationMode, mode, letterId, selectedLetterType, templateFieldValues, reuploadFile, submit, notify, router]);
+  }, [isSubmitting, submitLoading, form, documentFile, creationMode, mode, letterId, selectedLetterType, templateFieldValues, submit, notify, router]);
 
   const handleGoBack = useCallback(() => {
     router.push("/letters/drafts");
@@ -480,8 +502,7 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
                         onClear={() => {
                           setSelectedLetterType(null);
                           setTemplateFieldValues({});
-                          setReuploadFile(null);
-                        }}
+                                            }}
                       />
                     </FormField>
 
@@ -654,14 +675,10 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
 
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
-          {/* Edit mode: always show Collabora editor */}
-          {mode === "edit" && letterId && (
-            <ComponentCard title="Edit Dokumen (Collabora Online)">
-              <CollaboraEditor
-                letterId={letterId}
-                height="600px"
-                className="rounded-lg overflow-hidden border border-gray-200"
-              />
+          {/* Edit mode: show DocxJS editor */}
+          {mode === "edit" && letterId && documentUrl && (
+            <ComponentCard title="Edit Dokumen">
+              <DocxJsEditor ref={editorRef} url={documentUrl} height="600px" />
             </ComponentCard>
           )}
 
@@ -693,40 +710,6 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
                     />
                   </div>
                 </FormField>
-              </div>
-            </ComponentCard>
-          )}
-
-          {/* Create + Template mode: preview after generation */}
-          {mode === "create" && creationMode === "template" && previewUrl && (
-            <ComponentCard title="Pratinjau Dokumen">
-              <DocumentViewer url={previewUrl} fileName="preview.docx" />
-              <div className="mt-4 space-y-3">
-                <a
-                  href={previewUrl}
-                  download="dokumen-template.docx"
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 w-fit"
-                >
-                  <DownloadOutlined />
-                  Unduh untuk Diedit di Word/LibreOffice
-                </a>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">
-                    Setelah diedit, unggah kembali file .docx yang sudah dimodifikasi:
-                  </p>
-                  <input
-                    type="file"
-                    accept=".docx"
-                    onChange={(e) => setReuploadFile(e.target.files?.[0] ?? null)}
-                    className="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
-                  />
-                  {reuploadFile && (
-                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                      <UploadOutlined />
-                      {reuploadFile.name} akan digunakan sebagai dokumen surat
-                    </p>
-                  )}
-                </div>
               </div>
             </ComponentCard>
           )}
@@ -774,6 +757,40 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
           </ComponentCard>
         </div>
       </div>
+
+      {/* PREVIEW / EDITOR SECTION — shown below form when previewUrl is available */}
+      {creationMode === "template" && previewUrl && (
+        <div className="mt-6">
+          <ComponentCard title={showDocxEditor ? "Edit Dokumen" : "Pratinjau Dokumen"}>
+            <div className="flex items-center gap-3 mb-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDocxEditor((v) => !v)}
+              >
+                {showDocxEditor ? (
+                  <span className="flex items-center gap-2"><EyeOutlined /> Pratinjau</span>
+                ) : (
+                  <span className="flex items-center gap-2"><EditOutlined /> Edit Dokumen</span>
+                )}
+              </Button>
+              <a
+                href={previewUrl}
+                download="dokumen-template.docx"
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
+              >
+                <DownloadOutlined />
+                Unduh .docx
+              </a>
+            </div>
+            {showDocxEditor ? (
+              <DocxJsEditor ref={editorRef} url={previewUrl} height="600px" />
+            ) : (
+              <DocumentViewer url={previewUrl} fileName="dokumen-template.docx" />
+            )}
+          </ComponentCard>
+        </div>
+      )}
     </div>
   );
 }

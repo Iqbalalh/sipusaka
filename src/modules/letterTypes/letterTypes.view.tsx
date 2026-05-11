@@ -71,7 +71,7 @@ export default function LetterTypesView({ letterTypeId }: LetterTypesViewProps) 
             </Button>
           </div>
 
-          <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
+          <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="Jenis Surat" span={2}>
               <span className="font-medium">{letterType.jenisSurat}</span>
             </Descriptions.Item>

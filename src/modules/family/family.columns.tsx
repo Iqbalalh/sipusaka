@@ -184,7 +184,7 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     render: (_, home) => home._count?.children || 0,
   },
   {
-    title: "Bantuan",
+    title: "Kunjungan",
     dataIndex: "_count",
     key: "familyVisits",
     align: "center",

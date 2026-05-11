@@ -120,8 +120,8 @@ export const getChildrenForExport = async (
 
     const url = params.toString() ? `${API_CHILDREN}/export?${params.toString()}` : `${API_CHILDREN}/export`;
     const json = await apiClient<ApiResponseList<Children>>(url);
-    
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Children[];
+
+    return camelcaseKeys(json.data ?? json, { deep: true, exclude: [/^_/] }) as unknown as Children[];
   } catch (error) {
     throw error;
   }

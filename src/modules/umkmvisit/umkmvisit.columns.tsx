@@ -156,11 +156,12 @@ export const getUmkmVisitColumns = (role?: string): ColumnsType<UmkmVisit> => [
     dataIndex: "value",
     key: "value",
     width: 150,
-    sorter: (a, b) => a.value - b.value,
-    render: (value) => {
+    sorter: (a: { value: number; }, b: { value: number; }) => a.value - b.value,
+    render: (value: { toLocaleString: (arg0: string) => any; }) => {
       return value ? `Rp ${value.toLocaleString("id-ID")}` : "-";
     },
-  },
+    exportRender: (value: number) => value ?? "",
+  } as any,
   {
     title: "Catatan",
     dataIndex: "notes",

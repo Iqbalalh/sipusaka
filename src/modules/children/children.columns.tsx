@@ -15,7 +15,8 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 export const getChildrenColumns = (
   regions: Region[],
-  role?: string
+  role?: string,
+  eduFilters?: { text: string; value: string }[]
 ): ColumnsType<Children> => [
   {
     title: "Foto",
@@ -121,30 +122,20 @@ export const getChildrenColumns = (
   },
 
   {
-    title: "Jenjang Pendidikan",
-    dataIndex: "educationLevel",
-    key: "educationLevel",
-    filters: [
-      { text: "TK", value: "TK" },
-      { text: "SD/Sederajat", value: "SD/Sederajat" },
-      { text: "SMP/Sederajat", value: "SMP/Sederajat" },
-      { text: "SMA/Sederajat", value: "SMA/Sederajat" },
-      { text: "Diploma", value: "Diploma" },
-      { text: "Sarjana", value: "Sarjana" },
-      { text: "Magister", value: "Magister" },
-      { text: "Doktor", value: "Doktor" },
-    ],
-    onFilter: (value, record) => record.educationLevel === value,
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
-  },
-
-  {
-    title: "Tingkat Pendidikan",
-    dataIndex: "educationGrade",
-    key: "educationGrade",
-    render: (text) => text || "-",
-    exportRender: (value: string) => value ?? "-",
+    title: "Pendidikan Terakhir",
+    key: "lastEducationLevel",
+    filters: eduFilters ?? [],
+    onFilter: (value, record: any) => {
+      const level = (record as any).childAssistance?.[0]?.educationLevel?.trim() ?? "";
+      return level === String(value);
+    },
+    render: (_: any, record: any) => {
+      const level = (record as any).childAssistance?.[0]?.educationLevel?.trim();
+      return level || "-";
+    },
+    exportRender: (_: any, record: any) => {
+      return (record as any).childAssistance?.[0]?.educationLevel?.trim() ?? "-";
+    },
   },
 
   {
@@ -269,11 +260,28 @@ export const getChildrenColumns = (
   },
 
   {
-    title: "Bantuan",
+    title: "Jml. Bantuan",
     dataIndex: "_count",
     key: "childAssistanceCount",
     align: "center",
-    render: (_: any, record: any) => record._count?.childAssistance ?? 0,
+    filters: [
+      { text: "1", value: "1" },
+      { text: "2", value: "2" },
+      { text: "3", value: "3" },
+      { text: "4", value: "4" },
+      { text: "5", value: "5" },
+      { text: "5+", value: "5+" },
+    ],
+    onFilter: (value, record: any) => {
+      const count = record._count?.childAssistance ?? 0;
+      if (value === "5+") return count > 5;
+      return count === Number(value);
+    },
+    render: (_: any, record: any) => (
+      <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+        {record._count?.childAssistance ?? 0}
+      </span>
+    ),
     exportRender: (_: any, record: any) =>
       String(record._count?.childAssistance ?? 0),
   },
