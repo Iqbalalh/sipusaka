@@ -50,11 +50,11 @@ export default function DraftsTable() {
       <DataTable<Letter>
         key={refreshKey}
         fetchData={getDraftLetters}
-        deleteItem={isAdmin ? deleteLetter : undefined}
+        deleteItem={deleteLetter}
         columns={columns}
         rowKey="id"
         title="Draft Surat"
-        createPath={isAdmin ? "/letters/drafts/create" : undefined}
+        createPath="/letters/drafts/create"
         deleteConfirmTitle="Hapus Surat"
         deleteConfirmMessage="Apakah Anda yakin ingin menghapus surat ini?"
         deleteSuccessMessage="Surat berhasil dihapus"

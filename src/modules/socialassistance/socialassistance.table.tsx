@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Progress } from "antd";
+import { Table, Spin, Modal, Input, Progress, Skeleton } from "antd";
 import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
+import { FaUsers, FaDollarSign, FaMoneyBill, FaMapMarkerAlt } from "react-icons/fa";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import Link from "next/link";
@@ -24,6 +25,58 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { MEDICAL_EQUIPMENT_OPTIONS } from "./socialassistance.constants";
 import ImportModal from "./components/ImportModal";
+
+// ==============================================
+// FORMAT CURRENCY
+// ==============================================
+const fmt = (v: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
+
+// ==============================================
+// INSIGHT PANEL
+// ==============================================
+function SocialAssistanceInsightPanel({ data, loading }: { data: SocialAssistance[]; loading: boolean }) {
+  if (loading && data.length === 0) {
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-5">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-white/3">
+            <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const totalPenerima = data.length;
+  const totalDana = data.reduce((s, r) => s + (r.totalAmount ?? 0), 0);
+  const totalUang = data.reduce((s, r) => s + (r.cashAmount ?? 0), 0);
+  const uniqueWilayah = new Set(data.map((r) => r.region).filter(Boolean)).size;
+
+  const tiles = [
+    { icon: <FaUsers />, label: "Penerima", value: totalPenerima, sub: "dari halaman ini", color: "bg-blue-500" },
+    { icon: <FaDollarSign />, label: "Total Dana", value: fmt(totalDana), sub: "seluruh bantuan", color: "bg-emerald-500" },
+    { icon: <FaMoneyBill />, label: "Total Uang Tunai", value: fmt(totalUang), sub: "komponen tunai", color: "bg-indigo-500" },
+    { icon: <FaMapMarkerAlt />, label: "Wilayah", value: uniqueWilayah, sub: "wilayah unik", color: "bg-amber-500" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-5">
+      {tiles.map((t) => (
+        <div key={t.label} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/3">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white text-sm shadow ${t.color}`}>
+            {t.icon}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">{t.label}</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white truncate">{t.value}</p>
+            <p className="text-[10px] text-gray-400 truncate">{t.sub}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ==============================================
 // EXCEL EXPORT FUNCTION WITH PROGRESS
@@ -346,6 +399,9 @@ export default function SocialAssistanceTable() {
   // ==========================
   return (
     <>
+      {/* INSIGHT PANEL */}
+      <SocialAssistanceInsightPanel data={filteredData} loading={loading} />
+
       {/* DELETE MODAL */}
       <Modal
         title="Konfirmasi Hapus"

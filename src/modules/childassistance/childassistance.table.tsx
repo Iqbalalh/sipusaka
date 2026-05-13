@@ -301,13 +301,6 @@ export default function ChildAssistanceTable() {
           >
             Export ({data.length})
           </AntButton>
-          {isAdmin && (
-            <Link href="/childassistance/create">
-              <AntButton type="primary" icon={<PlusOutlined />}>
-                Tambah
-              </AntButton>
-            </Link>
-          )}
         </div>
       </div>
 

@@ -369,11 +369,11 @@ export default function StaffForm({ mode, staffId }: StaffFormProps) {
 
               <FormField label="Status">
                 <SelectInput
-                  value={form.isActive}
-                  onChange={(value) => handleFieldChange("isActive", value)}
+                  value={form.isActive ? 1 : 0}
+                  onChange={(value) => handleFieldChange("isActive", value === 1)}
                   options={[
-                    { value: true, label: "Aktif" },
-                    { value: false, label: "Tidak Aktif" },
+                    { value: 1, label: "Aktif" },
+                    { value: 0, label: "Tidak Aktif" },
                   ]}
                   placeholder="Pilih status"
                 />

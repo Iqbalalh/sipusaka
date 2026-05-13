@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
-import { Progress } from "antd";
+import { Progress, Skeleton } from "antd";
+import { FaUserCheck, FaUserXmark, FaMoneyBillWave, FaBoxOpen } from "react-icons/fa6";
 
 // Types
 import { Umkm } from "@/types/models/umkm";
@@ -20,6 +21,51 @@ import { getRegionsList } from "@/utils/services/region.service";
 import { getUmkmColumns } from "./umkm.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
+// ==============================================
+// INSIGHT PANEL
+// ==============================================
+function UmkmInsightPanel({ data }: { data: Umkm[] | null }) {
+  if (!data) {
+    return (
+      <div className="grid grid-cols-4 gap-3 mb-5">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-white/3">
+            <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const aktif = data.filter((u) => u.isActive).length;
+  const tidakAktif = data.filter((u) => !u.isActive).length;
+  const dana = data.length;
+  const sumberBantuan = new Set(data.map((u) => u.businessType).filter(Boolean)).size;
+
+  const tiles = [
+    { icon: <FaUserCheck />, label: "Aktif", value: aktif, color: "bg-emerald-500" },
+    { icon: <FaUserXmark />, label: "Tidak Aktif", value: tidakAktif, color: "bg-gray-400" },
+    { icon: <FaMoneyBillWave />, label: "Dana", value: dana, color: "bg-blue-500" },
+    { icon: <FaBoxOpen />, label: "Sumber Bantuan", value: sumberBantuan, color: "bg-purple-500" },
+  ];
+
+  return (
+    <div className="grid grid-cols-4 gap-3 mb-5">
+      {tiles.map((t) => (
+        <div key={t.label} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/3">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white text-sm shadow ${t.color}`}>
+            {t.icon}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">{t.label}</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white truncate">{t.value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function UmkmTable() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
@@ -28,6 +74,7 @@ export default function UmkmTable() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [visibleData, setVisibleData] = useState<Umkm[] | null>(null);
 
   // Fetch regions for column filters
   useEffect(() => {
@@ -97,6 +144,8 @@ export default function UmkmTable() {
         </div>
       )}
 
+      <UmkmInsightPanel data={visibleData} />
+
       <DataTable<Umkm>
         fetchData={getUmkmList}
         deleteItem={isAdmin ? deleteUmkm : undefined}
@@ -107,6 +156,7 @@ export default function UmkmTable() {
           sheetName: "UMKM",
         }}
         onExport={handleExportWithProgress}
+        onFilteredDataChange={setVisibleData}
         title="Jumlah Data"
         createPath={isAdmin ? "/umkm/create" : undefined}
         pageSize={50}

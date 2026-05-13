@@ -14,6 +14,8 @@ import {
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
+import { formatDate } from "@/utils/formatter/formatDate";
+import { getDateRangeFilterProps } from "@/utils/table/dateRangeFilter";
 
 // ==============================================
 // SEARCH CONFIGURATION
@@ -184,6 +186,21 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     render: (_, home) => home._count?.children || 0,
   },
   {
+    title: "Total Dana Bantuan Anak",
+    key: "totalAssistanceAmount",
+    align: "right",
+    sorter: (a: any, b: any) => ((a as any).totalAssistanceAmount ?? 0) - ((b as any).totalAssistanceAmount ?? 0),
+    render: (_: any, home: any) => {
+      const amount = (home as any).totalAssistanceAmount ?? 0;
+      if (amount === 0) return <span className="text-gray-400 text-xs">-</span>;
+      return (
+        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount)}
+        </span>
+      );
+    },
+  },
+  {
     title: "Kunjungan",
     dataIndex: "_count",
     key: "familyVisits",
@@ -230,16 +247,26 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     ),
   },
   {
+    title: "Tanggal Dibuat",
+    dataIndex: "createdAt",
+    key: "createdAt",
+    ...getDateRangeFilterProps<HomeTable>("createdAt"),
+    render: (text) => text ? formatDate(text) : "-",
+    hidden: true,
+  },
+  {
     title: "Dibuat Oleh",
     dataIndex: "createdBy",
     key: "createdBy",
     render: (_: any, record: any) => (record as any)?.createdByStaffName || (record as any)?.createdBy || "-",
+    hidden: true,
   },
   {
     title: "Diedit Oleh",
     dataIndex: "editedBy",
     key: "editedBy",
     render: (_: any, record: any) => (record as any)?.editedByStaffName || (record as any)?.editedBy || "-",
+    hidden: true,
   },
   {
     title: "Aksi",

@@ -4,7 +4,7 @@ import Link from "next/link";
 import DataTable from "@/components/custom/table/DataTable";
 import Button from "@/components/ui/button/Button";
 import { Letter } from "@/types/models/letter";
-import { getLetters, deleteLetter } from "@/utils/services/letter.service";
+import { getLetters } from "@/utils/services/letter.service";
 import { getArchiveColumns } from "./letters.columns";
 import { useSession } from "next-auth/react";
 import { UploadOutlined } from "@ant-design/icons";
@@ -17,13 +17,9 @@ export default function ArchivesTable() {
   return (
     <DataTable<Letter>
       fetchData={getLetters}
-      deleteItem={isAdmin ? deleteLetter : undefined}
-      columns={getArchiveColumns(true, role)}
+      columns={getArchiveColumns()}
       rowKey="id"
       title="Arsip Surat"
-      deleteConfirmTitle="Hapus Surat"
-      deleteConfirmMessage="Apakah Anda yakin ingin menghapus surat ini? Semua data dan dokumen terkait akan dihapus permanen."
-      deleteSuccessMessage="Surat berhasil dihapus"
       headerActions={
         isAdmin ? (
           <Link href="/letters/archives/upload">

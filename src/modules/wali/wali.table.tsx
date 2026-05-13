@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 
 // Components
 import DataTable from "@/components/custom/table/DataTable";
-import { Progress } from "antd";
+import { Progress, Skeleton } from "antd";
+import { FaUsers, FaUserCheck, FaUserXmark } from "react-icons/fa6";
 
 // Types
 import { Wali } from "@/types/models/wali";
@@ -18,12 +19,56 @@ import {
 import { getWaliColumns } from "./wali.columns";
 import { exportTableToExcel } from "@/utils/export/excel/exportTableToExcel";
 
+// ==============================================
+// INSIGHT PANEL
+// ==============================================
+function WaliInsightPanel({ data }: { data: Wali[] | null }) {
+  if (!data) {
+    return (
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-white/3">
+            <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const total = data.length;
+  const aktif = data.filter((w) => (w as any).isActive === true).length;
+  const tidakAktif = data.filter((w) => (w as any).isActive === false).length;
+
+  const tiles = [
+    { icon: <FaUserCheck />, label: "Aktif", value: aktif, color: "bg-emerald-500" },
+    { icon: <FaUserXmark />, label: "Tidak Aktif", value: tidakAktif, color: "bg-gray-400" },
+    { icon: <FaUsers />, label: "Total Data", value: total, color: "bg-blue-500" },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-3 mb-5">
+      {tiles.map((t) => (
+        <div key={t.label} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/3">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white text-sm shadow ${t.color}`}>
+            {t.icon}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">{t.label}</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white truncate">{t.value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function WaliTable() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
 
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [visibleData, setVisibleData] = useState<Wali[] | null>(null);
 
   // Generate columns
   const columns = getWaliColumns(session?.user?.role);
@@ -65,6 +110,7 @@ export default function WaliTable() {
 
   return (
     <div>
+
       {showProgress && (
         <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="flex items-center justify-between mb-2">
@@ -79,6 +125,8 @@ export default function WaliTable() {
         </div>
       )}
 
+      <WaliInsightPanel data={visibleData} />
+
       <DataTable<Wali>
         fetchData={getWalis}
         deleteItem={isAdmin ? deleteWali : undefined}
@@ -89,7 +137,8 @@ export default function WaliTable() {
           sheetName: "Wali",
         }}
         onExport={handleExportWithProgress}
-        title="Jumlah Data"
+        onFilteredDataChange={setVisibleData}
+        title="Jumlah Data Wali"
         createPath={isAdmin ? "/wali/create" : undefined}
         pageSize={50}
         scrollY={500}

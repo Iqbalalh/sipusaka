@@ -24,6 +24,22 @@ const EDU_DYNAMIC_COLORS = [
   "#ec4899", "#14b8a6",
 ];
 
+const CANONICAL_EDU_ORDER = [
+  "Pra Sekolah - TK", "SD", "SMP", "SMA",
+  "D1", "D2", "D3", "D4 - S1", "Kursus", "ABK",
+];
+
+const sortEduEntries = (entries: [string, number][]): [string, number][] => {
+  return [...entries].sort(([a], [b]) => {
+    const ia = CANONICAL_EDU_ORDER.indexOf(a);
+    const ib = CANONICAL_EDU_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+};
+
 const CHILDREN_BREAKDOWN = [
   { key: "active" as const, label: "Aktif", color: "#22c55e" },
   { key: "inactive" as const, label: "Tidak Aktif", color: "#9ca3af" },
@@ -121,7 +137,7 @@ function EduCards({
   eduLevels: Record<string, number>;
   inactiveCount: number;
 }) {
-  const entries = Object.entries(eduLevels).sort(([, a], [, b]) => b - a);
+  const entries = sortEduEntries(Object.entries(eduLevels));
   const grandTotal = entries.reduce((s, [, v]) => s + v, 0);
   const maxCount = Math.max(...entries.map(([, v]) => v), inactiveCount, 1);
 
@@ -186,7 +202,7 @@ function RegionDetailCard({ stat, eduData, eduLoading }: {
   const totalChildren = children.total || 1;
   const maxChildrenCount = Math.max(...CHILDREN_BREAKDOWN.map((b) => children[b.key] ?? 0), 1);
 
-  const eduEntries = Object.entries(eduData).filter(([, v]) => v > 0);
+  const eduEntries = sortEduEntries(Object.entries(eduData).filter(([, v]) => v > 0));
   const eduPieSeries = eduEntries.map(([, v]) => v);
   const regionEduPieOptions: ApexOptions = {
     chart: { type: "donut", fontFamily: "Outfit, sans-serif", toolbar: { show: false } },
@@ -279,12 +295,23 @@ function SummaryView({ stats, globalEduData, globalEduLoading }: {
   globalEduData: Record<string, number>;
   globalEduLoading: boolean;
 }) {
-  const sortedStats = [...stats].sort((a, b) => (b.familiesActive ?? b.families) - (a.familiesActive ?? a.families));
+  const getRegionRank = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.startsWith("daop")) return 0;
+    if (n.startsWith("divre")) return 1;
+    if (n.startsWith("by")) return 2;
+    return 3;
+  };
+  const sortedStats = [...stats].sort((a, b) => {
+    const rankDiff = getRegionRank(a.regionName) - getRegionRank(b.regionName);
+    if (rankDiff !== 0) return rankDiff;
+    return a.regionName.localeCompare(b.regionName);
+  });
   const names = sortedStats.map((s) => s.regionName);
   const chartHeight = Math.max(300, sortedStats.length * 120);
 
   const totalInactive = stats.reduce((sum, s) => sum + s.children.inactive, 0);
-  const eduEntries = Object.entries(globalEduData).filter(([, v]) => v > 0);
+  const eduEntries = sortEduEntries(Object.entries(globalEduData).filter(([, v]) => v > 0));
   const eduGrandTotal = eduEntries.reduce((s, [, v]) => s + v, 0);
 
   // Education pie chart options

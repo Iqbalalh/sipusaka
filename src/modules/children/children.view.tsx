@@ -6,7 +6,8 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 // Components
-import { Spin, Modal, Form, Input, DatePicker, Upload, message, Image } from "antd";
+import { Spin, Modal, Form, Input, DatePicker, Upload, message, Image, Select } from "antd";
+import { EDUCATION_LEVEL_OPTIONS } from "@/constants/option";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
 import { InfoItem } from "@/components/ui/field/InfoItem";
@@ -209,6 +210,9 @@ export default function ChildrenView() {
       }
       if (values.educationGrade) {
         formData.append("educationGrade", values.educationGrade);
+      }
+      if (values.schoolName) {
+        formData.append("schoolName", values.schoolName);
       }
       if (values.age) {
         formData.append("age", values.age);
@@ -617,10 +621,19 @@ export default function ChildrenView() {
           </Form.Item>
 
           <Form.Item name="educationLevel" label="Jenjang Pendidikan">
-            <Input />
+            <Select
+              options={EDUCATION_LEVEL_OPTIONS}
+              placeholder="Pilih jenjang pendidikan"
+              allowClear
+              showSearch
+            />
           </Form.Item>
 
           <Form.Item name="educationGrade" label="Tingkat Pendidikan">
+            <Input placeholder="Contoh: 4, 5, Semester 3" />
+          </Form.Item>
+
+          <Form.Item name="schoolName" label="Nama Sekolah">
             <Input />
           </Form.Item>
 

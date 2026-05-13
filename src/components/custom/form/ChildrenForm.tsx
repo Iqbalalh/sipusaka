@@ -284,33 +284,33 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
             <div className="space-y-5">
               <FormField label="Status" required>
                 <SelectInput
-                  value={form.isActive}
-                  onChange={(v) => handleFieldChange("isActive", v)}
-                  options={[{ value: true, label: "Aktif" }, { value: false, label: "Tidak Aktif" }]}
+                  value={form.isActive ? 1 : 0}
+                  onChange={(v) => handleFieldChange("isActive", v === 1)}
+                  options={[{ value: 1, label: "Aktif" }, { value: 0, label: "Tidak Aktif" }]}
                 />
               </FormField>
 
               <FormField label="ABK (Anak Berkebutuhan Khusus)" required>
                 <SelectInput
-                  value={form.isCondition}
-                  onChange={(v) => handleFieldChange("isCondition", v)}
-                  options={[{ value: true, label: "Tidak" }, { value: false, label: "Ya" }]}
+                  value={form.isCondition ? 1 : 0}
+                  onChange={(v) => handleFieldChange("isCondition", v === 1)}
+                  options={[{ value: 1, label: "Tidak" }, { value: 0, label: "Ya" }]}
                 />
               </FormField>
 
               <FormField label="Ayah Masih Hidup">
                 <SelectInput
-                  value={form.isFatherAlive}
-                  onChange={(v) => handleFieldChange("isFatherAlive", v)}
-                  options={[{ value: true, label: "Ya" }, { value: false, label: "Tidak" }]}
+                  value={form.isFatherAlive ? 1 : 0}
+                  onChange={(v) => handleFieldChange("isFatherAlive", v === 1)}
+                  options={[{ value: 1, label: "Ya" }, { value: 0, label: "Tidak" }]}
                 />
               </FormField>
 
               <FormField label="Ibu Masih Hidup">
                 <SelectInput
-                  value={form.isMotherAlive}
-                  onChange={(v) => handleFieldChange("isMotherAlive", v)}
-                  options={[{ value: true, label: "Ya" }, { value: false, label: "Tidak" }]}
+                  value={form.isMotherAlive ? 1 : 0}
+                  onChange={(v) => handleFieldChange("isMotherAlive", v === 1)}
+                  options={[{ value: 1, label: "Ya" }, { value: 0, label: "Tidak" }]}
                 />
               </FormField>
 

@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 
 // Components
-import { Table, Flex, Spin, Modal, Input } from "antd";
+import { Table, Modal, Input, Skeleton } from "antd";
 import Button from "@/components/ui/button/Button";
 
 // Icons
-import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 
 // Types
 import type { ColumnsType } from "antd/es/table";
@@ -69,6 +69,9 @@ export interface DataTableProps<T> {
   // Extra header actions (rendered on the right side of the header)
   headerActions?: React.ReactNode;
 
+  // Callback fired whenever the effectively-visible rows change (search + column filters)
+  onFilteredDataChange?: (data: T[]) => void;
+
   // Delete configuration
   deleteConfirmTitle?: string;
   deleteConfirmMessage?: string;
@@ -86,6 +89,7 @@ export default function DataTable<T extends Record<string, any>>({
   rowKey,
   exportConfig,
   onExport,
+  onFilteredDataChange,
   title,
   createPath,
   pageSize = 50,
@@ -120,6 +124,9 @@ export default function DataTable<T extends Record<string, any>>({
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Export State
+  const [isExporting, setIsExporting] = useState(false);
   
   // Refs to store functions and values to avoid recreation
   const hasLoaded = useRef(false);
@@ -128,7 +135,8 @@ export default function DataTable<T extends Record<string, any>>({
   const notifyRef = useRef(notify);
   const pageSizeRef = useRef(pageSize);
   const serverSidePaginationRef = useRef(serverSidePagination);
-  
+  const onFilteredDataChangeRef = useRef(onFilteredDataChange);
+
   // Update refs when props change
   useEffect(() => {
     fetchDataRef.current = fetchData;
@@ -136,7 +144,8 @@ export default function DataTable<T extends Record<string, any>>({
     notifyRef.current = notify;
     pageSizeRef.current = pageSize;
     serverSidePaginationRef.current = serverSidePagination;
-  }, [fetchData, fetchPaginatedData, notify, pageSize, serverSidePagination]);
+    onFilteredDataChangeRef.current = onFilteredDataChange;
+  }, [fetchData, fetchPaginatedData, notify, pageSize, serverSidePagination, onFilteredDataChange]);
 
   // ==========================
   // FETCH DATA FUNCTION
@@ -158,8 +167,10 @@ export default function DataTable<T extends Record<string, any>>({
         const result = await fetchDataRef.current();
         setData(result);
         setFilteredData(result);
+        setCurrentData(result);
         setCount(result.length);
         setTotalPages(Math.ceil(result.length / pageSizeRef.current));
+        onFilteredDataChangeRef.current?.(result);
       }
     } catch (err) {
       notifyFromResult(notifyRef.current, { error: err });
@@ -207,8 +218,10 @@ export default function DataTable<T extends Record<string, any>>({
       // Client-side search
       if (!searchQuery.trim()) {
         setFilteredData(data);
+        setCurrentData(data);
         setCount(data.length);
         setTotalPages(Math.ceil(data.length / pageSizeRef.current));
+        onFilteredDataChangeRef.current?.(data);
         return;
       }
 
@@ -250,8 +263,10 @@ export default function DataTable<T extends Record<string, any>>({
       const filtered = data.filter((record) => matchesQuery(record));
 
       setFilteredData(filtered);
+      setCurrentData(filtered);
       setCount(filtered.length);
       setTotalPages(Math.ceil(filtered.length / pageSizeRef.current));
+      onFilteredDataChangeRef.current?.(filtered);
     }
   }, [searchQuery, data, loadData]); // Removed searchTimer from deps
 
@@ -288,23 +303,24 @@ export default function DataTable<T extends Record<string, any>>({
   // EXPORT TO EXCEL
   // ==========================
   const handleExportExcel = useCallback(async () => {
-    if (!exportConfig) return;
-
-    // Use custom export function if provided
-    if (onExport) {
+    if (!exportConfig || isExporting) return;
+    setIsExporting(true);
+    try {
       const dataToExport = currentData.length ? currentData : filteredData;
-      await onExport(dataToExport);
-      return;
+      if (onExport) {
+        await onExport(dataToExport);
+      } else {
+        exportTableToExcel<T>({
+          data: dataToExport,
+          columns,
+          filename: exportConfig.filename,
+          sheetName: exportConfig.sheetName,
+        });
+      }
+    } finally {
+      setIsExporting(false);
     }
-
-    // Use default export function
-    exportTableToExcel<T>({
-      data: currentData.length ? currentData : filteredData,
-      columns,
-      filename: exportConfig.filename,
-      sheetName: exportConfig.sheetName,
-    });
-  }, [currentData, filteredData, columns, exportConfig, onExport]);
+  }, [currentData, filteredData, columns, exportConfig, onExport, isExporting]);
 
   // ==========================
   // ENHANCE COLUMNS WITH DELETE MODAL
@@ -331,15 +347,53 @@ export default function DataTable<T extends Record<string, any>>({
   }, [columns, openDeleteModal]);
 
   // ==========================
-  // LOADING STATE
+  // SKELETON TABLE
   // ==========================
+  const skeletonCols = [160, 120, 100, 130, 90, 110];
+  const skeletonRowWidths = [
+    [140, 100, 80, 110, 70, 90],
+    [120, 90, 100, 100, 85, 105],
+    [150, 110, 70, 120, 60, 95],
+    [130, 95, 90, 105, 75, 100],
+    [145, 105, 85, 115, 65, 85],
+    [125, 85, 95, 125, 80, 110],
+    [155, 115, 75, 95, 90, 80],
+    [135, 100, 88, 108, 72, 92],
+  ];
   if (loading && data.length === 0) {
     return (
-      <div className="flex justify-center items-center gap-4 h-40 text-gray-500">
-        <Flex align="center" gap="middle">
-          <Spin indicator={<LoadingOutlined spin />} size="large" />
-        </Flex>
-        Memuat data...
+      <div>
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex flex-col gap-2">
+            <Skeleton.Input active size="small" style={{ width: 180 }} />
+            {showSearch && <Skeleton.Input active size="default" style={{ width: 260 }} />}
+          </div>
+          <div className="flex gap-2">
+            {exportConfig && <Skeleton.Button active size="default" style={{ width: 110 }} />}
+            {createPath && <Skeleton.Button active size="default" style={{ width: 40 }} />}
+          </div>
+        </div>
+        {/* Table skeleton */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex gap-6 bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            {skeletonCols.map((w, i) => (
+              <Skeleton.Input key={i} active size="small" style={{ width: w, minWidth: w }} />
+            ))}
+          </div>
+          {skeletonRowWidths.map((rowWidths, row) => (
+            <div
+              key={row}
+              className={`flex gap-6 px-4 py-3 border-t border-gray-100 dark:border-gray-700 ${
+                row % 2 === 1 ? "bg-gray-50/60 dark:bg-gray-800/30" : "bg-white dark:bg-transparent"
+              }`}
+            >
+              {rowWidths.map((w, col) => (
+                <Skeleton.Input key={col} active size="small" style={{ width: w, minWidth: 40 }} />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -390,8 +444,8 @@ export default function DataTable<T extends Record<string, any>>({
           {/* Search Input */}
 
           {exportConfig && (
-            <Button size="sm" onClick={handleExportExcel}>
-              Export Excel
+            <Button size="sm" onClick={handleExportExcel} disabled={isExporting}>
+              {isExporting ? "Mengekspor..." : "Export Excel"}
             </Button>
           )}
 
@@ -435,11 +489,11 @@ export default function DataTable<T extends Record<string, any>>({
         onChange={(_, __, ___, extra) => {
           const current = extra.currentDataSource as T[];
           setCurrentData(current);
+          onFilteredDataChangeRef.current?.(current);
           if (!serverSidePagination) {
             setCount(current.length);
           }
         }}
-        loading={loading}
       />
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { Spin, Flex, Tag, Table } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -29,9 +28,7 @@ const statusLabels: Record<LetterStatus, string> = {
 };
 
 export default function LetterView() {
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
-  const [data, setData] = useState<Letter | null>(null);
+const [data, setData] = useState<Letter | null>(null);
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [publishStep, setPublishStep] = useState<PublishStep>("idle");
@@ -170,7 +167,7 @@ export default function LetterView() {
       <div className="flex items-center justify-between mb-6">
         <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Detail Surat</h4>
         <div className="flex gap-2">
-          {isAdmin && data.status === "approved" && (
+          {data.status === "approved" && (
             <Button
               onClick={handleStartPublish}
               disabled={isConverting}

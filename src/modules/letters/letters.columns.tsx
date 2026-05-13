@@ -13,9 +13,9 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 const statusConfig: Record<LetterStatus, { label: string; color: string }> = {
   draft: { label: "Draft", color: "default" },
-  pending1: { label: "Menunggu TTD 1", color: "processing" },
-  pending2: { label: "Menunggu TTD 2", color: "processing" },
-  pending3: { label: "Menunggu TTD 3", color: "processing" },
+  pending1: { label: "Menunggu Persetujuan 1", color: "processing" },
+  pending2: { label: "Menunggu Persetujuan 2", color: "processing" },
+  pending3: { label: "Menunggu Persetujuan 3", color: "processing" },
   approved: { label: "Disetujui", color: "success" },
   published: { label: "Diterbitkan", color: "purple" },
 };
@@ -89,7 +89,7 @@ export const getDraftColumns = (onSubmit?: (id: number) => void, role?: string):
     fixed: "right",
     render: (_, letter) => (
       <div className="flex gap-2 text-xs">
-        {role !== "staff" && letter.status === "draft" && onSubmit && (
+        {letter.status === "draft" && onSubmit && (
           <Button
             size="xs"
             onClick={() => onSubmit(letter.id)}
@@ -98,25 +98,21 @@ export const getDraftColumns = (onSubmit?: (id: number) => void, role?: string):
             <SendOutlined />
           </Button>
         )}
-        {role !== "staff" && (
-          <Link href={`/letters/drafts/edit/${letter.id}`}>
-            <Button size="xs">
-              <EditOutlined />
-            </Button>
-          </Link>
-        )}
-        {role !== "staff" && (
-          <Button
-            size="xs"
-            onClick={() => {
-              if (!letter.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              letter._openDeleteModal(letter.id);
-            }}
-          >
-            <DeleteOutlined />
+        <Link href={`/letters/drafts/edit/${letter.id}`}>
+          <Button size="xs">
+            <EditOutlined />
           </Button>
-        )}
+        </Link>
+        <Button
+          size="xs"
+          onClick={() => {
+            if (!letter.id) return;
+            // @ts-ignore - _openDeleteModal is injected by DataTable
+            letter._openDeleteModal(letter.id);
+          }}
+        >
+          <DeleteOutlined />
+        </Button>
       </div>
     ),
   },
@@ -182,7 +178,7 @@ export const getApprovalColumns = (): ColumnsType<Letter> => [
 // ==============================================
 // ARCHIVE COLUMNS
 // ==============================================
-export const getArchiveColumns = (showDelete = false, role?: string): ColumnsType<Letter> => [
+export const getArchiveColumns = (): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
@@ -221,9 +217,9 @@ export const getArchiveColumns = (showDelete = false, role?: string): ColumnsTyp
     key: "status",
     filters: [
       { text: "Draft", value: "draft" },
-      { text: "Menunggu TTD 1", value: "pending1" },
-      { text: "Menunggu TTD 2", value: "pending2" },
-      { text: "Menunggu TTD 3", value: "pending3" },
+      { text: "Menunggu Persetujuan 1", value: "pending1" },
+      { text: "Menunggu Persetujuan 2", value: "pending2" },
+      { text: "Menunggu Persetujuan 3", value: "pending3" },
       { text: "Disetujui", value: "approved" },
       { text: "Diterbitkan", value: "published" },
     ],
@@ -247,18 +243,6 @@ export const getArchiveColumns = (showDelete = false, role?: string): ColumnsTyp
             <EyeOutlined />
           </Button>
         </Link>
-        {showDelete && role && ["admin", "superadmin"].includes(role) && (
-          <Button
-            size="xs"
-            onClick={() => {
-              if (!letter.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              letter._openDeleteModal(letter.id);
-            }}
-          >
-            <DeleteOutlined />
-          </Button>
-        )}
       </div>
     ),
   },

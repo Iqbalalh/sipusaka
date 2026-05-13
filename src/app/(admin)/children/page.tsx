@@ -10,7 +10,6 @@ export const metadata: Metadata = {
 export default function ChildrenTables() {
   return (
     <div>
-      {" "}
       <PageBreadcrumb pageTitle="Anak Asuh" />
       <div className="space-y-6">
         <ComponentCard title="Data Anak Asuh" header={false}>

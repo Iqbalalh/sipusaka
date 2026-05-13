@@ -10,13 +10,12 @@ export const metadata: Metadata = {
 export default function FamilyTables() {
   return (
     <div>
-        {" "}
-        <PageBreadcrumb pageTitle="Keluarga Asuh" />
-        <div className="space-y-6">
-          <ComponentCard title="Data Keluarga Asuh" header={false}>
-            <FamilyTable />
-          </ComponentCard>
-        </div>
+      <PageBreadcrumb pageTitle="Keluarga Asuh" />
+      <div className="space-y-6">
+        <ComponentCard title="Data Keluarga Asuh" header={false}>
+          <FamilyTable />
+        </ComponentCard>
+      </div>
     </div>
   );
 }

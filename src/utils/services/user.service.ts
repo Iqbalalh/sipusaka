@@ -44,7 +44,6 @@ export interface CreateUserData {
 }
 
 export const createUser = async (data: CreateUserData) => {
-  console.log("createUser called with data:", data);
   const response = await fetchWithAuth(API_USERS, {
     method: "POST",
     headers: {
@@ -52,18 +51,13 @@ export const createUser = async (data: CreateUserData) => {
     },
     body: JSON.stringify(data),
   });
-  
-  console.log("createUser response status:", response.status);
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error("createUser error:", errorData);
-    throw new Error(errorData.message || "Failed to create user");
+    throw new Error(errorData.message || "Gagal membuat user");
   }
-  
-  const result = await response.json();
-  console.log("createUser result:", result);
-  return result;
+
+  return response.json();
 };
 
 export interface UpdateUserData {
@@ -74,7 +68,6 @@ export interface UpdateUserData {
 }
 
 export const updateUser = async (id: string | number, data: UpdateUserData) => {
-  console.log("updateUser called with id:", id, "data:", data);
   const response = await fetchWithAuth(`${API_USERS}/${id}`, {
     method: "PATCH",
     headers: {
@@ -82,18 +75,13 @@ export const updateUser = async (id: string | number, data: UpdateUserData) => {
     },
     body: JSON.stringify(data),
   });
-  
-  console.log("updateUser response status:", response.status);
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error("updateUser error:", errorData);
-    throw new Error(errorData.message || "Failed to update user");
+    throw new Error(errorData.message || "Gagal memperbarui user");
   }
-  
-  const result = await response.json();
-  console.log("updateUser result:", result);
-  return result;
+
+  return response.json();
 };
 
 export const deleteUser = async (id: number) => {

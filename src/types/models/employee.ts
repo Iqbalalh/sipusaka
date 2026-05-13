@@ -9,8 +9,8 @@ export interface BaseEmployee {
   employeeGender: "M" | "F";
   isAccident: boolean;
   employeePict?: string | null;
-  createdAt?: string | null; // Timestamp ISO
-  updatedAt?: string | null; // Timestamp ISO
+  createdAt?: string | null;
+  updatedAt?: string | null;
   createdBy?: number | null;
   editedBy?: number | null;
 }

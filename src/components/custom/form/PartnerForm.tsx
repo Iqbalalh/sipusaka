@@ -345,11 +345,11 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
 
               <FormField label="Status Aktif">
                 <SelectInput
-                  value={form.isActive}
-                  onChange={(value) => handleFieldChange("isActive", value)}
+                  value={form.isActive ? 1 : 0}
+                  onChange={(value) => handleFieldChange("isActive", value === 1)}
                   options={[
-                    { value: true, label: "Aktif" },
-                    { value: false, label: "Tidak Aktif" }
+                    { value: 1, label: "Aktif" },
+                    { value: 0, label: "Tidak Aktif" }
                   ]}
                   placeholder="Pilih status"
                 />
@@ -357,11 +357,11 @@ export default function PartnerForm({ mode, partnerId }: PartnerFormProps) {
 
               <FormField label="Status Hidup">
                 <SelectInput
-                  value={form.isAlive}
-                  onChange={(value) => handleFieldChange("isAlive", value)}
+                  value={form.isAlive ? 1 : 0}
+                  onChange={(value) => handleFieldChange("isAlive", value === 1)}
                   options={[
-                    { value: true, label: "Hidup" },
-                    { value: false, label: "Meninggal" }
+                    { value: 1, label: "Hidup" },
+                    { value: 0, label: "Meninggal" }
                   ]}
                   placeholder="Pilih status hidup"
                 />

@@ -64,6 +64,7 @@ interface Dashboard {
     maxAmount?: number;
   };
   umkmVisitBySource?: Array<{ source: string; count: number; totalAmount: number }>;
+  umkmVisitBySourceLatestYear?: { year: number | null; sources: Array<{ source: string; count: number; totalAmount: number }> };
   umkmVisitYearlyBreakdown?: Array<{
     year: number;
     count: number;
@@ -403,9 +404,9 @@ export const TableMetrics = () => {
                         {formatCurrency(data?.totalAmount ?? 0)}
                       </p>
                     </div>
-                    {!latest && dashboardData?.umkmVisitBySource && dashboardData.umkmVisitBySource.length > 0 && (
+                    {dashboardData?.umkmVisitBySourceLatestYear?.sources && dashboardData.umkmVisitBySourceLatestYear.sources.length > 0 && (
                       <div className="space-y-1">
-                        {dashboardData.umkmVisitBySource.map((s) => (
+                        {dashboardData.umkmVisitBySourceLatestYear.sources.map((s) => (
                           <div key={s.source} className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-800/50 px-3 py-2">
                             <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[55%]">
                               {s.source} <span className="text-gray-400">({s.count}x)</span>
@@ -417,28 +418,6 @@ export const TableMetrics = () => {
                         ))}
                       </div>
                     )}
-                    {latest && (
-                      <div className="mt-2 grid grid-cols-3 gap-2">
-                        <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
-                          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Rata-rata</p>
-                          <p className="mt-1 text-sm font-semibold text-blue-700 dark:text-blue-300">
-                            {formatCurrency(latest.averageAmount)}
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
-                          <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">Terendah</p>
-                          <p className="mt-1 text-sm font-semibold text-orange-700 dark:text-orange-300">
-                            {formatCurrency(latest.minAmount)}
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-green-50 p-3 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30">
-                          <p className="text-xs text-green-600 dark:text-green-400 font-medium">Tertinggi</p>
-                          <p className="mt-1 text-sm font-semibold text-green-700 dark:text-green-300">
-                            {formatCurrency(latest.maxAmount)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -447,7 +426,7 @@ export const TableMetrics = () => {
         </div>
       </div>
 
-      {/* Yearly Breakdown Section */}
+      {/* Child Assistance Yearly Breakdown */}
       {dashboardData?.childAssistanceYearlyBreakdown && dashboardData.childAssistanceYearlyBreakdown.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -460,81 +439,161 @@ export const TableMetrics = () => {
             <table className="w-full">
               <thead className="bg-gray-100 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
-                    Tahun
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
-                    Jumlah Bantuan
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
-                    Total Dana
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
-                    Rata-rata
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
-                    Terendah
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
-                    Tertinggi
-                  </th>
+                  {["Tahun","Jumlah Bantuan","Total Dana","Rata-rata","Terendah","Tertinggi"].map(h => (
+                    <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                {/* TOTAL row */}
+                {(() => {
+                  const bd = dashboardData.childAssistanceYearlyBreakdown;
+                  const totalCount = bd.reduce((s, y) => s + y.count, 0);
+                  const totalAmt = bd.reduce((s, y) => s + y.totalAmount, 0);
+                  const avgAmt = totalCount > 0 ? totalAmt / totalCount : 0;
+                  const minAmt = Math.min(...bd.map(y => y.minAmount).filter(v => v > 0));
+                  const maxAmt = Math.max(...bd.map(y => y.maxAmount));
+                  return (
+                    <tr className="bg-indigo-50 dark:bg-indigo-950/40 border-b-2 border-indigo-200 dark:border-indigo-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-indigo-600 text-white shadow-md">
+                          Total
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{totalCount}</span></td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{formatCurrency(totalAmt)}</span></td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-blue-600 dark:text-blue-400">{formatCurrency(Math.round(avgAmt))}</span></td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-orange-600 dark:text-orange-400">{formatCurrency(isFinite(minAmt) ? minAmt : 0)}</span></td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-green-600 dark:text-green-400">{formatCurrency(maxAmt)}</span></td>
+                    </tr>
+                  );
+                })()}
                 {(() => {
                   const latestYear = Math.max(...dashboardData.childAssistanceYearlyBreakdown.map(y => y.year));
                   return dashboardData.childAssistanceYearlyBreakdown.map((yearData, index) => {
-                  const isLatest = yearData.year === latestYear;
-                  return (
-                  <tr
-                    key={yearData.year}
-                    className={`transition-colors duration-200 ${
-                      isLatest
-                        ? 'bg-blue-50 dark:bg-blue-950/40 ring-1 ring-inset ring-blue-200 dark:ring-blue-800/50'
-                        : index % 2 === 0
-                        ? 'bg-white dark:bg-white/3 hover:bg-blue-50/50 dark:hover:bg-blue-950/30'
-                        : 'bg-gray-50 dark:bg-gray-800/30 hover:bg-blue-100/50 dark:hover:bg-blue-900/30'
-                    }`}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold shadow-md ${
-                        isLatest ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                    const isLatest = yearData.year === latestYear;
+                    return (
+                      <tr key={yearData.year} className={`transition-colors duration-200 ${
+                        isLatest
+                          ? 'bg-blue-50 dark:bg-blue-950/40 ring-1 ring-inset ring-blue-200 dark:ring-blue-800/50'
+                          : index % 2 === 0
+                          ? 'bg-white dark:bg-white/3 hover:bg-blue-50/50 dark:hover:bg-blue-950/30'
+                          : 'bg-gray-50 dark:bg-gray-800/30 hover:bg-blue-100/50 dark:hover:bg-blue-900/30'
                       }`}>
-                        {yearData.year}
-                        {isLatest && <span className="text-[10px] font-normal opacity-80">terbaru</span>}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {yearData.count}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(yearData.totalAmount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                        {formatCurrency(yearData.averageAmount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                        {formatCurrency(yearData.minAmount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                        {formatCurrency(yearData.maxAmount)}
-                      </span>
-                    </td>
-                  </tr>
-                  );
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold shadow-md ${
+                            isLatest ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          }`}>
+                            {yearData.year}
+                            {isLatest && <span className="text-[10px] font-normal opacity-80">terbaru</span>}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-semibold text-gray-900 dark:text-white">{yearData.count}</span></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(yearData.totalAmount)}</span></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-blue-600 dark:text-blue-400">{formatCurrency(yearData.averageAmount)}</span></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-orange-600 dark:text-orange-400">{formatCurrency(yearData.minAmount)}</span></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-green-600 dark:text-green-400">{formatCurrency(yearData.maxAmount)}</span></td>
+                      </tr>
+                    );
                   });
                 })()}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* UMKM Yearly Breakdown + Sumber Dana */}
+      {dashboardData?.umkmVisitYearlyBreakdown && dashboardData.umkmVisitYearlyBreakdown.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-6 bg-rose-500 rounded-full"></div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Rincian Kunjungan UMKM
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Yearly table */}
+            <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-100 dark:bg-gray-700">
+                  <tr>
+                    {["Tahun","Jumlah Kunjungan","Total Dana"].map(h => (
+                      <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  {/* TOTAL row */}
+                  {(() => {
+                    const bd = dashboardData.umkmVisitYearlyBreakdown!;
+                    const totalCount = bd.reduce((s, y) => s + y.count, 0);
+                    const totalAmt = bd.reduce((s, y) => s + y.totalAmount, 0);
+                    return (
+                      <tr className="bg-rose-50 dark:bg-rose-950/40 border-b-2 border-rose-200 dark:border-rose-700">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-rose-600 text-white shadow-md">Total</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-rose-700 dark:text-rose-300">{totalCount}</span></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-rose-700 dark:text-rose-300">{formatCurrency(totalAmt)}</span></td>
+                      </tr>
+                    );
+                  })()}
+                  {(() => {
+                    const latestYear = Math.max(...dashboardData.umkmVisitYearlyBreakdown!.map(y => y.year));
+                    return dashboardData.umkmVisitYearlyBreakdown!.map((yearData, index) => {
+                      const isLatest = yearData.year === latestYear;
+                      return (
+                        <tr key={yearData.year} className={`transition-colors duration-200 ${
+                          isLatest
+                            ? 'bg-rose-50 dark:bg-rose-950/40 ring-1 ring-inset ring-rose-200 dark:ring-rose-800/50'
+                            : index % 2 === 0
+                            ? 'bg-white dark:bg-white/3 hover:bg-rose-50/50 dark:hover:bg-rose-950/30'
+                            : 'bg-gray-50 dark:bg-gray-800/30 hover:bg-rose-100/50 dark:hover:bg-rose-900/30'
+                        }`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold shadow-md ${
+                              isLatest ? 'bg-rose-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                            }`}>
+                              {yearData.year}
+                              {isLatest && <span className="text-[10px] font-normal opacity-80">terbaru</span>}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-semibold text-gray-900 dark:text-white">{yearData.count}</span></td>
+                          <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(yearData.totalAmount)}</span></td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Sumber Dana breakdown — all years total */}
+            {dashboardData.umkmVisitBySource && dashboardData.umkmVisitBySource.length > 0 && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-white/3">
+                <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Sumber Dana</h4>
+                {(() => {
+                  const sources = dashboardData.umkmVisitBySource!;
+                  const maxAmt = Math.max(...sources.map(s => s.totalAmount));
+                  return sources.map((s) => (
+                    <div key={s.source} className="mb-4 last:mb-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[55%]">{s.source}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{s.count}x</span>
+                      </div>
+                      <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 mb-1">
+                        <div
+                          className="bg-rose-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: maxAmt > 0 ? `${Math.round((s.totalAmount / maxAmt) * 100)}%` : '0%' }}
+                        />
+                      </div>
+                      <p className="text-xs font-semibold text-gray-800 dark:text-white text-right">{formatCurrency(s.totalAmount)}</p>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
           </div>
         </div>
       )}

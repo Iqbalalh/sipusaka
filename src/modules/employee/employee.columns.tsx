@@ -116,6 +116,41 @@ export const getEmployeeColumns = (
   },
 
   {
+    title: "Status",
+    key: "isActive",
+    filters: [
+      { text: "Aktif", value: true },
+      { text: "Tidak Aktif", value: false },
+    ],
+    onFilter: (value, record) => {
+      const homes = (record as any).homes;
+      const active = Array.isArray(homes)
+        ? homes.some((h: any) => h.partners?.isActive === true)
+        : (homes?.partners?.isActive ?? null);
+      return active === value;
+    },
+    render: (_: any, record: any) => {
+      const homes = record.homes;
+      const isActive = Array.isArray(homes)
+        ? homes.some((h: any) => h.partners?.isActive === true)
+        : (homes?.partners?.isActive ?? null);
+      if (isActive === null) return "-";
+      return (
+        <Badge size="sm" color={isActive ? "success" : "error"}>
+          {isActive ? "Aktif" : "Tidak Aktif"}
+        </Badge>
+      );
+    },
+    exportRender: (_: any, record: any) => {
+      const homes = record.homes;
+      const isActive = Array.isArray(homes)
+        ? homes.some((h: any) => h.partners?.isActive === true)
+        : (homes?.partners?.isActive ?? null);
+      return isActive === null ? "-" : isActive ? "Aktif" : "Tidak Aktif";
+    },
+  },
+
+  {
     title: "Penyebab Wafat",
     dataIndex: "deathCause",
     key: "deathCause",

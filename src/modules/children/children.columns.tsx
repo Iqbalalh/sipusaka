@@ -9,6 +9,7 @@ import { Children } from "@/types/models/children";
 import { Region } from "@/types/models/region";
 import type { ColumnsType } from "antd/es/table";
 import { formatDate } from "@/utils/formatter/formatDate";
+import { getDateRangeFilterProps } from "@/utils/table/dateRangeFilter";
 
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
@@ -85,8 +86,8 @@ export const getChildrenColumns = (
     title: "Tanggal Lahir",
     dataIndex: "childrenBirthdate",
     key: "childrenBirthdate",
-    render: (text) =>
-      text ? formatDate(text) : "-",
+    ...getDateRangeFilterProps<Children>("childrenBirthdate"),
+    render: (text) => text ? formatDate(text) : "-",
     exportRender: (_: any, row: any) => {
       const formatted = formatDate(row.childrenBirthdate);
       return formatted ? formatted : "-";
@@ -260,11 +261,30 @@ export const getChildrenColumns = (
   },
 
   {
+    title: "Total Dana",
+    key: "totalAssistanceAmount",
+    align: "right",
+    sorter: (a: any, b: any) => (a.totalAssistanceAmount ?? 0) - (b.totalAssistanceAmount ?? 0),
+    render: (_: any, record: any) => {
+      const amount = record.totalAssistanceAmount ?? 0;
+      if (amount === 0) return <span className="text-gray-400 text-xs">-</span>;
+      return (
+        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount)}
+        </span>
+      );
+    },
+    exportRender: (_: any, record: any) =>
+      new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(record.totalAssistanceAmount ?? 0),
+  },
+
+  {
     title: "Jml. Bantuan",
     dataIndex: "_count",
     key: "childAssistanceCount",
     align: "center",
     filters: [
+      { text: "0 (Belum Ada)", value: "0" },
       { text: "1", value: "1" },
       { text: "2", value: "2" },
       { text: "3", value: "3" },
@@ -332,12 +352,9 @@ export const getChildrenColumns = (
     title: "Dibuat Pada",
     dataIndex: "createdAt",
     key: "createdAt",
-    render: (text) =>
-      text ? formatDate(text) : "-",
-    exportRender: (value: string) => {
-      const formatted = formatDate(value);
-      return formatted ? formatted : "-";
-    },
+    ...getDateRangeFilterProps<Children>("createdAt"),
+    render: (text) => text ? formatDate(text) : "-",
+    exportRender: (value: string) => formatDate(value) || "-",
     hidden: true,
   },
 
@@ -345,12 +362,9 @@ export const getChildrenColumns = (
     title: "Diperbarui Pada",
     dataIndex: "updatedAt",
     key: "updatedAt",
-    render: (text) =>
-      text ? formatDate(text) : "-",
-    exportRender: (value: string) => {
-      const formatted = formatDate(value);
-      return formatted ? formatted : "-";
-    },
+    ...getDateRangeFilterProps<Children>("updatedAt"),
+    render: (text) => text ? formatDate(text) : "-",
+    exportRender: (value: string) => formatDate(value) || "-",
     hidden: true,
   },
 
