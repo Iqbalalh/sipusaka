@@ -3,6 +3,7 @@
 // Hooks
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // Components
 import {
@@ -64,6 +65,8 @@ export default function FamilyView() {
   // Data state
   const [data, setData] = useState<Home | null>(null);
   const { id } = useParams<{ id: string }>();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role !== "staff";
 
   // Page State
   const [loading, setLoading] = useState(true);
@@ -277,11 +280,13 @@ export default function FamilyView() {
               Data Keluarga{" "}
             </h4>
             <div className="flex items-center gap-2">
-              <Link href={`/family/edit/${id}`}>
-                <Button variant="outline" size="sm">
-                  Edit
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link href={`/family/edit/${id}`}>
+                  <Button variant="outline" size="sm">
+                    Edit
+                  </Button>
+                </Link>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -904,6 +909,33 @@ export default function FamilyView() {
               Tidak ada data anak yang tercatat.
             </p>
           )}
+        </div>
+
+        {/* Validation Status */}
+        <div className={`flex items-center gap-3 p-4 rounded-2xl border mb-5 ${
+          (data as any)?.isValidated
+            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700/50"
+            : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700/50"
+        }`}>
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold ${
+            (data as any)?.isValidated ? "bg-emerald-500" : "bg-red-500"
+          }`}>
+            {(data as any)?.isValidated ? "✓" : "✗"}
+          </div>
+          <div>
+            <p className={`text-sm font-semibold ${
+              (data as any)?.isValidated
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-red-600 dark:text-red-400"
+            }`}>
+              {(data as any)?.isValidated ? "Data Tervalidasi" : "Belum Divalidasi"}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {(data as any)?.isValidated
+                ? "Tervalidasi"
+                : "Belum Tervalidasi"}
+            </p>
+          </div>
         </div>
 
         {/* Family Visits */}

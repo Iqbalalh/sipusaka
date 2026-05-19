@@ -126,14 +126,12 @@ export default function LetterTypesTable() {
             style={{ width: 280 }}
           />
         </div>
-        {session?.user?.role !== "staff" && (
-          <UIButton
-            onClick={() => router.push("/letters/types/create")}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            +
-          </UIButton>
-        )}
+        <UIButton
+          onClick={() => router.push("/letters/types/create")}
+          className="bg-blue-600 text-white hover:bg-blue-700"
+        >
+          +
+        </UIButton>
       </div>
 
       <Table

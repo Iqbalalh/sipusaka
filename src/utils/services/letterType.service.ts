@@ -54,11 +54,13 @@ export const generatePreview = async (
   fields: Record<string, string>,
   letterDate?: string
 ): Promise<Blob> => {
-  const body: Record<string, any> = { fields };
-  if (letterDate) body.letterDate = letterDate;
+  // Bypass fetchWithAuth auto-snakecasing so template field keys are preserved as-is
+  const payload: Record<string, any> = { fields };
+  if (letterDate) payload.letter_date = letterDate;
   const res = await fetchWithAuth(`${API_LETTER_TYPES}/${id}/generate`, {
     method: "POST",
-    body: body as any,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload) as any,
   });
   if (!res.ok) {
     const json = await res.json().catch(() => ({}));

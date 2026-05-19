@@ -1,6 +1,6 @@
 "use client";
 
-import { Image, Input } from "antd";
+import { Image } from "antd";
 import Link from "next/link";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
@@ -8,8 +8,6 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  FileTextOutlined,
-  SearchOutlined,
 } from "@ant-design/icons";
 import { HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
@@ -17,91 +15,11 @@ import type { ColumnsType } from "antd/es/table";
 import { formatDate } from "@/utils/formatter/formatDate";
 import { getDateRangeFilterProps } from "@/utils/table/dateRangeFilter";
 
-// ==============================================
-// SEARCH CONFIGURATION
-// ==============================================
-const getColumnSearchProps = (dataIndex: string): any => ({
-  filterDropdown: ({
-    setSelectedKeys,
-    selectedKeys,
-    confirm,
-    clearFilters,
-  }: any) => (
-    <div style={{ padding: 8 }}>
-      <Input
-        placeholder={`Cari ${dataIndex}`}
-        value={selectedKeys[0]}
-        onChange={(e) =>
-          setSelectedKeys(e.target.value ? [e.target.value] : [])
-        }
-        onPressEnter={() => confirm()}
-        style={{ marginBottom: 8, display: "block" }}
-      />
-      <div className="flex gap-2">
-        <button
-          className="text-white bg-blue-500 px-2 py-1 rounded text-xs"
-          onClick={() => confirm()}
-        >
-          Cari
-        </button>
-        <button
-          className="text-gray-700 bg-gray-200 px-2 py-1 rounded text-xs"
-          onClick={() => {
-            clearFilters && clearFilters();
-            confirm();
-          }}
-        >
-          Reset
-        </button>
-      </div>
-    </div>
-  ),
-  filterIcon: (filtered: boolean) => (
-    <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
-  ),
-  onFilter: (value: string | number | boolean, record: HomeTable) => {
-    // Handle nested object properties
-    if (dataIndex === "employeeName") {
-      return record.employees?.employeeName
-        ? record.employees.employeeName
-            .toLowerCase()
-            .includes(String(value).toLowerCase())
-        : false;
-    }
-    if (dataIndex === "nipNipp") {
-      return record.employees?.nipNipp
-        ? record.employees.nipNipp
-            .toLowerCase()
-            .includes(String(value).toLowerCase())
-        : false;
-    }
-    if (dataIndex === "partnerName") {
-      return record.partners?.partnerName
-        ? record.partners.partnerName
-            .toLowerCase()
-            .includes(String(value).toLowerCase())
-        : false;
-    }
-    if (dataIndex === "waliName") {
-      return record.wali?.waliName
-        ? record.wali.waliName
-            .toLowerCase()
-            .includes(String(value).toLowerCase())
-        : false;
-    }
-    return false;
-  },
-});
-
-// ==============================================
-// COLUMN CONFIGURATION GENERATOR
-// ==============================================
-export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<HomeTable> => [
+export const getFamilyColumns = (regions: Region[], role?: string, onDelete?: (id: number) => void): ColumnsType<HomeTable> => [
   {
     title: "Pegawai",
     dataIndex: "employeeName",
     key: "employeeName",
-    ...getColumnSearchProps("employeeName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.employees?.employeePict ? (
@@ -137,7 +55,6 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     title: "Pasangan",
     dataIndex: "partnerName",
     key: "partnerName",
-    ...getColumnSearchProps("partnerName"),
     render: (_, home) => (
       <div className="flex items-center gap-3">
         {home.partners?.partnerPict ? (
@@ -175,7 +92,6 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
     title: "Wali",
     dataIndex: "waliName",
     key: "waliName",
-    ...getColumnSearchProps("waliName"),
     render: (_, home) => home.wali?.waliName || "-",
   },
   {
@@ -209,10 +125,6 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
       text: n === 10 ? "10+" : String(n),
       value: n,
     })),
-    onFilter: (value, record) => {
-      const count = (record._count as any)?.familyVisits ?? 0;
-      return value === 10 ? count >= 10 : count === value;
-    },
     render: (_, home) => (home._count as any)?.familyVisits ?? 0,
   },
   {
@@ -223,23 +135,42 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => record.regionId === value,
     render: (_, home) => {
       const region = regions.find((r) => r.regionId === home.regionId);
       return region ? region.regionName : home.regions?.regionName || "-";
     },
   },
   {
+    title: "Validasi",
+    dataIndex: "isValidated",
+    key: "isValidated",
+    width: 110,
+    align: "center",
+    filters: [
+      { text: "Tervalidasi", value: true },
+      { text: "Belum Divalidasi", value: false },
+    ],
+    render: (_: any, home: any) => (
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+          home.isValidated
+            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+            : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+        }`}
+      >
+        {home.isValidated ? "Tervalidasi" : "Belum"}
+      </span>
+    ),
+  },
+  {
     title: "Status",
     dataIndex: "partners",
     key: "isActive",
-
     width: 120,
     filters: [
       { text: "Aktif", value: true },
       { text: "Tidak Aktif", value: false },
     ],
-    onFilter: (value, record) => record.partners?.isActive === value,
     render: (_, home) => (
       <Badge size="sm" color={home.partners?.isActive ? "success" : "error"}>
         {home.partners?.isActive ? "Aktif" : "Tidak Aktif"}
@@ -286,13 +217,12 @@ export const getFamilyColumns = (regions: Region[], role?: string): ColumnsType<
             </Button>
           </Link>
         )}
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <Button
             size="xs"
             onClick={() => {
               if (!home.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              home._openDeleteModal(home.id);
+              onDelete(home.id);
             }}
           >
             <DeleteOutlined />

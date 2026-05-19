@@ -3,6 +3,7 @@
 // Hooks
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // Components
 import { Image, Spin } from "antd";
@@ -34,6 +35,8 @@ export default function StaffView() {
   // Data state
   const [data, setData] = useState<Staff | null>(null);
   const { id } = useParams<{ id: string }>();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role !== "staff";
 
   // Page State
   const [loading, setLoading] = useState(true);
@@ -106,11 +109,13 @@ export default function StaffView() {
           </div>
 
           <div className="flex items-center gap-2 sm:justify-end">
-            <Link href={`/staff/edit/${data?.id}`}>
-              <Button variant="outline" size="sm">
-                Edit
-              </Button>
-            </Link>
+            {isAdmin && (
+              <Link href={`/staff/edit/${data?.id}`}>
+                <Button variant="outline" size="sm">
+                  Edit
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

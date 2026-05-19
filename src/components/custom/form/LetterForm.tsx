@@ -416,15 +416,14 @@ export default function LetterForm({ mode, letterId }: LetterFormProps) {
   // COMPUTED
   // ==============================================
   const predictedLetterNumber = selectedLetterType
-    ? (() => {
-        const kode = [selectedLetterType.kodeSurat1, selectedLetterType.kodeSurat2].filter(Boolean).join("-");
-        return [
-          String(selectedLetterType.currentCounter + 1).padStart(3, "0"),
-          kode,
-          letterDate ? ROMAN_MONTHS[letterDate.month()] : "…",
-          letterDate ? String(letterDate.year()) : "…",
-        ].filter(Boolean).join("/");
-      })()
+    ? [
+        String(selectedLetterType.currentCounter + 1).padStart(3, "0"),
+        selectedLetterType.kodeSurat1,
+        "YP",
+        selectedLetterType.kodeSurat2 || null,
+        letterDate ? ROMAN_MONTHS[letterDate.month()] : "…",
+        letterDate ? String(letterDate.year()) : "…",
+      ].filter(Boolean).join("/")
     : null;
 
 

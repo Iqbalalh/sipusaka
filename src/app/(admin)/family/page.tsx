@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import FamilyTable from "@/modules/family/family.table";
@@ -13,7 +14,9 @@ export default function FamilyTables() {
       <PageBreadcrumb pageTitle="Keluarga Asuh" />
       <div className="space-y-6">
         <ComponentCard title="Data Keluarga Asuh" header={false}>
-          <FamilyTable />
+          <Suspense>
+            <FamilyTable />
+          </Suspense>
         </ComponentCard>
       </div>
     </div>

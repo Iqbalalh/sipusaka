@@ -1,9 +1,12 @@
+import AdminGuard from "@/components/custom/AdminGuard";
 import CreatePartner from "@/modules/partner/partner.create";
 
 export default function Partner() {
   return (
-    <div>
-      <CreatePartner />
-    </div>
+    <AdminGuard>
+      <div>
+        <CreatePartner />
+      </div>
+    </AdminGuard>
   );
 }

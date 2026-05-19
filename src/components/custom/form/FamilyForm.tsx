@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { message, Select } from "antd";
+import { message, Select, Switch } from "antd";
 
 // Components
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -42,6 +42,7 @@ const INITIAL_FORM_STATE: BaseHome = {
   employeeId: null,
   partnerId: null,
   waliId: null,
+  isValidated: false,
 };
 
 // ==============================================
@@ -167,6 +168,7 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
               employeeId,
               partnerId,
               waliId,
+              isValidated: homeData.isValidated ?? false,
             });
             setSelectedChildrenIds(homeData.childrens?.map((c: any) => c.id) || []);
             setWaliMode(waliId ? "existing" : "none");
@@ -240,6 +242,9 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
       if (form.waliId) {
         fd.append("waliId", String(form.waliId));
       }
+
+      // isValidated
+      fd.append("isValidated", String(form.isValidated ?? false));
 
       // Children IDs - Send as JSON string
       fd.append("childrens", JSON.stringify(selectedChildrenIds.map(id => ({ id }))));
@@ -348,6 +353,19 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
                 onChange={(value) => setForm({ ...form, postalCode: value })}
                 placeholder="Masukkan kode pos"
               />
+            </FormField>
+            <FormField label="Status Validasi">
+              <div className="flex items-center gap-3 pt-1">
+                <Switch
+                  checked={!!form.isValidated}
+                  onChange={(v) => setForm({ ...form, isValidated: v })}
+                  checkedChildren="Tervalidasi"
+                  unCheckedChildren="Belum Divalidasi"
+                />
+                <span className={`text-sm font-medium ${form.isValidated ? "text-emerald-600" : "text-red-500"}`}>
+                  {form.isValidated ? "Data telah divalidasi" : "Belum divalidasi"}
+                </span>
+              </div>
             </FormField>
           </div>
         </ComponentCard>

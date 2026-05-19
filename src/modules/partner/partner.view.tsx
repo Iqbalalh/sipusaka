@@ -3,6 +3,7 @@
 // Hooks
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // Components
 import { Image, Spin } from "antd";
@@ -35,6 +36,8 @@ export default function PartnerView() {
   // Data state
   const [data, setData] = useState<Partner | null>(null);
   const { id } = useParams<{ id: string }>();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role !== "staff";
 
   // Page State
   const [loading, setLoading] = useState(true);
@@ -117,11 +120,13 @@ export default function PartnerView() {
             >
               Print
             </Button>
-            <Link href={`/partner/edit/${data?.id}`}>
-              <Button variant="outline" size="sm">
-                Edit
-              </Button>
-            </Link>
+            {isAdmin && (
+              <Link href={`/partner/edit/${data?.id}`}>
+                <Button variant="outline" size="sm">
+                  Edit
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

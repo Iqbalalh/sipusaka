@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Image, Spin, Flex } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import Button from "@/components/ui/button/Button";
@@ -16,6 +17,8 @@ import { formatDate } from "@/utils/formatter/formatDate";
 export default function GalleryView() {
   const [data, setData] = useState<Gallery | null>(null);
   const { id } = useParams<{ id: string }>();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role !== "staff";
   const [loading, setLoading] = useState(true);
   const { notify } = useNotify();
 
@@ -74,9 +77,11 @@ export default function GalleryView() {
           </div>
 
           <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-            <Link href={`/galleries/edit/${data?.id}`}>
-              <Button variant="outline">Edit</Button>
-            </Link>
+            {isAdmin && (
+              <Link href={`/galleries/edit/${data?.id}`}>
+                <Button variant="outline">Edit</Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

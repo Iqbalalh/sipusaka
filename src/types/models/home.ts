@@ -13,6 +13,7 @@ export interface BaseHome {
   postalCode: string | null;
   createdBy?: number | null;
   editedBy?: number | null;
+  isValidated?: boolean | null;
 }
 
 export interface Home extends BaseHome {
@@ -29,6 +30,7 @@ export interface Home extends BaseHome {
     children: number;
   };
   isUmkm?: boolean;
+  isValidated?: boolean | null;
 }
 
 // Type matching the API response structure for the table
@@ -88,4 +90,5 @@ export interface HomeTable {
     children: number;
   };
   isUmkm: boolean;
+  isValidated?: boolean | null;
 }

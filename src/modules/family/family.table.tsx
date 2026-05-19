@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { Progress, Skeleton } from "antd";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Progress, Skeleton, Table, Modal, Input } from "antd";
 import {
   FaUsers,
   FaChild,
   FaDollarSign,
   FaHandHoldingHeart,
 } from "react-icons/fa6";
-import DataTable from "@/components/custom/table/DataTable";
+import Link from "next/link";
+import Button from "@/components/ui/button/Button";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 // Types
 import { HomeTable } from "@/types/models/home";
@@ -18,14 +22,16 @@ import { Region } from "@/types/models/region";
 // Utils
 import {
   deleteHome,
-  getAllHomes,
   getHomesForExport,
+  getHomesOptimized,
+  getHomeSummary,
+  HomeSummary,
 } from "@/utils/services/home.service";
 import { getRegionsList } from "@/utils/services/region.service";
 import { getFamilyColumns } from "./family.columns";
 import { formatDate } from "@/utils/formatter/formatDate";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
+import { useNotify } from "@/context/NotificationContext";
+import { notifyFromResult } from "@/utils/fetch/notify";
 
 // ==============================================
 // FORMAT CURRENCY HELPER
@@ -38,18 +44,20 @@ const fmt = (v: number) =>
   }).format(v);
 
 // ==============================================
-// INLINE INSIGHT PANEL
+// INSIGHT PANEL
 // ==============================================
 function FamilyInsightPanel({
-  data,
+  summary,
   loading,
+  totalRecords,
 }: {
-  data: HomeTable[] | null;
+  summary: HomeSummary | null;
   loading: boolean;
+  totalRecords: number;
 }) {
-  if (loading || !data) {
+  if (loading || !summary) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-5">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 mb-5">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
@@ -62,13 +70,12 @@ function FamilyInsightPanel({
     );
   }
 
-  const totalFamilies = data.length;
-  const activeFamilies = data.filter((h) => h.partners?.isActive).length;
-  const totalChildren = data.reduce((s, h) => s + (h._count?.children ?? 0), 0);
-  const totalDana = data.reduce(
-    (s, h) => s + ((h as any).totalAssistanceAmount ?? 0),
-    0,
-  );
+  const {
+    totalFamilies,
+    activeFamilies,
+    totalChildren,
+    totalAssistanceAmount: totalDana,
+  } = summary;
 
   const tiles = [
     {
@@ -82,7 +89,7 @@ function FamilyInsightPanel({
       icon: <FaUsers />,
       label: "Jumlah Data",
       value: totalFamilies,
-      sub: `${activeFamilies} aktif`,
+      sub: `${totalRecords} Total`,
       color: "bg-blue-500",
     },
     {
@@ -92,7 +99,6 @@ function FamilyInsightPanel({
       sub: "Tertampil",
       color: "bg-indigo-500",
     },
-
     {
       icon: <FaDollarSign />,
       label: "Total Dana Bantuan Anak",
@@ -103,7 +109,7 @@ function FamilyInsightPanel({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-5">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 mb-5">
       {tiles.map((t) => (
         <div
           key={t.label}
@@ -130,22 +136,67 @@ function FamilyInsightPanel({
 }
 
 // ==============================================
-// EXCEL EXPORT FUNCTION WITH PROGRESS
+// TABLE SKELETON
+// ==============================================
+const SKEL_COLS = [160, 120, 100, 130, 90, 110];
+const SKEL_ROWS = [
+  [140, 100, 80, 110, 70, 90],
+  [120, 90, 100, 100, 85, 105],
+  [150, 110, 70, 120, 60, 95],
+  [130, 95, 90, 105, 75, 100],
+  [145, 105, 85, 115, 65, 85],
+  [125, 85, 95, 125, 80, 110],
+  [155, 115, 75, 95, 90, 80],
+  [135, 100, 88, 108, 72, 92],
+];
+
+function TableSkeleton() {
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <Skeleton.Input active size="default" style={{ width: 300 }} />
+        <div className="flex gap-2">
+          <Skeleton.Button active size="default" style={{ width: 110 }} />
+          <Skeleton.Button active size="default" style={{ width: 40 }} />
+        </div>
+      </div>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="flex gap-6 bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          {SKEL_COLS.map((w, i) => (
+            <Skeleton.Input key={i} active size="small" style={{ width: w, minWidth: w }} />
+          ))}
+        </div>
+        {SKEL_ROWS.map((rowWidths, row) => (
+          <div
+            key={row}
+            className={`flex gap-6 px-4 py-3 border-t border-gray-100 dark:border-gray-700 ${
+              row % 2 === 1
+                ? "bg-gray-50/60 dark:bg-gray-800/30"
+                : "bg-white dark:bg-transparent"
+            }`}
+          >
+            {rowWidths.map((w, col) => (
+              <Skeleton.Input key={col} active size="small" style={{ width: w, minWidth: 40 }} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==============================================
+// EXCEL EXPORT
 // ==============================================
 const exportFamilyToExcel = async (
   exportData: HomeTable[],
-  setShowProgress: (show: boolean) => void,
-  setProgress: (progress: number) => void,
+  setShowProgress: (v: boolean) => void,
+  setProgress: (v: number) => void,
 ) => {
   try {
     setShowProgress(true);
     setProgress(10);
-
-    if (!exportData || exportData.length === 0) {
-      setShowProgress(false);
-      return;
-    }
-
+    if (!exportData || exportData.length === 0) { setShowProgress(false); return; }
     setProgress(30);
 
     const workbook = new ExcelJS.Workbook();
@@ -162,11 +213,13 @@ const exportFamilyToExcel = async (
       { header: "Wilayah", key: "regionName", width: 20 },
       { header: "Nama Pasangan", key: "partnerName", width: 25 },
       { header: "Status Pasangan", key: "partnerStatus", width: 15 },
+      { header: "Tervalidasi", key: "isValidated", width: 15 },
       { header: "Nama Wali", key: "waliName", width: 25 },
       { header: "Nama Anak", key: "childrenName", width: 25 },
       { header: "Jenis Kelamin Anak", key: "childrenGender", width: 20 },
       { header: "Tanggal Lahir Anak", key: "childrenBirthdate", width: 20 },
-      { header: "Alamat", key: "address", width: 200 },
+      { header: "Bantuan Per Anak", key: "childAssistanceAmount", width: 22 },
+      { header: "Alamat", key: "address", width: 50 },
       { header: "Kode Pos", key: "postalCode", width: 15 },
       { header: "Nomor Telepon", key: "phoneNumber", width: 20 },
       { header: "Koordinat Rumah", key: "homeCoordinate", width: 30 },
@@ -174,7 +227,7 @@ const exportFamilyToExcel = async (
       { header: "Anak Aktif", key: "activeChildrenCount", width: 15 },
       { header: "Anak Tidak Aktif", key: "inactiveChildrenCount", width: 18 },
       { header: "UMKM", key: "isUmkm", width: 15 },
-      { header: "Total Dana Bantuan", key: "totalAssistanceAmount", width: 22 },
+      { header: "Total Dana Bantuan Anak", key: "totalChildAssistance", width: 25 },
       { header: "Tanggal Dibuat", key: "createdAt", width: 20 },
     ];
 
@@ -182,71 +235,61 @@ const exportFamilyToExcel = async (
     headerRow.height = 30;
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: "center",
-        wrapText: true,
-      };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF2563EB" },
-      };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
       cell.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
+        top: { style: "thin" }, left: { style: "thin" },
+        bottom: { style: "thin" }, right: { style: "thin" },
       };
     });
-
     setProgress(50);
 
     const dataRows: any[] = [];
     exportData.forEach((home) => {
       const children = (home as any).children || [];
-      const totalAmt = (home as any).totalAssistanceAmount ?? 0;
+
+      const totalChildAssistance = children.reduce((sum: number, child: any) => {
+        const childAmt = (child.childAssistance ?? []).reduce(
+          (s: number, a: any) => s + (Number(a.assistanceAmount) || 0), 0
+        );
+        return sum + childAmt;
+      }, 0);
+
       const base = {
         id: home.id,
         nipNipp: home.employees?.nipNipp || "-",
         employeeName: home.employees?.employeeName || "-",
-        employeeGender:
-          home.employees?.employeeGender === "M" ? "Laki-laki" : "Perempuan",
-        regionName:
-          home.regions?.regionName ||
-          home.employees?.regions?.regionName ||
-          "-",
+        employeeGender: home.employees?.employeeGender === "M" ? "Laki-laki" : "Perempuan",
+        regionName: home.regions?.regionName || (home.employees as any)?.regions?.regionName || "-",
         partnerName: home.partners?.partnerName || "-",
         partnerStatus: home.partners?.isActive ? "Aktif" : "Tidak Aktif",
+        isValidated: (home as any).isValidated ? "Tervalidasi" : "Belum Divalidasi",
         waliName: home.wali?.waliName || "-",
         address: home.partners?.address || "-",
         postalCode: home.postalCode || home.partners?.postalCode || "-",
         phoneNumber: home.partners?.phoneNumber || "-",
         homeCoordinate: home.partners?.homeCoordinate || "-",
-        childrenCount: home._count?.children || 0,
+        childrenCount: children.length,
         activeChildrenCount: children.filter((c: any) => c.isActive).length,
         inactiveChildrenCount: children.filter((c: any) => !c.isActive).length,
         isUmkm: (home as any).isUmkm ? "Ya" : "Tidak",
-        totalAssistanceAmount: fmt(totalAmt),
+        totalChildAssistance: totalChildAssistance > 0 ? totalChildAssistance : "-",
         createdAt: home.createdAt ? formatDate(home.createdAt) : "-",
       };
+
       if (children.length === 0) {
-        dataRows.push({
-          ...base,
-          childrenName: "-",
-          childrenGender: "-",
-          childrenBirthdate: "-",
-        });
+        dataRows.push({ ...base, childrenName: "-", childrenGender: "-", childrenBirthdate: "-", childAssistanceAmount: "-" });
       } else {
         children.forEach((child: any) => {
+          const childAmt = (child.childAssistance ?? []).reduce(
+            (s: number, a: any) => s + (Number(a.assistanceAmount) || 0), 0
+          );
           dataRows.push({
             ...base,
             childrenName: child.childrenName || "-",
-            childrenGender:
-              child.childrenGender === "M" ? "Laki-laki" : "Perempuan",
-            childrenBirthdate: child.childrenBirthdate
-              ? formatDate(child.childrenBirthdate)
-              : "-",
+            childrenGender: child.childrenGender === "M" ? "Laki-laki" : "Perempuan",
+            childrenBirthdate: child.childrenBirthdate ? formatDate(child.childrenBirthdate) : "-",
+            childAssistanceAmount: childAmt > 0 ? childAmt : "-",
           });
         });
       }
@@ -256,30 +299,17 @@ const exportFamilyToExcel = async (
       const excelRow = worksheet.addRow(row);
       if (index % 2 === 1) {
         excelRow.eachCell((cell) => {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFF1F5F9" },
-          };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
         });
       }
       excelRow.eachCell((cell) => {
-        cell.alignment = {
-          vertical: "middle",
-          horizontal: "left",
-          wrapText: true,
-        };
+        cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
         cell.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
+          top: { style: "thin" }, left: { style: "thin" },
+          bottom: { style: "thin" }, right: { style: "thin" },
         };
       });
-      if (
-        dataRows.length > 10 &&
-        index % Math.floor(dataRows.length / 10) === 0
-      ) {
+      if (dataRows.length > 10 && index % Math.floor(dataRows.length / 10) === 0) {
         setProgress(50 + Math.floor((index / dataRows.length) * 30));
       }
     });
@@ -287,46 +317,26 @@ const exportFamilyToExcel = async (
     setProgress(80);
 
     const columnsToMerge = [
-      "id",
-      "nipNipp",
-      "employeeName",
-      "employeeGender",
-      "regionName",
-      "partnerName",
-      "partnerStatus",
-      "waliName",
-      "address",
-      "postalCode",
-      "phoneNumber",
-      "homeCoordinate",
-      "childrenCount",
-      "activeChildrenCount",
-      "inactiveChildrenCount",
-      "isUmkm",
-      "totalAssistanceAmount",
-      "createdAt",
+      "id", "nipNipp", "employeeName", "employeeGender", "regionName",
+      "partnerName", "partnerStatus", "isValidated", "waliName",
+      "address", "postalCode", "phoneNumber", "homeCoordinate",
+      "childrenCount", "activeChildrenCount", "inactiveChildrenCount",
+      "isUmkm", "totalChildAssistance", "createdAt",
     ];
     columnsToMerge.forEach((columnKey) => {
       const column = worksheet.getColumn(columnKey);
       if (!column) return;
       let currentFamilyId: number | null = null;
       let groupStartRow = 2;
-      column.eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+      column.eachCell({ includeEmpty: false }, (_cell, rowNumber) => {
         if (rowNumber === 1) return;
         const row = worksheet.getRow(rowNumber);
         const familyId = row.getCell("id").value as number;
         if (familyId !== currentFamilyId) {
           if (currentFamilyId !== null && rowNumber - groupStartRow > 1) {
-            worksheet.mergeCells(
-              groupStartRow,
-              column.number,
-              rowNumber - 1,
-              column.number,
-            );
+            worksheet.mergeCells(groupStartRow, column.number, rowNumber - 1, column.number);
             worksheet.getCell(groupStartRow, column.number).alignment = {
-              vertical: "middle",
-              horizontal: "left",
-              wrapText: true,
+              vertical: "middle", horizontal: "left", wrapText: true,
             };
           }
           currentFamilyId = familyId;
@@ -335,16 +345,9 @@ const exportFamilyToExcel = async (
       });
       const lastRow = worksheet.lastRow?.number ?? groupStartRow;
       if (currentFamilyId !== null && lastRow - groupStartRow >= 1) {
-        worksheet.mergeCells(
-          groupStartRow,
-          column.number,
-          lastRow,
-          column.number,
-        );
+        worksheet.mergeCells(groupStartRow, column.number, lastRow, column.number);
         worksheet.getCell(groupStartRow, column.number).alignment = {
-          vertical: "middle",
-          horizontal: "left",
-          wrapText: true,
+          vertical: "middle", horizontal: "left", wrapText: true,
         };
       }
     });
@@ -368,10 +371,7 @@ const exportFamilyToExcel = async (
       "data-keluarga.xlsx",
     );
     setProgress(100);
-    setTimeout(() => {
-      setShowProgress(false);
-      setProgress(0);
-    }, 1000);
+    setTimeout(() => { setShowProgress(false); setProgress(0); }, 1000);
   } catch (error) {
     console.error("Export failed:", error);
     setShowProgress(false);
@@ -380,34 +380,183 @@ const exportFamilyToExcel = async (
 };
 
 // ==============================================
+// SERVER-SIDE FILTER KEYS (sent to backend)
+// ==============================================
+const SERVER_FILTER_KEYS = ["regionId", "isValidated", "isActive", "familyVisits"];
+
+// ==============================================
 // MAIN COMPONENT
 // ==============================================
 export default function FamilyTable() {
   const { data: session } = useSession();
+  const { notify } = useNotify();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const isAdmin =
     session?.user?.role === "admin" || session?.user?.role === "superadmin";
 
+  // ── URL state (single source of truth) ──────────────────────────────
+  const page = Number(searchParams.get("page")) || 1;
+  const urlSearch = searchParams.get("search") || "";
+  const urlFilters = searchParams.get("filters") || "";
+
+  const filters = useMemo<Record<string, any>>(() => {
+    if (!urlFilters) return {};
+    try { return JSON.parse(urlFilters); } catch { return {}; }
+  }, [urlFilters]);
+
+  const pushParams = useCallback(
+    (updates: Partial<Record<string, string>>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([k, v]) => {
+        if (!v) params.delete(k);
+        else params.set(k, v);
+      });
+      router.push(`/family?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  // ── Local state ──────────────────────────────────────────────────────
+  const [data, setData] = useState<HomeTable[]>([]);
+  const [total, setTotal] = useState(0);
+  const [tableLoading, setTableLoading] = useState(true);
+  const [summary, setSummary] = useState<HomeSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [regions, setRegions] = useState<Region[]>([]);
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [visibleData, setVisibleData] = useState<HomeTable[] | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
 
+  // Search input decoupled from URL — only commits on Enter / Cari
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  useEffect(() => { setSearchInput(urlSearch); }, [urlSearch]);
+
+  // Responsive scrollY: lg+ → fixed 500px, smaller → viewport-based
+  const [isLg, setIsLg] = useState(false);
+  useEffect(() => {
+    const check = () => setIsLg(window.innerWidth >= 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // ── Load regions + unfiltered total once ────────────────────────────
   useEffect(() => {
     getRegionsList().then(setRegions).catch(console.error);
+    getHomeSummary().then((s) => setTotalRecords(s.totalFamilies)).catch(console.error);
   }, []);
 
-  const columns = getFamilyColumns(regions, session?.user?.role);
+  // ── Fetch table + summary whenever URL params change ─────────────────
+  useEffect(() => {
+    setTableLoading(true);
+    setSummaryLoading(true);
+    Promise.all([
+      getHomesOptimized(page, 20, urlSearch, filters),
+      getHomeSummary(urlSearch, filters),
+    ])
+      .then(([tableResult, summaryResult]) => {
+        setData(tableResult.data);
+        setTotal(tableResult.pagination.total);
+        setSummary(summaryResult);
+      })
+      .catch(console.error)
+      .finally(() => {
+        setTableLoading(false);
+        setSummaryLoading(false);
+      });
+  // urlFilters (string) used instead of filters (object) to keep dep stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, urlSearch, urlFilters]);
 
-  const handleExport = useCallback(async (filteredData: HomeTable[]) => {
-    const filteredIds = new Set(filteredData.map((h) => h.id));
-    const allExportData = await getHomesForExport();
-    const exportData = allExportData.filter((h) => filteredIds.has(h.id));
-    await exportFamilyToExcel(exportData, setShowProgress, setProgress);
+  // ── Handlers ─────────────────────────────────────────────────────────
+  const handleSearch = useCallback(
+    (val: string) => pushParams({ search: val, page: "1" }),
+    [pushParams],
+  );
+
+  const handleTableChange = useCallback(
+    (_: any, antdFilters: any) => {
+      const cleaned: Record<string, any> = {};
+      SERVER_FILTER_KEYS.forEach((k) => {
+        const v = antdFilters[k];
+        if (Array.isArray(v) && v.length > 0) cleaned[k] = v;
+      });
+      const newFiltersStr = Object.keys(cleaned).length ? JSON.stringify(cleaned) : "";
+      if (newFiltersStr !== urlFilters) {
+        pushParams({ filters: newFiltersStr, page: "1" });
+      }
+    },
+    [pushParams, urlFilters],
+  );
+
+  const openDeleteModal = useCallback((id: number) => {
+    setDeleteId(id);
+    setIsDeleteModalOpen(true);
   }, []);
 
+  const handleDelete = useCallback(async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteHome(deleteId);
+      setIsDeleteModalOpen(false);
+      // Re-fetch current view after delete
+      Promise.all([
+        getHomesOptimized(page, 20, urlSearch, filters),
+        getHomeSummary(urlSearch, filters),
+      ]).then(([tableResult, summaryResult]) => {
+        setData(tableResult.data);
+        setTotal(tableResult.pagination.total);
+        setSummary(summaryResult);
+      }).catch(console.error);
+      notifyFromResult(notify, { successMessage: "Keluarga berhasil dihapus" });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setDeleteLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deleteId, page, urlSearch, urlFilters, notify]);
+
+  const handleExport = useCallback(async () => {
+    if (exportLoading) return;
+    setExportLoading(true);
+    try {
+      const allExportData = await getHomesForExport(urlSearch, filters);
+      await exportFamilyToExcel(allExportData, setShowProgress, setProgress);
+    } finally {
+      setExportLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportLoading, urlSearch, urlFilters]);
+
+  // ── Columns ──────────────────────────────────────────────────────────
+  const columns = useMemo(
+    () => getFamilyColumns(regions, session?.user?.role, isAdmin ? openDeleteModal : undefined),
+    [regions, session?.user?.role, isAdmin, openDeleteModal],
+  );
+
+  // ALL filterable columns must declare filteredValue (antd v6 requirement)
+  const columnsWithState = useMemo(
+    () =>
+      columns.map((col) => ({
+        ...col,
+        filteredValue: col.key && SERVER_FILTER_KEYS.includes(col.key as string)
+          ? (filters[col.key as string] as any) ?? null
+          : null,
+      })),
+    [columns, filters],
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div>
-      <FamilyInsightPanel data={visibleData} loading={visibleData === null} />
+      <FamilyInsightPanel summary={summary} loading={summary === null || summaryLoading} totalRecords={totalRecords} />
 
       {showProgress && (
         <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -423,23 +572,73 @@ export default function FamilyTable() {
         </div>
       )}
 
-      <DataTable<HomeTable>
-        fetchData={getAllHomes}
-        deleteItem={isAdmin ? deleteHome : undefined}
-        columns={columns}
-        rowKey="id"
-        exportConfig={{ filename: "data-keluarga", sheetName: "Keluarga" }}
-        onExport={handleExport}
-        onFilteredDataChange={setVisibleData}
-        title="Jumlah Data Keluarga"
-        showSearch={true}
-        createPath={isAdmin ? "/family/create" : undefined}
-        pageSize={50}
-        scrollY={500}
-        deleteConfirmTitle="Konfirmasi Hapus"
-        deleteConfirmMessage="Apakah Anda yakin ingin menghapus keluarga ini?"
-        deleteSuccessMessage="Keluarga berhasil dihapus"
-      />
+      <Modal
+        title="Konfirmasi Hapus"
+        open={isDeleteModalOpen}
+        onOk={handleDelete}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        cancelText="Batal"
+        okText={deleteLoading ? "Menghapus..." : "Hapus"}
+        okButtonProps={{ danger: true, loading: deleteLoading }}
+      >
+        <p>Apakah Anda yakin ingin menghapus keluarga ini?</p>
+      </Modal>
+
+      {tableLoading && summary === null ? (
+        <TableSkeleton />
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="family-search-wrap">
+              <style>{`
+                .family-search-wrap .ant-input-search-button { box-shadow: none !important; }
+                .family-search-wrap .ant-input-affix-wrapper-focused { clip-path: inset(-5px 0px -5px -5px) !important; }
+                .family-search-wrap:focus-within .ant-input-search-button { border-color: #1677ff !important; box-shadow: 0 0 0 2px rgba(5,145,255,0.1) !important; clip-path: inset(-5px -5px -5px 0px); }
+              `}</style>
+              <Input.Search
+                placeholder="Cari nama pegawai, pasangan, atau wali..."
+                value={searchInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchInput(val);
+                  if (!val) handleSearch("");
+                }}
+                onSearch={handleSearch}
+                enterButton="Cari"
+                allowClear
+                style={{ width: 340 }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={handleExport} disabled={exportLoading}>
+                {exportLoading ? "Mengekspor..." : "Export Excel"}
+              </Button>
+              {isAdmin && (
+                <Link href="/family/create">
+                  <Button size="sm">+</Button>
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <Table
+            columns={columnsWithState}
+            dataSource={data}
+            rowKey="id"
+            bordered
+            loading={tableLoading}
+            pagination={{
+              current: page,
+              pageSize: 20,
+              total,
+              showSizeChanger: false,
+              onChange: (p) => pushParams({ page: String(p) }),
+            }}
+            scroll={{ x: "max-content", y: isLg ? 500 : "calc(100vh - 430px)" }}
+            onChange={handleTableChange}
+          />
+        </>
+      )}
     </div>
   );
 }
