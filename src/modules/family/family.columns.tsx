@@ -141,14 +141,14 @@ export const getFamilyColumns = (regions: Region[], role?: string, onDelete?: (i
     },
   },
   {
-    title: "Validasi",
+    title: "Kunjungan",
     dataIndex: "isValidated",
     key: "isValidated",
     width: 110,
     align: "center",
     filters: [
-      { text: "Tervalidasi", value: true },
-      { text: "Belum Divalidasi", value: false },
+      { text: "Sudah dikunjungi", value: true },
+      { text: "Belum dikunjungi", value: false },
     ],
     render: (_: any, home: any) => (
       <span
@@ -158,7 +158,7 @@ export const getFamilyColumns = (regions: Region[], role?: string, onDelete?: (i
             : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
         }`}
       >
-        {home.isValidated ? "Tervalidasi" : "Belum"}
+        {home.isValidated ? "Sudah dikunjungi" : "Belum dikunjungi"}
       </span>
     ),
   },

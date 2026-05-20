@@ -928,12 +928,12 @@ export default function FamilyView() {
                 ? "text-emerald-700 dark:text-emerald-400"
                 : "text-red-600 dark:text-red-400"
             }`}>
-              {(data as any)?.isValidated ? "Data Tervalidasi" : "Belum Divalidasi"}
+              {(data as any)?.isValidated ? "Sudah Dikunjungi" : "Belum Dikunjungi"}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {(data as any)?.isValidated
-                ? "Tervalidasi"
-                : "Belum Tervalidasi"}
+                ? "Sudah Dikunjungi"
+                : "Belum Dikunjungi"}
             </p>
           </div>
         </div>

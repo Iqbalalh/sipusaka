@@ -354,16 +354,16 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
                 placeholder="Masukkan kode pos"
               />
             </FormField>
-            <FormField label="Status Validasi">
+            <FormField label="Kunjungan">
               <div className="flex items-center gap-3 pt-1">
                 <Switch
                   checked={!!form.isValidated}
                   onChange={(v) => setForm({ ...form, isValidated: v })}
-                  checkedChildren="Tervalidasi"
-                  unCheckedChildren="Belum Divalidasi"
+                  checkedChildren="Sudah dikunjungi"
+                  unCheckedChildren="Belum dikunjungi"
                 />
                 <span className={`text-sm font-medium ${form.isValidated ? "text-emerald-600" : "text-red-500"}`}>
-                  {form.isValidated ? "Data telah divalidasi" : "Belum divalidasi"}
+                  {form.isValidated ? "Sudah dikunjungi" : "Belum dikunjungi"}
                 </span>
               </div>
             </FormField>
