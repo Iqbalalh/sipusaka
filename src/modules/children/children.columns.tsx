@@ -17,7 +17,8 @@ import { getDateRangeFilterProps } from "@/utils/table/dateRangeFilter";
 export const getChildrenColumns = (
   regions: Region[],
   role?: string,
-  eduFilters?: { text: string; value: string }[]
+  eduFilters?: { text: string; value: string }[],
+  onDelete?: (id: number) => void,
 ): ColumnsType<Children> => [
   {
     title: "Foto",
@@ -241,15 +242,9 @@ export const getChildrenColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => (record as any).homes?.regionId === value,
-    render: (_, child: any) => {
-      const region = regions.find((r) => r.regionId === child.homes?.regionId);
-      return region ? region.regionName : "-";
-    },
-    exportRender: (_: any, child: any) => {
-      const region = regions.find((r) => r.regionId === child.homes?.regionId);
-      return region?.regionName ?? "-";
-    },
+    onFilter: (value, record) => (record as any).homes?.employees?.regions?.regionId === value,
+    render: (_, child: any) => child.homes?.employees?.regions?.regionName ?? "-",
+    exportRender: (_: any, child: any) => child.homes?.employees?.regions?.regionName ?? "-",
   },
 
   {
@@ -279,7 +274,7 @@ export const getChildrenColumns = (
   },
 
   {
-    title: "Jml. Bantuan",
+    title: "Total Bantuan",
     dataIndex: "_count",
     key: "childAssistanceCount",
     align: "center",
@@ -404,14 +399,10 @@ export const getChildrenColumns = (
           </Link>
         )}
 
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <Button
             size="xs"
-            onClick={() => {
-              if (!child.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              child._openDeleteModal(child.id);
-            }}
+            onClick={() => { if (child.id) onDelete(child.id); }}
           >
             <DeleteOutlined />
           </Button>

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Table, Modal, Input, Spin } from "antd";
-import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Table, Modal, Input } from "antd";
 import UIButton from "@/components/ui/button/Button";
+import { Button as AntButton } from "antd";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { LetterType } from "@/types/models/letterType";
@@ -16,51 +16,70 @@ export default function LetterTypesTable() {
   const { data: session } = useSession();
   const { notify } = useNotify();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [data, setData] = useState<LetterType[]>([]);
-  const [filteredData, setFilteredData] = useState<LetterType[]>([]);
+  // URL state
+  const page = Number(searchParams.get("page")) || 1;
+  const urlSearch = searchParams.get("search") || "";
+
+  const pushParams = useCallback(
+    (updates: Partial<Record<string, string>>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([k, v]) => {
+        if (!v) params.delete(k);
+        else params.set(k, v);
+      });
+      router.push(`/letters/types?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const [allData, setAllData] = useState<LetterType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const result = await getLetterTypes();
-      setData(result);
-      setFilteredData(result);
+      setAllData(result);
     } catch (err) {
       notifyFromResult(notify, { error: err });
-      setData([]);
-      setFilteredData([]);
+      setAllData([]);
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredData(data);
-      return;
-    }
-    const q = searchQuery.toLowerCase();
-    setFilteredData(
-      data.filter(
-        (lt) =>
-          lt.jenisSurat.toLowerCase().includes(q) ||
-          lt.kodeSurat1.toLowerCase().includes(q) ||
-          (lt.kodeSurat2 ?? "").toLowerCase().includes(q) ||
-          (lt.perihal ?? "").toLowerCase().includes(q)
-      )
+  const data = useMemo(() => {
+    if (!urlSearch.trim()) return allData;
+    const q = urlSearch.toLowerCase();
+    return allData.filter(
+      (lt) =>
+        lt.jenisSurat.toLowerCase().includes(q) ||
+        lt.kodeSurat1.toLowerCase().includes(q) ||
+        (lt.kodeSurat2 ?? "").toLowerCase().includes(q) ||
+        (lt.perihal ?? "").toLowerCase().includes(q),
     );
-  }, [searchQuery, data]);
+  }, [allData, urlSearch]);
+
+  const handleSearch = useCallback(
+    (val: string) => pushParams({ search: val, page: "1" }),
+    [pushParams],
+  );
 
   const openDeleteModal = useCallback((id: number) => {
     setDeleteId(id);
@@ -88,7 +107,7 @@ export default function LetterTypesTable() {
 
   const columns = useMemo(
     () => getLetterTypeColumns(router, session?.user?.role, openDeleteModal),
-    [router, session?.user?.role, openDeleteModal]
+    [router, session?.user?.role, openDeleteModal],
   );
 
   return (
@@ -109,42 +128,47 @@ export default function LetterTypesTable() {
         </p>
       </Modal>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-col gap-2 w-full sm:w-auto">
-          <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
-            Total: {filteredData.length}
-            {filteredData.length < data.length && (
-              <span className="text-xs font-normal text-gray-500 ml-1">(difilter dari {data.length})</span>
-            )}
-          </h3>
-          <Input
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+        <div className="lettertypes-search-wrap w-full max-w-[340px]">
+          <style>{`
+            .lettertypes-search-wrap .ant-input-search-button { box-shadow: none !important; }
+            .lettertypes-search-wrap .ant-input-affix-wrapper-focused { clip-path: inset(-5px 0px -5px -5px) !important; }
+            .lettertypes-search-wrap:focus-within .ant-input-search-button { border-color: #1677ff !important; box-shadow: 0 0 0 2px rgba(5,145,255,0.1) !important; clip-path: inset(-5px -5px -5px 0px); }
+          `}</style>
+          <Input.Search
             placeholder="Cari jenis surat, kode, tahun..."
-            prefix={<SearchOutlined className="text-gray-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchInput(val);
+              if (!val) handleSearch("");
+            }}
+            onSearch={handleSearch}
+            enterButton="Cari"
             allowClear
-            style={{ width: 280 }}
+            style={{ width: "100%" }}
           />
         </div>
-        <UIButton
-          onClick={() => router.push("/letters/types/create")}
-          className="bg-blue-600 text-white hover:bg-blue-700"
-        >
+        <AntButton type="primary" onClick={() => router.push("/letters/types/create")}>
           +
-        </UIButton>
+        </AntButton>
       </div>
 
       <Table
         columns={columns as any}
-        dataSource={filteredData}
+        dataSource={data}
         rowKey="id"
         bordered
-        loading={{
-          spinning: loading,
-          indicator: <Spin indicator={<LoadingOutlined spin />} size="large" />,
+        loading={loading}
+        pagination={{
+          current: page,
+          pageSize: 20,
+          total: data.length,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} data`,
+          onChange: (p) => pushParams({ page: String(p) }),
         }}
         scroll={{ x: "max-content" }}
-        pagination={{ pageSize: 20, showTotal: (tot) => `Total ${tot} data`, showSizeChanger: false }}
         size="small"
       />
     </>

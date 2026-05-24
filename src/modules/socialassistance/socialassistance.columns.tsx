@@ -75,25 +75,6 @@ const getColumnSearchProps = (dataIndex: string): any => ({
   filterIcon: (filtered: boolean) => (
     <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
   ),
-  onFilter: (value: string | number | boolean, record: SocialAssistance) => {
-    const searchValue = String(value).toLowerCase();
-    if (dataIndex === "nipNipp") {
-      return record.nipNipp?.toLowerCase().includes(searchValue) || false;
-    }
-    if (dataIndex === "recipientName") {
-      return record.recipientName?.toLowerCase().includes(searchValue) || false;
-    }
-    if (dataIndex === "ktpAddress") {
-      return record.ktpAddress?.toLowerCase().includes(searchValue) || false;
-    }
-    if (dataIndex === "region") {
-      return record.region?.toLowerCase().includes(searchValue) || false;
-    }
-    if (dataIndex === "condition") {
-      return record.condition?.toLowerCase().includes(searchValue) || false;
-    }
-    return false;
-  },
 });
 
 // ==============================================
@@ -101,6 +82,7 @@ const getColumnSearchProps = (dataIndex: string): any => ({
 // ==============================================
 export const getSocialAssistanceColumns = (
   role?: string,
+  onDelete?: (id: number) => void,
 ): ColumnsType<SocialAssistance> => [
   {
     title: "NIP/NIPP",
@@ -205,14 +187,10 @@ export const getSocialAssistanceColumns = (
             </Button>
           </Link>
         )}
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <Button
             size="xs"
-            onClick={() => {
-              if (!record.id) return;
-              // @ts-ignore - _openDeleteModal is injected by table
-              record._openDeleteModal(record.id);
-            }}
+            onClick={() => { if (record.id) onDelete(record.id); }}
           >
             <DeleteOutlined />
           </Button>

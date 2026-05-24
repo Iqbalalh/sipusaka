@@ -17,6 +17,7 @@ export const getUmkmVisitColumns = (
   assistanceSources: string[] = [],
   assistanceTypes: string[] = [],
   visitCountMap: Map<number, number> = new Map(),
+  onDelete?: (id: number) => void,
 ): ColumnsType<UmkmVisit> => [
   {
     title: "Kunjungan ke-",
@@ -148,14 +149,10 @@ export const getUmkmVisitColumns = (
     width: 80,
     render: (_, record) => (
       <div className="flex gap-2 text-xs">
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <Button
             size="xs"
-            onClick={() => {
-              if (!record.id) return;
-              // @ts-ignore
-              record._openDeleteModal(record.id);
-            }}
+            onClick={() => { if (record.id) onDelete(record.id); }}
           >
             <DeleteOutlined />
           </Button>

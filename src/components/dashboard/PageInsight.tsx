@@ -155,7 +155,7 @@ export function ChildrenInsight() {
     },
     {
       icon: <FaHandHoldingHeart />,
-      label: "Jml. Bantuan",
+      label: "Total Bantuan",
       value: assistanceCount,
       sub: `ABK: ${abk} anak`,
       color: "bg-indigo-500",

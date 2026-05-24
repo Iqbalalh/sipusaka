@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import DraftsTable from "@/modules/letters/letters.drafts-table";
@@ -13,7 +14,9 @@ export default function LetterDraftsPage() {
       <PageBreadcrumb pageTitle="Draft Surat" />
       <div className="space-y-6">
         <ComponentCard title="Draft Surat" header={false}>
-          <DraftsTable />
+          <Suspense>
+            <DraftsTable />
+          </Suspense>
         </ComponentCard>
       </div>
     </div>

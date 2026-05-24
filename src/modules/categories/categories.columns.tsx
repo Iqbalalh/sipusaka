@@ -10,7 +10,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getCategoryColumns = (role?: string): TableColumn<Category>[] => [
+export const getCategoryColumns = (role?: string, onDelete?: (id: number) => void): TableColumn<Category>[] => [
   {
     title: "Nama Kategori",
     dataIndex: "name",
@@ -79,14 +79,10 @@ export const getCategoryColumns = (role?: string): TableColumn<Category>[] => [
           </Link>
         )}
 
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <Button
             size="xs"
-            onClick={() => {
-              if (!category.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              category._openDeleteModal(category.id);
-            }}
+            onClick={() => { if (category.id) onDelete(category.id); }}
           >
             <DeleteOutlined />
           </Button>

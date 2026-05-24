@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import UserTable from "@/modules/user/user.table";
@@ -13,7 +14,9 @@ export default function UsersTables() {
         <PageBreadcrumb pageTitle="User" />
         <div className="space-y-6">
           <ComponentCard title="Data User" header={false}>
-            <UserTable />
+            <Suspense>
+              <UserTable />
+            </Suspense>
           </ComponentCard>
         </div>
     </div>

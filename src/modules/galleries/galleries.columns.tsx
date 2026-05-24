@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION
 // ==============================================
-export const getGalleryColumns = (regions: Region[] = [], categories: Category[] = [], role?: string): ColumnsType<Gallery> => [
+export const getGalleryColumns = (regions: Region[] = [], categories: Category[] = [], role?: string, onDelete?: (id: number) => void): ColumnsType<Gallery> => [
   {
     title: "Gambar",
     dataIndex: "s3Path",
@@ -48,8 +48,6 @@ export const getGalleryColumns = (regions: Region[] = [], categories: Category[]
     key: "categories",
     dataIndex: "categories",
     filters: categories.map((c) => ({ text: c.name, value: c.id })),
-    onFilter: (value: any, record: Gallery) =>
-      record.categories?.some((c) => c.id === value) ?? false,
     render: (_: any, gallery: Gallery) => {
       if (!gallery.categories || gallery.categories.length === 0) return "-";
       return gallery.categories.map((cat) => cat.name).join(", ");
@@ -78,7 +76,6 @@ export const getGalleryColumns = (regions: Region[] = [], categories: Category[]
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value: any, record: Gallery) => record.regionId === value,
     render: (_: any, gallery: Gallery) => {
       return gallery.regionName || "-";
     },
@@ -144,14 +141,10 @@ export const getGalleryColumns = (regions: Region[] = [], categories: Category[]
           </Link>
         )}
 
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <Button
             size="xs"
-            onClick={() => {
-              if (!gallery.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              gallery._openDeleteModal(gallery.id);
-            }}
+            onClick={() => { if (gallery.id) onDelete(gallery.id); }}
           >
             <DeleteOutlined />
           </Button>

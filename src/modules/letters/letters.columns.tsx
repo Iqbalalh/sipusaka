@@ -28,7 +28,7 @@ const StatusBadge = ({ status }: { status: LetterStatus }) => {
 // ==============================================
 // DRAFT COLUMNS
 // ==============================================
-export const getDraftColumns = (onSubmit?: (id: number) => void, role?: string): ColumnsType<Letter> => [
+export const getDraftColumns = (onSubmit?: (id: number) => void, role?: string, onDelete?: (id: number) => void): ColumnsType<Letter> => [
   {
     title: "Jenis Surat",
     dataIndex: "letterType",
@@ -103,16 +103,14 @@ export const getDraftColumns = (onSubmit?: (id: number) => void, role?: string):
             <EditOutlined />
           </Button>
         </Link>
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!letter.id) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            letter._openDeleteModal(letter.id);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {onDelete && (
+          <Button
+            size="xs"
+            onClick={() => { if (letter.id) onDelete(letter.id); }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

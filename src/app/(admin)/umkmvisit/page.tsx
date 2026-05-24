@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import UmkmVisitTable from "@/modules/umkmvisit/umkmvisit.table";
@@ -13,7 +14,9 @@ export default function UmkmVisitPage() {
       <PageBreadcrumb pageTitle="Bantuan UMKM" />
       <div className="space-y-6">
         <ComponentCard title="Data Bantuan UMKM" header={false}>
-          <UmkmVisitTable />
+          <Suspense>
+            <UmkmVisitTable />
+          </Suspense>
         </ComponentCard>
       </div>
     </div>

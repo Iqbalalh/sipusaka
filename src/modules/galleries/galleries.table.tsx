@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Table, Spin, Modal, Input, Progress } from "antd";
-import { LoadingOutlined, SearchOutlined, DeleteOutlined, EditOutlined, DownloadOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
+import { Table, Modal, Input, Progress } from "antd";
+import { Button as AntButton } from "antd";
+import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 
-// Types
 import { Gallery, Category } from "@/types/models/gallery";
 import { Region } from "@/types/models/region";
-
-// Utils
 import { getGalleries, deleteGallery, getCategories } from "@/utils/services/gallery.service";
 import { getRegionsList } from "@/utils/services/region.service";
 import { getGalleryColumns } from "./galleries.columns";
@@ -23,12 +21,12 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 // ==============================================
-// EXCEL EXPORT FUNCTION WITH PROGRESS
+// EXCEL EXPORT
 // ==============================================
 const exportGalleryToExcel = async (
   galleries: Gallery[],
   setShowProgress: (show: boolean) => void,
-  setProgress: (progress: number) => void
+  setProgress: (progress: number) => void,
 ) => {
   try {
     setShowProgress(true);
@@ -39,14 +37,12 @@ const exportGalleryToExcel = async (
       return;
     }
 
-    // Create workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data Galeri", {
       views: [{ state: "frozen", ySplit: 1 }],
     });
     setProgress(20);
 
-    // Define columns with Indonesian names
     worksheet.columns = [
       { header: "ID", key: "id", width: 10 },
       { header: "Keterangan", key: "caption", width: 40 },
@@ -58,17 +54,12 @@ const exportGalleryToExcel = async (
       { header: "Diedit Oleh", key: "editedBy", width: 20 },
     ];
 
-    // Style header row
     const headerRow = worksheet.getRow(1);
     headerRow.height = 30;
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
       cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF2563EB" },
-      };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
       cell.border = {
         top: { style: "thin" },
         left: { style: "thin" },
@@ -79,9 +70,8 @@ const exportGalleryToExcel = async (
 
     setProgress(40);
 
-    // Add data to worksheet
     galleries.forEach((gallery, index) => {
-      const row = {
+      const excelRow = worksheet.addRow({
         id: gallery.id,
         caption: gallery.caption || "-",
         categories: gallery.categories?.map((cat) => cat.name).join(", ") || "-",
@@ -90,22 +80,13 @@ const exportGalleryToExcel = async (
         createdAt: gallery.createdAt ? formatDate(gallery.createdAt) : "-",
         createdBy: (gallery as any).createdByStaffName || (gallery as any).createdBy || "-",
         editedBy: (gallery as any).editedByStaffName || (gallery as any).editedBy || "-",
-      };
+      });
 
-      const excelRow = worksheet.addRow(row);
-
-      // Style alternating rows
       if (index % 2 === 1) {
         excelRow.eachCell((cell) => {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFF1F5F9" },
-          };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
         });
       }
-
-      // Style all cells
       excelRow.eachCell((cell) => {
         cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
         cell.border = {
@@ -116,21 +97,20 @@ const exportGalleryToExcel = async (
         };
       });
 
-      // Update progress
-      if (index % Math.floor(galleries.length / 10) === 0) {
+      if (index % Math.max(1, Math.floor(galleries.length / 10)) === 0) {
         setProgress(40 + Math.floor((index / galleries.length) * 40));
       }
     });
 
     setProgress(90);
 
-    // Export file
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-
-    saveAs(blob, "data-galeri.xlsx");
+    saveAs(
+      new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "data-galeri.xlsx",
+    );
 
     setProgress(100);
     setTimeout(() => {
@@ -144,6 +124,9 @@ const exportGalleryToExcel = async (
   }
 };
 
+// ==============================================
+// MAIN COMPONENT
+// ==============================================
 export default function GalleriesTable() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
@@ -152,150 +135,125 @@ export default function GalleriesTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Data State
-  const [data, setData] = useState<Gallery[]>([]);
+  // URL state
+  const page = Number(searchParams.get("page")) || 1;
+  const urlSearch = searchParams.get("search") || "";
+
+  const pushParams = useCallback(
+    (updates: Partial<Record<string, string>>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([k, v]) => {
+        if (!v) params.delete(k);
+        else params.set(k, v);
+      });
+      router.push(`/galleries?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const [allData, setAllData] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
-
-  // Delete State
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Export State
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [exportLoading, setExportLoading] = useState(false);
 
-  // Regions & Categories for column filters
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  // Fetch regions and categories for filters
+  const [searchInput, setSearchInput] = useState(urlSearch);
   useEffect(() => {
-    const init = async () => {
-      try {
-        const [regionList, categoryList] = await Promise.all([
-          getRegionsList(),
-          getCategories(),
-        ]);
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  // Fetch lookup data once
+  useEffect(() => {
+    Promise.all([getRegionsList(), getCategories()])
+      .then(([regionList, categoryList]) => {
         setRegions(regionList);
         setCategories(categoryList);
-      } catch (err) {
-        console.error("Failed to fetch filters:", err);
-      }
-    };
-
-    init();
+      })
+      .catch((err) => console.error("Failed to fetch filters:", err));
   }, []);
 
-  // ==========================
-  // FETCH DATA
-  // ==========================
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await getGalleries();
-      let filtered = response;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter((item: Gallery) => {
-          const caption = item.caption?.toLowerCase() || "";
-          const regionName = item.regionName?.toLowerCase() || "";
-          const cats = item.categories?.map((c) => c.name.toLowerCase()).join(", ") || "";
-          return caption.includes(q) || regionName.includes(q) || cats.includes(q);
-        });
-      }
-      setData(filtered);
-    } catch (err) {
-      notifyFromResult(notify, { error: err });
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, notify]);
-
-  // ==========================
-  // INITIAL SEARCH FROM URL
-  // ==========================
+  // Fetch all gallery data once on mount
   useEffect(() => {
-    const searchParam = searchParams.get("search") || "";
-    setSearchQuery(searchParam);
+    setLoading(true);
+    getGalleries()
+      .then((res) => setAllData(Array.isArray(res) ? res : []))
+      .catch((err) => {
+        notifyFromResult(notify, { error: err });
+        setAllData([]);
+      })
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ==========================
-  // FETCH ON SEARCH CHANGE
-  // ==========================
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // Client-side filter by URL search term
+  const data = useMemo(() => {
+    if (!urlSearch.trim()) return allData;
+    const q = urlSearch.toLowerCase();
+    return allData.filter((item) => {
+      const caption = item.caption?.toLowerCase() || "";
+      const regionName = item.regionName?.toLowerCase() || "";
+      const cats = item.categories?.map((c) => c.name.toLowerCase()).join(" ") || "";
+      return caption.includes(q) || regionName.includes(q) || cats.includes(q);
+    });
+  }, [allData, urlSearch]);
 
-  // ==========================
-  // SEARCH WITH DEBOUNCE
-  // ==========================
-  const handleSearchChange = (value: string) => {
-    if (searchTimer) clearTimeout(searchTimer);
-    const timer = setTimeout(() => setSearchQuery(value), 500);
-    setSearchTimer(timer);
-  };
+  const handleSearch = useCallback(
+    (val: string) => pushParams({ search: val, page: "1" }),
+    [pushParams],
+  );
 
-  // ==========================
-  // DELETE HANDLER
-  // ==========================
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteId) return;
-
     setDeleteLoading(true);
     try {
       await deleteGallery(deleteId);
-
-      // Refresh current page
-      await fetchData();
-
       setIsDeleteModalOpen(false);
-      notifyFromResult(notify, {
-        successMessage: "Galeri berhasil dihapus",
-      });
+      getGalleries()
+        .then((res) => setAllData(Array.isArray(res) ? res : []))
+        .catch(() => {});
+      notifyFromResult(notify, { successMessage: "Galeri berhasil dihapus" });
     } catch (err) {
       notifyFromResult(notify, { error: err });
     } finally {
       setDeleteLoading(false);
     }
-  };
+  }, [deleteId, notify]);
 
-  // ==========================
-  // EXPORT HANDLER
-  // ==========================
-  const handleExportWithProgress = async () => {
-    // Fetch all data for export
+  const handleExport = useCallback(async () => {
+    if (exportLoading) return;
+    setExportLoading(true);
     try {
-      const allData = await getGalleries();
-      await exportGalleryToExcel(allData, setShowProgress, setProgress);
-    } catch (error) {
-      console.error("Export failed:", error);
-      setShowProgress(false);
+      await exportGalleryToExcel(data, setShowProgress, setProgress);
+    } finally {
+      setExportLoading(false);
     }
-  };
+  }, [exportLoading, data]);
 
-  const columns = getGalleryColumns(regions, categories, session?.user?.role);
+  const baseColumns = useMemo(
+    () =>
+      getGalleryColumns(regions, categories, session?.user?.role, isAdmin ? (id) => {
+        setDeleteId(id);
+        setIsDeleteModalOpen(true);
+      } : undefined),
+    [regions, categories, session?.user?.role, isAdmin],
+  );
 
-  // ==========================
-  // LOADING STATE
-  // ==========================
-  if (loading && data.length === 0) {
-    return (
-      <div className="flex justify-center items-center gap-4 h-40 text-gray-500">
-        <Spin indicator={<LoadingOutlined spin />} size="large" />
-        Memuat data...
-      </div>
-    );
-  }
+  const columnsWithState = useMemo(
+    () =>
+      baseColumns.map((col) => ({
+        ...col,
+        ...(col.filters !== undefined ? { filteredValue: null } : {}),
+      })),
+    [baseColumns],
+  );
 
-  // ==========================
-  // RENDER
-  // ==========================
   return (
     <>
       {/* DELETE MODAL */}
@@ -303,20 +261,11 @@ export default function GalleriesTable() {
         title="Konfirmasi Hapus"
         open={isDeleteModalOpen}
         onCancel={() => setIsDeleteModalOpen(false)}
-        footer={[
-          <Button key="cancel" variant="outline" onClick={() => setIsDeleteModalOpen(false)} disabled={deleteLoading}>
-            Batal
-          </Button>,
-          <Button
-            key="delete"
-            variant="primary"
-            onClick={handleDelete}
-            disabled={deleteLoading}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            {deleteLoading ? "Menghapus..." : "Hapus"}
-          </Button>,
-        ]}
+        confirmLoading={deleteLoading}
+        okText="Hapus"
+        okButtonProps={{ danger: true }}
+        cancelText="Batal"
+        onOk={handleDelete}
       >
         <p>Apakah Anda yakin ingin menghapus galeri ini?</p>
       </Modal>
@@ -328,43 +277,47 @@ export default function GalleriesTable() {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Sedang mengekspor data...
             </span>
-            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-              {progress}%
-            </span>
+            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
           </div>
           <Progress percent={progress} status="active" strokeColor="#2563EB" />
         </div>
       )}
 
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-col gap-4 w-full sm:w-auto">
-          <div className="w-full">
-            <Input
-              placeholder="Cari data..."
-              prefix={<SearchOutlined />}
-              defaultValue={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              allowClear
-              className="w-full"
-            />
-          </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+        <div className="galleries-search-wrap w-full max-w-[340px]">
+          <style>{`
+            .galleries-search-wrap .ant-input-search-button { box-shadow: none !important; }
+            .galleries-search-wrap .ant-input-affix-wrapper-focused { clip-path: inset(-5px 0px -5px -5px) !important; }
+            .galleries-search-wrap:focus-within .ant-input-search-button { border-color: #1677ff !important; box-shadow: 0 0 0 2px rgba(5,145,255,0.1) !important; clip-path: inset(-5px -5px -5px 0px); }
+          `}</style>
+          <Input.Search
+            placeholder="Cari keterangan, kategori, wilayah..."
+            value={searchInput}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchInput(val);
+              if (!val) handleSearch("");
+            }}
+            onSearch={handleSearch}
+            enterButton="Cari"
+            allowClear
+            style={{ width: "100%" }}
+          />
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleExportWithProgress}
-            className="bg-blue-600 hover:bg-blue-700"
+        <div className="flex gap-2">
+          <AntButton
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+            loading={exportLoading}
+            disabled={data.length === 0}
           >
-            <DownloadOutlined className="mr-2" />
-            Export Excel
-          </Button>
+            Export ({data.length})
+          </AntButton>
           {isAdmin && (
             <Link href="/galleries/create">
-              <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700">
-                <PlusOutlined />
-              </Button>
+              <AntButton type="primary">+</AntButton>
             </Link>
           )}
         </div>
@@ -372,51 +325,20 @@ export default function GalleriesTable() {
 
       {/* TABLE */}
       <Table
-        columns={columns.map((col) => {
-          if (col.key === "actions") {
-            return {
-              ...col,
-              render: (_: any, gallery: Gallery) => (
-                <div className="flex gap-2 text-xs">
-                  <Link href={`galleries/view/${gallery.id}`}>
-                    <Button size="xs">
-                      <EyeOutlined />
-                    </Button>
-                  </Link>
-                  <Link href={`galleries/edit/${gallery.id}`}>
-                    <Button size="xs">
-                      <EditOutlined />
-                    </Button>
-                  </Link>
-                  {isAdmin && (
-                    <Button
-                      size="xs"
-                      onClick={() => {
-                        if (gallery.id) {
-                          setDeleteId(gallery.id);
-                          setIsDeleteModalOpen(true);
-                        }
-                      }}
-                    >
-                      <DeleteOutlined />
-                    </Button>
-                  )}
-                </div>
-              ),
-            };
-          }
-          return col;
-        })}
+        columns={columnsWithState}
         dataSource={data}
         rowKey="id"
         bordered
+        loading={loading}
         pagination={{
+          current: page,
           pageSize: 50,
+          total: data.length,
           showSizeChanger: false,
           showTotal: (t) => `Jumlah Data: ${t}`,
+          onChange: (p) => pushParams({ page: String(p) }),
         }}
         scroll={{ x: "max-content", y: 500 }}
-        loading={loading}
       />
     </>
   );

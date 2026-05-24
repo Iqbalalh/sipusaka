@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getStaffColumns = (role?: string): TableColumn<Staff>[] => [
+export const getStaffColumns = (role?: string, onDelete?: (id: number) => void): TableColumn<Staff>[] => [
   {
     title: "Foto",
     dataIndex: "staffPict",
@@ -60,7 +60,6 @@ export const getStaffColumns = (role?: string): TableColumn<Staff>[] => [
       { text: "Laki-laki", value: "M" },
       { text: "Perempuan", value: "F" },
     ],
-    onFilter: (value, record) => record.gender === value,
     render: (gender: "M" | "F") =>
       gender === "M" ? "Laki-laki" : "Perempuan",
     exportRender: (value: "M" | "F") =>
@@ -83,7 +82,6 @@ export const getStaffColumns = (role?: string): TableColumn<Staff>[] => [
       { text: "Aktif", value: true },
       { text: "Tidak Aktif", value: false },
     ],
-    onFilter: (value, record) => record.isActive === value,
     render: (isActive: boolean) => (
       <Badge size="sm" color={isActive ? "success" : "error"}>
         {isActive ? "Aktif" : "Tidak Aktif"}
@@ -170,15 +168,8 @@ export const getStaffColumns = (role?: string): TableColumn<Staff>[] => [
           </Link>
         )}
 
-        {role !== "staff" && (
-          <Button
-            size="xs"
-            onClick={() => {
-              if (!staff.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              staff._openDeleteModal(staff.id);
-            }}
-          >
+        {role !== "staff" && onDelete && (
+          <Button size="xs" onClick={() => { if (!staff.id) return; onDelete(staff.id); }}>
             <DeleteOutlined />
           </Button>
         )}

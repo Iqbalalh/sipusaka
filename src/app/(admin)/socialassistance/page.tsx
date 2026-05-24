@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import SocialAssistanceTable from "@/modules/socialassistance/socialassistance.table";
@@ -13,7 +14,9 @@ export default function SocialAssistancePage() {
       <PageBreadcrumb pageTitle="Bantuan Sosial" />
       <div className="space-y-6">
         <ComponentCard title="Data Bantuan Sosial" header={false}>
-          <SocialAssistanceTable />
+          <Suspense>
+            <SocialAssistanceTable />
+          </Suspense>
         </ComponentCard>
       </div>
     </div>

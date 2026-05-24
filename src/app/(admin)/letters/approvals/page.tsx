@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ApprovalsTable from "@/modules/letters/letters.approvals-table";
@@ -13,7 +14,9 @@ export default function LetterApprovalsPage() {
       <PageBreadcrumb pageTitle="Persetujuan Surat" />
       <div className="space-y-6">
         <ComponentCard title="Persetujuan Surat" header={false}>
-          <ApprovalsTable />
+          <Suspense>
+            <ApprovalsTable />
+          </Suspense>
         </ComponentCard>
       </div>
     </div>

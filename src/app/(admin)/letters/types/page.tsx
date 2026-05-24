@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import LetterTypesTable from "@/modules/letterTypes/letterTypes.table";
@@ -13,7 +14,9 @@ export default function LetterTypesPage() {
       <PageBreadcrumb pageTitle="Template Surat" />
       <div className="space-y-6">
         <ComponentCard title="Data Template Surat" header={false}>
-          <LetterTypesTable />
+          <Suspense>
+            <LetterTypesTable />
+          </Suspense>
         </ComponentCard>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import StaffTable from "@/modules/staff/staff.table";
@@ -10,13 +11,14 @@ export const metadata: Metadata = {
 export default function StaffTables() {
   return (
     <div>
-        {" "}
-        <PageBreadcrumb pageTitle="Staf" />
-        <div className="space-y-6">
-          <ComponentCard title="Data Staf" header={false}>
+      <PageBreadcrumb pageTitle="Staf" />
+      <div className="space-y-6">
+        <ComponentCard title="Data Staf" header={false}>
+          <Suspense>
             <StaffTable />
-          </ComponentCard>
-        </div>
+          </Suspense>
+        </ComponentCard>
+      </div>
     </div>
   );
 }

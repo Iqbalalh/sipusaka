@@ -1,5 +1,5 @@
 import { apiClient } from "../fetch/apiClient";
-import { API_STAFF } from "@/constants/endpoint";
+import { API_STAFF, API_STAFF_OPTIMIZED } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
 import {
   ApiResponseList,
@@ -65,4 +65,23 @@ export const deleteStaff = async (id: number) => {
   } catch (error) {
     throw error;
   }
+};
+
+export interface StaffPagination { page: number; pageSize: number; total: number; totalPages: number; }
+export interface StaffPaginatedResponse { data: Staff[]; pagination: StaffPagination; }
+
+export const getStaffOptimized = async (
+  page = 1,
+  pageSize = 50,
+  search = "",
+  filters?: Record<string, string[]>
+): Promise<StaffPaginatedResponse> => {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search.trim()) params.append("search", search.trim());
+  if (filters && Object.keys(filters).length > 0) params.append("filters", JSON.stringify(filters));
+  const json = await apiClient<ApiResponseList<Staff> & { pagination: StaffPagination }>(
+    `${API_STAFF_OPTIMIZED}?${params.toString()}`
+  );
+  const data = camelcaseKeys(json.data ?? [], { deep: true }) as unknown as Staff[];
+  return { data: Array.isArray(data) ? data : [], pagination: json.pagination ?? { page, pageSize, total: 0, totalPages: 1 } };
 };

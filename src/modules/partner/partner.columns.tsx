@@ -15,7 +15,8 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 export const getPartnerColumns = (
   regions: Region[],
-  role?: string
+  role?: string,
+  onDelete?: (id: number) => void
 ): ColumnsType<Partner> => [
   {
     title: "Foto",
@@ -73,7 +74,6 @@ export const getPartnerColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => record.regionId === value,
     render: (_, partner) => {
       const region = regions.find((r) => r.regionId === partner.regionId);
       return region ? region.regionName : "-";
@@ -107,7 +107,6 @@ export const getPartnerColumns = (
       { text: "Aktif", value: true },
       { text: "Tidak Aktif", value: false },
     ],
-    onFilter: (value, record) => record.isActive === value,
     render: (isActive: boolean) => (
       <Badge size="sm" color={isActive ? "success" : "error"}>
         {isActive ? "Aktif" : "Tidak Aktif"}
@@ -124,7 +123,6 @@ export const getPartnerColumns = (
       { text: "Hidup", value: true },
       { text: "Meninggal", value: false },
     ],
-    onFilter: (value, record) => record.isAlive === value,
     render: (isAlive: boolean) => (
       <Badge size="sm" color={isAlive ? "success" : "error"}>
         {isAlive ? "Hidup" : "Meninggal"}
@@ -205,15 +203,8 @@ export const getPartnerColumns = (
           </Link>
         )}
 
-        {role !== "staff" && (
-          <Button
-            size="xs"
-            onClick={() => {
-              if (!partner.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              partner._openDeleteModal(partner.id);
-            }}
-          >
+        {role !== "staff" && onDelete && (
+          <Button size="xs" onClick={() => { if (!partner.id) return; onDelete(partner.id); }}>
             <DeleteOutlined />
           </Button>
         )}

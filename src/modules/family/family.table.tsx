@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Progress, Skeleton, Table, Modal, Input } from "antd";
+import { Progress, Skeleton, Table, Modal, Input, Button as AntButton } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import {
   FaUsers,
   FaChild,
@@ -11,7 +12,6 @@ import {
   FaHandHoldingHeart,
 } from "react-icons/fa6";
 import Link from "next/link";
-import Button from "@/components/ui/button/Button";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
@@ -589,7 +589,7 @@ export default function FamilyTable() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="family-search-wrap">
+            <div className="family-search-wrap w-full max-w-[340px]">
               <style>{`
                 .family-search-wrap .ant-input-search-button { box-shadow: none !important; }
                 .family-search-wrap .ant-input-affix-wrapper-focused { clip-path: inset(-5px 0px -5px -5px) !important; }
@@ -606,16 +606,16 @@ export default function FamilyTable() {
                 onSearch={handleSearch}
                 enterButton="Cari"
                 allowClear
-                style={{ width: 340 }}
+                style={{ width: "100%" }}
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={handleExport} disabled={exportLoading}>
-                {exportLoading ? "Mengekspor..." : "Export Excel"}
-              </Button>
+              <AntButton type="primary" icon={<DownloadOutlined />} onClick={handleExport} loading={exportLoading}>
+                Export Excel
+              </AntButton>
               {isAdmin && (
                 <Link href="/family/create">
-                  <Button size="sm">+</Button>
+                  <AntButton type="primary">+</AntButton>
                 </Link>
               )}
             </div>

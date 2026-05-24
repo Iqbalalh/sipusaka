@@ -1,6 +1,6 @@
 import { Wali } from "@/types/models/wali";
 import { apiClient } from "../fetch/apiClient";
-import { API_WALI } from "@/constants/endpoint";
+import { API_WALI, API_WALI_OPTIMIZED, API_WALI_SUMMARY } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
 import {
   ApiResponseList,
@@ -56,4 +56,32 @@ export const createWali = async (fd: FormData) => {
     method: "POST",
     body: fd,
   });
+};
+
+export interface WaliPagination { page: number; pageSize: number; total: number; totalPages: number; }
+export interface WaliPaginatedResponse { data: Wali[]; pagination: WaliPagination; }
+export interface WaliSummary { total: number; }
+
+export const getWaliOptimized = async (
+  page = 1,
+  pageSize = 50,
+  search = "",
+  filters?: Record<string, string[]>
+): Promise<WaliPaginatedResponse> => {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search.trim()) params.append("search", search.trim());
+  if (filters && Object.keys(filters).length > 0) params.append("filters", JSON.stringify(filters));
+  const json = await apiClient<ApiResponseList<Wali> & { pagination: WaliPagination }>(
+    `${API_WALI_OPTIMIZED}?${params.toString()}`
+  );
+  const data = camelcaseKeys(json.data ?? [], { deep: true }) as unknown as Wali[];
+  return { data: Array.isArray(data) ? data : [], pagination: json.pagination ?? { page, pageSize, total: 0, totalPages: 1 } };
+};
+
+export const getWaliSummary = async (search?: string): Promise<WaliSummary> => {
+  const params = new URLSearchParams();
+  if (search?.trim()) params.append("search", search.trim());
+  const qs = params.toString();
+  const json = await apiClient<{ data: WaliSummary }>(qs ? `${API_WALI_SUMMARY}?${qs}` : API_WALI_SUMMARY);
+  return json.data;
 };

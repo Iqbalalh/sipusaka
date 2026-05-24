@@ -12,7 +12,7 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Umkm>[] => [
+export const getUmkmColumns = (regions: Region[], role?: string, onDelete?: (id: number) => void): TableColumn<Umkm>[] => [
   {
     title: "Nama Usaha",
     dataIndex: "businessName",
@@ -68,7 +68,6 @@ export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Um
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value: any, record: Umkm) => record.regionId === value,
     render: (_: any, umkm: Umkm) => {
       const region = regions.find((r) => r.regionId === umkm.regionId);
       return region ? region.regionName : "-";
@@ -88,10 +87,6 @@ export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Um
       { text: "Pernah", value: "pernah" },
       { text: "Belum pernah", value: "belum" },
     ],
-    onFilter: (value: any, record: any) => {
-      const count = record._count?.umkmVisits ?? 0;
-      return value === "pernah" ? count > 0 : count === 0;
-    },
     render: (_: any, record: any) => {
       const count = record._count?.umkmVisits ?? 0;
       return count === 0 ? "Belum pernah" : count;
@@ -110,7 +105,6 @@ export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Um
       { text: "Aktif", value: true },
       { text: "Tidak Aktif", value: false },
     ],
-    onFilter: (value: any, record: Umkm) => record.isActive === value,
     render: (isActive: boolean) => {
       if (isActive === true) {
         return <Badge color="success">Aktif</Badge>;
@@ -198,15 +192,8 @@ export const getUmkmColumns = (regions: Region[], role?: string): TableColumn<Um
           </Link>
         )}
 
-        {role !== "staff" && (
-          <Button
-            size="xs"
-            onClick={() => {
-              if (!umkm.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              umkm._openDeleteModal(umkm.id);
-            }}
-          >
+        {role !== "staff" && onDelete && (
+          <Button size="xs" onClick={() => { if (!umkm.id) return; onDelete(umkm.id); }}>
             <DeleteOutlined />
           </Button>
         )}

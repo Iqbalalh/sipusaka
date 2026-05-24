@@ -10,7 +10,7 @@ import type { TableColumn } from "@/types/generic/antd-table";
 // ==============================================
 // COLUMN CONFIGURATION GENERATOR
 // ==============================================
-export const getUserColumns = (): TableColumn<User>[] => [
+export const getUserColumns = (onDelete?: (id: number) => void): TableColumn<User>[] => [
   {
     title: "Username",
     dataIndex: "username",
@@ -54,16 +54,14 @@ export const getUserColumns = (): TableColumn<User>[] => [
           </Button>
         </Link>
 
-        <Button
-          size="xs"
-          onClick={() => {
-            if (!user.userId) return;
-            // @ts-ignore - _openDeleteModal is injected by DataTable
-            user._openDeleteModal(user.userId);
-          }}
-        >
-          <DeleteOutlined />
-        </Button>
+        {onDelete && (
+          <Button
+            size="xs"
+            onClick={() => { if (user.userId) onDelete(user.userId); }}
+          >
+            <DeleteOutlined />
+          </Button>
+        )}
       </div>
     ),
   },

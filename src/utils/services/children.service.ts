@@ -1,4 +1,5 @@
 import { Children } from "@/types/models/children";
+export type { Children };
 import { apiClient } from "../fetch/apiClient";
 import { API_CHILDREN } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
@@ -103,6 +104,35 @@ export const getChildrenOptimized = async (
   } catch (error) {
     throw error;
   }
+};
+
+export interface ChildrenStats {
+  total: number;
+  active: number;
+  inactive: number;
+  abk: number;
+  yatim: number;
+  piatu: number;
+  yatimPiatu: number;
+  totalDana: number;
+  totalBantuan: number;
+}
+
+export const getChildrenStats = async (
+  search: string = "",
+  filters?: Omit<ChildrenFilters, "ageSort">
+): Promise<ChildrenStats> => {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (filters?.educationLevel) params.append("educationLevel", filters.educationLevel);
+  if (filters?.yatimStatus) params.append("yatimStatus", filters.yatimStatus);
+  if (filters?.regionId !== undefined) params.append("regionId", String(filters.regionId));
+  if (filters?.isActive !== undefined) params.append("isActive", String(filters.isActive));
+  if (filters?.isCondition !== undefined) params.append("isCondition", String(filters.isCondition));
+  const url = `${API_CHILDREN}/stats${params.toString() ? `?${params.toString()}` : ""}`;
+  const res = await fetchWithAuth(url);
+  const json = await res.json();
+  return json.data as ChildrenStats;
 };
 
 export const getChildrenForExport = async (

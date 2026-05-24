@@ -19,6 +19,8 @@ interface Dashboard {
     active?: { count: number };
     inactive?: { count: number };
     onMap?: { count: number };
+    visited?: { count: number };
+    unvisited?: { count: number };
   };
   children: {
     total?: { count: number };
@@ -33,6 +35,8 @@ interface Dashboard {
     total?: { count: number };
     active?: { count: number };
     inactive?: { count: number };
+    assisted?: { count: number };
+    unassisted?: { count: number };
   };
   childAssistance?: {
     count: number;
@@ -211,11 +215,21 @@ export const TableMetrics = () => {
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {getCount(dashboardData?.family?.active)}
             </p>
-            <div className="mt-4">
-              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  GEOPUSAKA
+            <div className="mt-4 grid grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Sudah Dikunjungi</p>
+                <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                  {getCount(dashboardData?.family?.visited)}
                 </p>
+              </div>
+              <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
+                <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">Belum Dikunjungi</p>
+                <p className="mt-1 text-lg font-bold text-orange-700 dark:text-orange-300">
+                  {getCount(dashboardData?.family?.unvisited)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50 col-span-2 lg:col-span-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400">GEOPUSAKA</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.family?.onMap)}
                 </p>
@@ -305,6 +319,20 @@ export const TableMetrics = () => {
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {getCount(dashboardData?.umkm?.active)}
             </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Sudah Diberi Bantuan</p>
+                <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                  {getCount(dashboardData?.umkm?.assisted)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
+                <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">Belum Diberi Bantuan</p>
+                <p className="mt-1 text-lg font-bold text-orange-700 dark:text-orange-300">
+                  {getCount(dashboardData?.umkm?.unassisted)}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

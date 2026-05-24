@@ -15,7 +15,8 @@ import { formatDate } from "@/utils/formatter/formatDate";
 // ==============================================
 export const getEmployeeColumns = (
   regions: Region[],
-  role?: string
+  role?: string,
+  onDelete?: (id: number) => void
 ): ColumnsType<Employee> => [
   {
     title: "Foto",
@@ -72,7 +73,6 @@ export const getEmployeeColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => record.regionId === value,
     render: (_, emp) => {
       const region = regions.find((r) => r.regionId === emp.regionId);
       return region ? region.regionName : "-";
@@ -91,7 +91,6 @@ export const getEmployeeColumns = (
       { text: "Laki-laki", value: "M" },
       { text: "Perempuan", value: "F" },
     ],
-    onFilter: (value, record) => record.employeeGender === value,
     render: (gender: "M" | "F") =>
       gender === "M" ? "Laki-laki" : "Perempuan",
     exportRender: (value: "M" | "F") =>
@@ -106,7 +105,6 @@ export const getEmployeeColumns = (
       { text: "PLH", value: true },
       { text: "Non-PLH", value: false },
     ],
-    onFilter: (value, record) => record.isAccident === value,
     render: (isAccident: boolean) => (
       <Badge size="sm" color={isAccident ? "error" : "success"}>
         {isAccident ? "PLH" : "Non-PLH"}
@@ -122,13 +120,6 @@ export const getEmployeeColumns = (
       { text: "Aktif", value: true },
       { text: "Tidak Aktif", value: false },
     ],
-    onFilter: (value, record) => {
-      const homes = (record as any).homes;
-      const active = Array.isArray(homes)
-        ? homes.some((h: any) => h.partners?.isActive === true)
-        : (homes?.partners?.isActive ?? null);
-      return active === value;
-    },
     render: (_: any, record: any) => {
       const homes = record.homes;
       const isActive = Array.isArray(homes)
@@ -224,15 +215,8 @@ export const getEmployeeColumns = (
           </Link>
         )}
 
-        {role !== "staff" && (
-          <Button
-            size="xs"
-            onClick={() => {
-              if (!emp.id) return;
-              // @ts-ignore - _openDeleteModal is injected by DataTable
-              emp._openDeleteModal(emp.id);
-            }}
-          >
+        {role !== "staff" && onDelete && (
+          <Button size="xs" onClick={() => { if (!emp.id) return; onDelete(emp.id); }}>
             <DeleteOutlined />
           </Button>
         )}
