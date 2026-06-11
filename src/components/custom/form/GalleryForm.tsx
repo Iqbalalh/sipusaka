@@ -368,7 +368,7 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
                   value={galleryDate}
                   onChange={(date) => {
                     setGalleryDate(date);
-                    handleFieldChange("galleryDate", date ? date.format('YYYY-MM-DD') : null);
+                    handleFieldChange("galleryDate", date && date.isValid() ? date.format('YYYY-MM-DD') : null);
                   }}
                   placeholder="Pilih tanggal galeri"
                   format="DD/MM/YYYY"
