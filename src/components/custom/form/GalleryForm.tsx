@@ -288,11 +288,6 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
       });
     }
 
-    // Append base form fields (camelCase — backend reads req.body as-is)
-    if (form.caption) extraData.append("caption", form.caption);
-    if (form.regionId != null) extraData.append("regionId", String(form.regionId));
-    if (form.galleryDate) extraData.append("galleryDate", String(form.galleryDate));
-
     // Use XHR with progress for multi-file create, regular submit for single/edit
     if (mode === "create" && multipleFiles.length > 1) {
       try {
