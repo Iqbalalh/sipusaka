@@ -82,7 +82,8 @@ function ChildrenInsightPanel({
     );
   }
 
-  const clusters = [
+  type ClusterItem = { label: string; value: number; sub?: string };
+  const clusters: { title: string; headerColor: string; items: ClusterItem[] }[] = [
     {
       title: "Aktif",
       headerColor: "bg-emerald-500",
@@ -110,10 +111,10 @@ function ChildrenInsightPanel({
       headerColor: "bg-blue-500",
       items: [
         { label: "Jumlah Data", value: stats.total, sub: `dari ${grandTotal} total` },
-        { label: "Yatim", value: stats.yatim, sub: undefined },
-        { label: "Piatu", value: stats.piatu, sub: undefined },
-        { label: "Yatim Piatu", value: stats.yatimPiatu, sub: undefined },
-        { label: "ABK", value: stats.abk, sub: undefined },
+        { label: "Yatim", value: stats.yatim },
+        { label: "Piatu", value: stats.piatu },
+        { label: "Yatim Piatu", value: stats.yatimPiatu },
+        { label: "ABK", value: stats.abk },
       ],
     },
   ];
