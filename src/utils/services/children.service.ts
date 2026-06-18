@@ -58,6 +58,7 @@ export interface ChildrenFilters {
   isActive?: boolean;
   isCondition?: boolean;
   ageSort?: "asc" | "desc";
+  gender?: string;
 }
 
 export interface ChildrenOptimizedResponse {
@@ -87,6 +88,7 @@ export const getChildrenOptimized = async (
     if (filters?.regionId) params.append("regionId", filters.regionId.toString());
     if (filters?.isActive !== undefined) params.append("isActive", filters.isActive.toString());
     if (filters?.isCondition !== undefined) params.append("isCondition", filters.isCondition.toString());
+    if (filters?.gender) params.append("gender", filters.gender);
     if (filters?.ageSort) params.append("ageSort", filters.ageSort);
 
     const url = `${API_CHILDREN}/optimized?${params.toString()}`;
@@ -110,10 +112,18 @@ export interface ChildrenStats {
   total: number;
   active: number;
   inactive: number;
-  abk: number;
   yatim: number;
   piatu: number;
   yatimPiatu: number;
+  abk: number;
+  yatimActive: number;
+  piatuActive: number;
+  yatimPiatuActive: number;
+  abkActive: number;
+  yatimInactive: number;
+  piatuInactive: number;
+  yatimPiatuInactive: number;
+  abkInactive: number;
   totalDana: number;
   totalBantuan: number;
 }
@@ -129,6 +139,7 @@ export const getChildrenStats = async (
   if (filters?.regionId !== undefined) params.append("regionId", String(filters.regionId));
   if (filters?.isActive !== undefined) params.append("isActive", String(filters.isActive));
   if (filters?.isCondition !== undefined) params.append("isCondition", String(filters.isCondition));
+  if (filters?.gender) params.append("gender", filters.gender);
   const url = `${API_CHILDREN}/stats${params.toString() ? `?${params.toString()}` : ""}`;
   const res = await fetchWithAuth(url);
   const json = await res.json();
@@ -146,6 +157,7 @@ export const getChildrenForExport = async (
     if (filters?.regionId) params.append("regionId", filters.regionId.toString());
     if (filters?.isActive !== undefined) params.append("isActive", filters.isActive.toString());
     if (filters?.isCondition !== undefined) params.append("isCondition", filters.isCondition.toString());
+    if (filters?.gender) params.append("gender", filters.gender);
     if (filters?.ageSort) params.append("ageSort", filters.ageSort);
 
     const url = params.toString() ? `${API_CHILDREN}/export?${params.toString()}` : `${API_CHILDREN}/export`;

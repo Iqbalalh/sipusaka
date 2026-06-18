@@ -76,7 +76,6 @@ export const getChildrenColumns = (
       { text: "Laki-laki", value: "M" },
       { text: "Perempuan", value: "F" },
     ],
-    onFilter: (value, record) => record.childrenGender === value,
     render: (gender: "M" | "F") =>
       gender === "M" ? "Laki-laki" : "Perempuan",
     exportRender: (value: "M" | "F") =>

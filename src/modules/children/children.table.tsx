@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Table, Modal, Input, Progress, Skeleton } from "antd";
 import { Button as AntButton } from "antd";
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { FaChild, FaPersonBreastfeeding, FaStar, FaMoon, FaHeartCrack, FaHandHoldingHeart, FaGift, FaListUl } from "react-icons/fa6";
+import { FaChild } from "react-icons/fa6";
 import type { TableProps } from "antd";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -32,7 +32,7 @@ import { saveAs } from "file-saver";
 // SERVER FILTER KEYS
 // These column keys map to ChildrenFilters fields
 // ==============================================
-const SERVER_FILTER_KEYS = ["lastEducationLevel", "yatimStatus", "regionId", "isActive", "isCondition"] as const;
+const SERVER_FILTER_KEYS = ["lastEducationLevel", "yatimStatus", "regionId", "isActive", "isCondition", "childrenGender"] as const;
 
 const toChildrenFilters = (raw: Record<string, string[]>): ChildrenFilters => ({
   educationLevel: raw["lastEducationLevel"]?.[0],
@@ -40,6 +40,7 @@ const toChildrenFilters = (raw: Record<string, string[]>): ChildrenFilters => ({
   regionId: raw["regionId"]?.[0] ? Number(raw["regionId"][0]) : undefined,
   isActive: raw["isActive"]?.[0] !== undefined ? raw["isActive"][0] === "true" : undefined,
   isCondition: raw["isCondition"]?.[0] !== undefined ? raw["isCondition"][0] === "true" : undefined,
+  gender: raw["childrenGender"]?.[0],
 });
 
 // ==============================================
@@ -66,48 +67,74 @@ function ChildrenInsightPanel({
 }) {
   if (loading || !stats) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-white/3"
-          >
-            <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+            <div className="h-9 bg-gray-200 dark:bg-gray-700" />
+            <div className="p-4 space-y-3">
+              {[0, 1, 2, 3, 4].map((j) => (
+                <Skeleton key={j} active paragraph={false} title={{ width: "100%" }} />
+              ))}
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
-  const tiles = [
-    { icon: <FaChild />, label: "Anak Aktif", value: stats.active, sub: `${stats.inactive} tidak aktif`, color: "bg-emerald-500" },
-    { icon: <FaListUl />, label: "Tertampil", value: stats.total, sub: `dari ${grandTotal} total`, color: "bg-blue-500" },
-    { icon: <FaPersonBreastfeeding />, label: "Anak ABK", value: stats.abk, sub: "", color: "bg-amber-500" },
-    { icon: <FaStar />, label: "Anak Yatim", value: stats.yatim, sub: "", color: "bg-orange-500" },
-    { icon: <FaMoon />, label: "Anak Piatu", value: stats.piatu, sub: "", color: "bg-purple-500" },
-    { icon: <FaHeartCrack />, label: "Yatim Piatu", value: stats.yatimPiatu, sub: "", color: "bg-rose-500" },
-    { icon: <FaHandHoldingHeart />, label: "Dana Bantuan", value: fmt(stats.totalDana), sub: "", color: "bg-teal-500" },
-    { icon: <FaGift />, label: "Total Bantuan", value: stats.totalBantuan, sub: "", color: "bg-indigo-500" },
+  const clusters = [
+    {
+      title: "Aktif",
+      headerColor: "bg-emerald-500",
+      items: [
+        { label: "Jumlah Data", value: stats.active },
+        { label: "Yatim", value: stats.yatimActive },
+        { label: "Piatu", value: stats.piatuActive },
+        { label: "Yatim Piatu", value: stats.yatimPiatuActive },
+        { label: "ABK", value: stats.abkActive },
+      ],
+    },
+    {
+      title: "Tidak Aktif",
+      headerColor: "bg-gray-400",
+      items: [
+        { label: "Jumlah Data", value: stats.inactive },
+        { label: "Yatim", value: stats.yatimInactive },
+        { label: "Piatu", value: stats.piatuInactive },
+        { label: "Yatim Piatu", value: stats.yatimPiatuInactive },
+        { label: "ABK", value: stats.abkInactive },
+      ],
+    },
+    {
+      title: "Total Keseluruhan",
+      headerColor: "bg-blue-500",
+      items: [
+        { label: "Jumlah Data", value: stats.total, sub: `dari ${grandTotal} total` },
+        { label: "Yatim", value: stats.yatim, sub: undefined },
+        { label: "Piatu", value: stats.piatu, sub: undefined },
+        { label: "Yatim Piatu", value: stats.yatimPiatu, sub: undefined },
+        { label: "ABK", value: stats.abk, sub: undefined },
+      ],
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-      {tiles.map((t) => (
-        <div
-          key={t.label}
-          className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/3"
-        >
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white text-sm shadow ${t.color}`}
-          >
-            {t.icon}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+      {clusters.map((cluster) => (
+        <div key={cluster.title} className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+          <div className={`px-4 py-2 ${cluster.headerColor}`}>
+            <p className="text-white font-semibold text-sm">{cluster.title}</p>
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">
-              {t.label}
-            </p>
-            <p className="text-base font-bold text-gray-900 dark:text-white truncate">{t.value}</p>
-            <p className="text-[10px] text-gray-400 truncate">{t.sub}</p>
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {cluster.items.map((item) => (
+              <div key={item.label} className="flex items-center justify-between px-4 py-2.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{item.value}</p>
+                  {item.sub && <p className="text-[10px] text-gray-400">{item.sub}</p>}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ))}

@@ -244,50 +244,33 @@ export const TableMetrics = () => {
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/30">
               <FaChild className="text-white text-2xl" />
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex">
-                <Badge color="primary" size="md">
-                  {getCount(dashboardData?.children?.total)} Total
-                </Badge>
-                <Badge color="error" size="md">
-                  {getCount(dashboardData?.children?.inactive)} Non-Aktif
-                </Badge>
-              </div>
-
-              <Badge color="warning" size="md">
-                {getCount(dashboardData?.children?.abk)} ABK
-              </Badge>
-            </div>
+            <Badge color="warning" size="md">
+              {getCount(dashboardData?.children?.abk)} ABK
+            </Badge>
           </div>
 
           <div className="mt-5">
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Anak
+              Anak Aktif
             </h3>
             <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
               {getCount(dashboardData?.children?.active)}
             </p>
             <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-2">
               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Yatim
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Yatim</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.children?.yatim)}
                 </p>
               </div>
               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Piatu
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Piatu</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.children?.piatu)}
                 </p>
               </div>
               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Yatim Piatu
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Yatim Piatu</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {getCount(dashboardData?.children?.yatimPiatu)}
                 </p>
