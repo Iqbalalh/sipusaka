@@ -43,6 +43,14 @@ export const updateChildren = async (id: string | number, fd: FormData) => {
   });
 };
 
+export const assignChildToHome = async (childId: number, homeId: number) => {
+  return await fetchWithAuth(`${API_CHILDREN}/${childId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ homeId }),
+  });
+};
+
 export const deleteChildren = async (id: number) => {
   try {
     return await deleteResource(`${API_CHILDREN}/${id}`);
@@ -126,6 +134,10 @@ export interface ChildrenStats {
   abkInactive: number;
   totalDana: number;
   totalBantuan: number;
+  totalDanaActive: number;
+  totalBantuanActive: number;
+  totalDanaInactive: number;
+  totalBantuanInactive: number;
 }
 
 export const getChildrenStats = async (

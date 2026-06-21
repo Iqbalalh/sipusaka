@@ -58,87 +58,107 @@ const fmt = (v: number) =>
 // ==============================================
 function ChildrenInsightPanel({
   stats,
-  grandTotal,
   loading,
 }: {
   stats: ChildrenStats | null;
-  grandTotal: number;
   loading: boolean;
 }) {
   if (loading || !stats) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-white/3 overflow-hidden">
-            <div className="h-9 bg-gray-200 dark:bg-gray-700" />
-            <div className="p-4 space-y-3">
-              {[0, 1, 2, 3, 4].map((j) => (
-                <Skeleton key={j} active paragraph={false} title={{ width: "100%" }} />
-              ))}
+      <div className="space-y-4 mb-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+              <div className="h-9 bg-gray-200 dark:bg-gray-700" />
+              <div className="p-4 space-y-3">
+                {[0, 1, 2, 3, 4, 5].map((j) => (
+                  <Skeleton key={j} active paragraph={false} title={{ width: "100%" }} />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+          <div className="h-9 bg-gray-200 dark:bg-gray-700" />
+          <div className="p-4"><Skeleton active paragraph={false} title={{ width: "40%" }} /></div>
+        </div>
       </div>
     );
   }
 
-  type ClusterItem = { label: string; value: number; sub?: string };
-  const clusters: { title: string; headerColor: string; items: ClusterItem[] }[] = [
+  type ClusterItem = { label: string; value: number | string; accent: string };
+  const clusters: { title: string; headerColor: string; accentBg: string; accent: string; items: ClusterItem[]; dana: number; bantuanCount: number }[] = [
     {
       title: "Aktif",
       headerColor: "bg-emerald-500",
+      accentBg: "bg-emerald-50 dark:bg-emerald-900/20",
+      accent: "text-emerald-700 dark:text-emerald-400",
+      dana: stats.totalDanaActive,
+      bantuanCount: stats.totalBantuanActive,
       items: [
-        { label: "Jumlah Data", value: stats.active },
-        { label: "Yatim", value: stats.yatimActive },
-        { label: "Piatu", value: stats.piatuActive },
-        { label: "Yatim Piatu", value: stats.yatimPiatuActive },
-        { label: "ABK", value: stats.abkActive },
+        { label: "Jumlah Data", value: stats.active, accent: "text-emerald-600 dark:text-emerald-400" },
+        { label: "Yatim", value: stats.yatimActive, accent: "text-amber-600 dark:text-amber-400" },
+        { label: "Piatu", value: stats.piatuActive, accent: "text-orange-600 dark:text-orange-400" },
+        { label: "Yatim Piatu", value: stats.yatimPiatuActive, accent: "text-red-600 dark:text-red-400" },
+        { label: "ABK", value: stats.abkActive, accent: "text-purple-600 dark:text-purple-400" },
       ],
     },
     {
       title: "Tidak Aktif",
       headerColor: "bg-gray-400",
+      accentBg: "bg-gray-50 dark:bg-gray-800/50",
+      accent: "text-gray-600 dark:text-gray-400",
+      dana: stats.totalDanaInactive,
+      bantuanCount: stats.totalBantuanInactive,
       items: [
-        { label: "Jumlah Data", value: stats.inactive },
-        { label: "Yatim", value: stats.yatimInactive },
-        { label: "Piatu", value: stats.piatuInactive },
-        { label: "Yatim Piatu", value: stats.yatimPiatuInactive },
-        { label: "ABK", value: stats.abkInactive },
+        { label: "Jumlah Data", value: stats.inactive, accent: "text-gray-600 dark:text-gray-400" },
+        { label: "Yatim", value: stats.yatimInactive, accent: "text-amber-600 dark:text-amber-400" },
+        { label: "Piatu", value: stats.piatuInactive, accent: "text-orange-600 dark:text-orange-400" },
+        { label: "Yatim Piatu", value: stats.yatimPiatuInactive, accent: "text-red-600 dark:text-red-400" },
+        { label: "ABK", value: stats.abkInactive, accent: "text-purple-600 dark:text-purple-400" },
       ],
     },
     {
       title: "Total Keseluruhan",
       headerColor: "bg-blue-500",
+      accentBg: "bg-blue-50 dark:bg-blue-900/20",
+      accent: "text-blue-700 dark:text-blue-400",
+      dana: stats.totalDana,
+      bantuanCount: stats.totalBantuan,
       items: [
-        { label: "Jumlah Data", value: stats.total, sub: `dari ${grandTotal} total` },
-        { label: "Yatim", value: stats.yatim },
-        { label: "Piatu", value: stats.piatu },
-        { label: "Yatim Piatu", value: stats.yatimPiatu },
-        { label: "ABK", value: stats.abk },
+        { label: "Jumlah Data", value: stats.total, accent: "text-blue-600 dark:text-blue-400" },
+        { label: "Yatim", value: stats.yatim, accent: "text-amber-600 dark:text-amber-400" },
+        { label: "Piatu", value: stats.piatu, accent: "text-orange-600 dark:text-orange-400" },
+        { label: "Yatim Piatu", value: stats.yatimPiatu, accent: "text-red-600 dark:text-red-400" },
+        { label: "ABK", value: stats.abk, accent: "text-purple-600 dark:text-purple-400" },
       ],
     },
   ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
-      {clusters.map((cluster) => (
-        <div key={cluster.title} className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-white/3 overflow-hidden">
-          <div className={`px-4 py-2 ${cluster.headerColor}`}>
-            <p className="text-white font-semibold text-sm">{cluster.title}</p>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {cluster.items.map((item) => (
-              <div key={item.label} className="flex items-center justify-between px-4 py-2.5">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{item.value}</p>
-                  {item.sub && <p className="text-[10px] text-gray-400">{item.sub}</p>}
+        {clusters.map((cluster) => (
+          <div key={cluster.title} className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-white/3 overflow-hidden">
+            <div className={`px-4 py-2 ${cluster.headerColor}`}>
+              <p className="text-white font-semibold text-sm">{cluster.title}</p>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {cluster.items.map((item) => (
+                <div key={item.label} className={`flex items-center justify-between px-4 py-2.5 ${cluster.accentBg}`}>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+                  <p className={`text-sm font-bold ${item.accent}`}>{item.value}</p>
                 </div>
+              ))}
+              <div className={`flex items-center justify-between px-4 py-2.5 ${cluster.accentBg} border-t-2 border-gray-200 dark:border-gray-700`}>
+                <div>
+                  <p className={`text-xs font-semibold ${cluster.accent}`}>Dana Bantuan</p>
+                  <p className="text-[10px] text-gray-400">{cluster.bantuanCount} rekam</p>
+                </div>
+                <p className={`text-sm font-bold ${cluster.accent}`}>{fmt(cluster.dana)}</p>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
     </div>
   );
 }
@@ -355,7 +375,6 @@ export default function ChildrenTable() {
 
   const [stats, setStats] = useState<ChildrenStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [grandTotal, setGrandTotal] = useState(0);
 
   const [searchInput, setSearchInput] = useState(urlSearch);
   useEffect(() => {
@@ -372,7 +391,6 @@ export default function ChildrenTable() {
         setEduFilters(levels.map((l) => ({ text: l, value: l })));
       })
       .catch(console.error);
-    getChildrenStats("", {}).then((s) => setGrandTotal(s.total)).catch(console.error);
   }, []);
 
   // Fetch table data + stats on URL change
@@ -486,7 +504,7 @@ export default function ChildrenTable() {
   return (
     <>
       {/* INSIGHT PANEL */}
-      <ChildrenInsightPanel stats={stats} grandTotal={grandTotal} loading={statsLoading} />
+      <ChildrenInsightPanel stats={stats} loading={statsLoading} />
 
       {/* DELETE MODAL */}
       <Modal

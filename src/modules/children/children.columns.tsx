@@ -241,9 +241,9 @@ export const getChildrenColumns = (
       text: r.regionName,
       value: r.regionId,
     })),
-    onFilter: (value, record) => (record as any).homes?.employees?.regions?.regionId === value,
-    render: (_, child: any) => child.homes?.employees?.regions?.regionName ?? "-",
-    exportRender: (_: any, child: any) => child.homes?.employees?.regions?.regionName ?? "-",
+    onFilter: (value, record) => (record as any).homes?.regions?.regionId === value,
+    render: (_, child: any) => child.homes?.regions?.regionName ?? "-",
+    exportRender: (_: any, child: any) => child.homes?.regions?.regionName ?? "-",
   },
 
   {

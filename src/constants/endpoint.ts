@@ -11,6 +11,7 @@ export const API_HOME = `${baseUrl}/api/homes`;
 export const API_HOME_EXPORT = `${baseUrl}/api/homes/export`;
 export const API_HOME_OPTIMIZED = `${baseUrl}/api/homes/optimized`;
 export const API_HOME_SUMMARY = `${baseUrl}/api/homes/summary`;
+export const API_HOME_SIBLING = (id: number | string) => `${baseUrl}/api/homes/${id}/sibling`;
 
 // Regions
 export const API_REGION = `${baseUrl}/api/regions`;

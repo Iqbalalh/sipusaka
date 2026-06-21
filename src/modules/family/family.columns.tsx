@@ -92,7 +92,14 @@ export const getFamilyColumns = (regions: Region[], role?: string, onDelete?: (i
     title: "Wali",
     dataIndex: "waliName",
     key: "waliName",
-    render: (_, home) => home.wali?.waliName || "-",
+    render: (_, home) => {
+      const walis = home.walis;
+      if (walis && walis.length > 0) {
+        const names = walis.map((w) => w.wali?.waliName).filter(Boolean);
+        if (names.length > 0) return names.join(", ");
+      }
+      return home.wali?.waliName || "-";
+    },
   },
   {
     title: "Anak",

@@ -16,6 +16,8 @@ import {
   Upload,
   message,
   Space,
+  Select,
+  Popconfirm,
 } from "antd";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
@@ -52,7 +54,9 @@ import type { UploadFile } from "antd/es/upload/interface";
 import dayjs from "dayjs";
 
 // Utils
-import { getHomeDetail } from "@/utils/services/home.service";
+import { addSiblingHome, deleteHome, getHomeDetail } from "@/utils/services/home.service";
+import { assignChildToHome } from "@/utils/services/children.service";
+import { getWaliOptimized } from "@/utils/services/wali.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
 import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPresignedUrl";
@@ -82,6 +86,21 @@ export default function FamilyView() {
   const [messageApi, contextHolder] = message.useMessage();
   const [deletingVisitId, setDeletingVisitId] = useState<number | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
+
+  // Tambah Wali modal state
+  const [addWaliOpen, setAddWaliOpen] = useState(false);
+  const [addWaliLoading, setAddWaliLoading] = useState(false);
+  const [selectedWaliId, setSelectedWaliId] = useState<number | null>(null);
+  const [waliOptions, setWaliOptions] = useState<{ value: number; label: string }[]>([]);
+  const [waliSearchLoading, setWaliSearchLoading] = useState(false);
+
+  // Hapus Wali (sibling home) state
+  const [deletingSiblingId, setDeletingSiblingId] = useState<number | null>(null);
+
+  // Tambah Anak ke cluster state
+  const [addAnakTargetHomeId, setAddAnakTargetHomeId] = useState<number | null>(null);
+  const [addAnakLoading, setAddAnakLoading] = useState(false);
+  const [selectedChildIds, setSelectedChildIds] = useState<number[]>([]);
 
   // ==========================
   // FETCH INITIAL DATA
@@ -261,6 +280,84 @@ export default function FamilyView() {
     return isImage;
   };
 
+  // ==========================
+  // TAMBAH WALI HANDLERS
+  // ==========================
+  const handleOpenAddWali = async () => {
+    setSelectedWaliId(null);
+    setAddWaliOpen(true);
+    setWaliSearchLoading(true);
+    try {
+      const result = await getWaliOptimized(1, 50, "");
+      setWaliOptions(result.data.map((w) => ({ value: w.id!, label: w.waliName })));
+    } catch {
+      // ignore
+    } finally {
+      setWaliSearchLoading(false);
+    }
+  };
+
+  const handleWaliSearch = async (search: string) => {
+    setWaliSearchLoading(true);
+    try {
+      const result = await getWaliOptimized(1, 50, search);
+      setWaliOptions(result.data.map((w) => ({ value: w.id!, label: w.waliName })));
+    } catch {
+      // ignore
+    } finally {
+      setWaliSearchLoading(false);
+    }
+  };
+
+  const handleAddWaliSubmit = async () => {
+    if (!selectedWaliId) return;
+    setAddWaliLoading(true);
+    try {
+      await addSiblingHome(id, selectedWaliId);
+      setAddWaliOpen(false);
+      // Refresh family data
+      const home = await getHomeDetail(id);
+      setData(home);
+      messageApi.success({ content: "Wali berhasil ditambahkan", key: "add-wali", duration: 2 });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setAddWaliLoading(false);
+    }
+  };
+
+  const handleDeleteSibling = async (siblingHomeId: number) => {
+    setDeletingSiblingId(siblingHomeId);
+    try {
+      await deleteHome(siblingHomeId);
+      // Refresh family data
+      const home = await getHomeDetail(id);
+      setData(home);
+      messageApi.success({ content: "Wali berhasil dihapus dari keluarga", key: "del-wali", duration: 2 });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setDeletingSiblingId(null);
+    }
+  };
+
+  const handleAddAnakSubmit = async () => {
+    if (!addAnakTargetHomeId || selectedChildIds.length === 0) return;
+    setAddAnakLoading(true);
+    try {
+      await Promise.all(selectedChildIds.map((childId) => assignChildToHome(childId, addAnakTargetHomeId)));
+      const home = await getHomeDetail(id);
+      setData(home);
+      setAddAnakTargetHomeId(null);
+      setSelectedChildIds([]);
+      messageApi.success({ content: "Anak berhasil ditambahkan ke cluster ini", key: "add-anak", duration: 2 });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setAddAnakLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -272,6 +369,79 @@ export default function FamilyView() {
   return (
     <>
       {contextHolder}
+
+      {/* Tambah Wali Modal */}
+      <Modal
+        title="Tambah Wali"
+        open={addWaliOpen}
+        onCancel={() => setAddWaliOpen(false)}
+        onOk={handleAddWaliSubmit}
+        okText="Tambah"
+        cancelText="Batal"
+        confirmLoading={addWaliLoading}
+        okButtonProps={{ disabled: !selectedWaliId }}
+      >
+        <div className="py-3">
+          <p className="text-sm text-gray-500 mb-3">
+            Pilih wali yang akan ditambahkan ke keluarga ini. Wali baru akan menjadi bagian dari keluarga yang sama dengan data pegawai dan pasangan yang identik.
+          </p>
+          <Select
+            showSearch
+            placeholder="Cari nama wali..."
+            className="w-full"
+            value={selectedWaliId}
+            onChange={(val) => setSelectedWaliId(val)}
+            onSearch={handleWaliSearch}
+            loading={waliSearchLoading}
+            filterOption={false}
+            options={waliOptions}
+            notFoundContent={waliSearchLoading ? <Spin size="small" /> : "Tidak ditemukan"}
+          />
+        </div>
+      </Modal>
+
+      {/* Tambah Anak Modal */}
+      {(() => {
+        const targetEntry = data?.walis?.find((e) => e.homeId === addAnakTargetHomeId);
+        const targetWaliName = targetEntry?.wali?.waliName;
+        const otherChildren = (data?.childrens ?? []).filter(
+          (c: any) => c.homeId !== addAnakTargetHomeId
+        );
+        return (
+          <Modal
+            title={`Tambah Anak ke Rumah${targetWaliName ? ` (${targetWaliName})` : ""}`}
+            open={addAnakTargetHomeId !== null}
+            onCancel={() => { setAddAnakTargetHomeId(null); setSelectedChildIds([]); }}
+            onOk={handleAddAnakSubmit}
+            okText="Pindahkan"
+            cancelText="Batal"
+            confirmLoading={addAnakLoading}
+            okButtonProps={{ disabled: selectedChildIds.length === 0 }}
+          >
+            <div className="py-3">
+              <p className="text-sm text-gray-500 mb-3">
+                Pilih anak yang akan dipindahkan ke cluster ini. Anak yang dipilih akan dipindahkan dari cluster sebelumnya.
+              </p>
+              {otherChildren.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">Tidak ada anak lain di keluarga ini yang bisa dipindahkan.</p>
+              ) : (
+                <Select
+                  mode="multiple"
+                  placeholder="Pilih anak..."
+                  className="w-full"
+                  value={selectedChildIds}
+                  onChange={(vals) => setSelectedChildIds(vals as number[])}
+                  options={otherChildren.map((c: any) => ({
+                    value: c.id,
+                    label: `${c.childrenName}${c.isActive ? "" : " (Tidak Aktif)"}`,
+                  }))}
+                />
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
+
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         {/* Home Info */}
         <div className="p-4 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-5 mb-5">
@@ -280,6 +450,15 @@ export default function FamilyView() {
               Data Keluarga{" "}
             </h4>
             <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenAddWali}
+                >
+                  + Tambah Wali
+                </Button>
+              )}
               {isAdmin && (
                 <Link href={`/family/edit/${id}`}>
                   <Button variant="outline" size="sm">
@@ -299,11 +478,12 @@ export default function FamilyView() {
                     `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
                       data?.partner?.partnerPict
                     )}`,
-                    data?.waliId && data?.wali
-                      ? `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
-                          data.wali.waliPict
-                        )}`
-                      : undefined,
+                    (() => {
+                      const firstWali = data?.walis?.find((e) => e.wali)?.wali;
+                      return firstWali
+                        ? `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl((firstWali as any).waliPict)}`
+                        : undefined;
+                    })(),
                     data?.childrens?.map(
                       (child) =>
                         `${API_IMAGE}/?keyObject=${extractKeyFromPresignedUrl(
@@ -582,334 +762,235 @@ export default function FamilyView() {
           </div>
         </div>
 
-        {/* Wali */}
-        {data?.waliId && (
-          <div className="p-4 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-5 mb-5">
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
-              Wali
-            </h4>
+        {/* Cluster per sibling home: satu card = Rumah (Nama Wali) + Anak */}
+        {(data?.walis ?? []).map((entry) => {
+          const w = entry.wali;
+          const clusterTitle = w ? `Rumah (${w.waliName})` : "Anak Tertanggung";
+          const groupChildren = (data?.childrens ?? []).filter(
+            (c: any) => c.homeId === entry.homeId
+          );
+          const otherChildrenExist = (data?.childrens ?? []).some(
+            (c: any) => c.homeId !== entry.homeId
+          );
 
-            <div className="flex flex-col gap-4 mb-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
-                  <Image
-                    width={56}
-                    height={56}
-                    src={data.wali?.waliPict || "/images/user/alt-user.png"}
-                    alt={`Profile Wali ${data.wali?.waliName || ""}`}
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <h4 className="text-base font-semibold text-gray-800 dark:text-white/90 truncate">
-                    {data.wali?.waliName}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {data.wali?.relation || "Relasi tidak diketahui"}
-                    </span>
-                    <span className="text-gray-300 dark:text-gray-700">•</span>
-                    <Badge variant="light" color="info">
-                      {data?.regions?.regionName || "Region tidak ada"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 sm:justify-end">
-                <Link href={`/wali/edit/${data?.waliId}?redirect=/family/view/${id}`}>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Detail Info Grid - Block Design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Nomor Telp
-                </span>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
-                    {data.wali?.waliPhone || "-"}
-                  </span>
-                  {data.wali?.waliPhone && <WhatsAppButton phoneNumber={data.wali.waliPhone} />}
+          return (
+            <div key={entry.homeId} className="p-4 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-5 mb-5">
+              {/* Cluster header */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h4 className="text-xl font-semibold text-gray-800 dark:text-white/90">{clusterTitle}</h4>
+                <div className="flex items-center gap-2 sm:justify-end">
+                  {isAdmin && otherChildrenExist && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setAddAnakTargetHomeId(entry.homeId); setSelectedChildIds([]); }}
+                    >
+                      + Tambah Anak
+                    </Button>
+                  )}
+                  {w && entry.waliId && (
+                    <Link href={`/wali/edit/${entry.waliId}?redirect=/family/view/${id}`}>
+                      <Button variant="outline" size="sm">Edit Wali</Button>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Popconfirm
+                      title="Hapus cluster ini?"
+                      description="Wali dan anak yang terkait akan dilepas. Apakah Anda yakin?"
+                      okText="Hapus"
+                      cancelText="Batal"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => handleDeleteSibling(entry.homeId)}
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="!text-red-500 !border-red-300 hover:!border-red-500"
+                        disabled={deletingSiblingId === entry.homeId}
+                      >
+                        {deletingSiblingId === entry.homeId ? "Menghapus..." : "Hapus"}
+                      </Button>
+                    </Popconfirm>
+                  )}
                 </div>
               </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Hubungan
-                </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                  {data.wali?.relation || "-"}
-                </span>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Alamat
-                </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                  {data.wali?.waliAddress || "-"}
-                </span>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Koordinat Alamat
-                </span>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">
-                    {data.wali?.addressCoordinate || "-"}
-                  </span>
-                  {data.wali?.addressCoordinate && <GoogleMapsButton coordinate={data.wali.addressCoordinate} />}
-                </div>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Dibuat Pada
-                </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">
-                  {data.wali?.createdAt
-                    ? formatDate(data.wali.createdAt)
-                    : "-"}
-                </span>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Diperbarui Pada
-                </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                  {data.wali?.updatedAt
-                    ? formatDate(data.wali.updatedAt)
-                    : "-"}
-                </span>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Dibuat Oleh
-                </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                  {(data.wali as any)?.createdByStaffName || data.wali?.createdBy || "-"}
-                </span>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                  Diedit Oleh
-                </span>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                  {(data.wali as any)?.editedByStaffName || data.wali?.editedBy || "-"}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Children List */}
-        <div className="p-4 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-5 mb-5">
-          <h4 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
-            Anak Tertanggung ({data?.childrens?.length || 0})
-          </h4>
-          {data?.childrens && data.childrens.length > 0 ? (
-            data.childrens.map((child, index) => (
-              <div
-                key={child.id || index}
-                className={`border-t border-gray-200 dark:border-gray-700 pt-4 ${
-                  index > 0 ? "mt-4" : ""
-                }`}
-              >
-                <div className="flex flex-col gap-4 mb-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
-                      <Image
-                        width={56}
-                        height={56}
-                        src={child.childrenPict || "/images/user/alt-user.png"}
-                        alt={`Profile ${child.childrenName}`}
-                      />
+              {/* Wali detail — only when wali exists */}
+              {w && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
+                      <Image width={48} height={48} src={(w as any).waliPict || "/images/user/alt-user.png"} alt={`Wali ${w.waliName}`} />
                     </div>
-
                     <div className="min-w-0">
-                      <h5 className="text-base font-semibold text-gray-800 dark:text-white/90 truncate">
-                        {child.childrenName}
-                      </h5>
-
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {child.childrenGender === "M"
-                            ? "Laki-laki"
-                            : child.childrenGender === "F"
-                            ? "Perempuan"
-                            : "-"}
-                        </span>
-                        <span className="text-gray-300 dark:text-gray-700">•</span>
-                        <Badge variant={child.isActive ? "solid" : "light"} color={child.isActive ? "success" : "error"}>
-                          {child.isActive ? "Aktif" : "Tidak Aktif"}
-                        </Badge>
-
-                        {!child.isCondition ? (
+                      <p className="text-base font-semibold text-gray-800 dark:text-white/90 truncate">{w.waliName}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{w.relation || "Relasi tidak diketahui"}</span>
+                        {entry.regions?.regionName && (
                           <>
                             <span className="text-gray-300 dark:text-gray-700">•</span>
-                            <Badge variant="light" color="warning" size="sm">
-                              ABK
-                            </Badge>
+                            <Badge variant="light" color="info">{entry.regions.regionName}</Badge>
                           </>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 sm:justify-end">
-                    <Link href={`/children/edit/${child.id}?redirect=/family/view/${id}`}>
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Detail Info Grid - Block Design */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Tanggal Lahir
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.childrenBirthdate
-                        ? formatDate(child.childrenBirthdate)
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Usia
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {calculateAge(child?.childrenBirthdate) !== null
-                        ? `${calculateAge(child?.childrenBirthdate)} Tahun`
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      NIK
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.nik || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Jenjang Pendidikan
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.educationLevel || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Tingkat Pendidikan
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.educationGrade || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Nama Sekolah
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.schoolName || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Pekerjaan
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.childrenJob || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Alamat
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.childrenAddress || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Nomor Telp
-                    </span>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words flex-1">
-                        {child?.childrenPhone || "-"}
-                      </span>
-                      {child?.childrenPhone && <WhatsAppButton phoneNumber={child.childrenPhone} />}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Nomor Telp</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">{w.waliPhone || "-"}</span>
+                        {w.waliPhone && <WhatsAppButton phoneNumber={w.waliPhone} />}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Hubungan</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">{w.relation || "-"}</span>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Alamat Wali</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word">{w.waliAddress || "-"}</span>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Koordinat Alamat</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-word flex-1">{(w as any).addressCoordinate || "-"}</span>
+                        {(w as any).addressCoordinate && <GoogleMapsButton coordinate={(w as any).addressCoordinate} />}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Dibuat Pada</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">{(w as any).createdAt ? formatDate((w as any).createdAt) : "-"}</span>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Diperbarui Pada</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">{(w as any).updatedAt ? formatDate((w as any).updatedAt) : "-"}</span>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Dibuat Oleh</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">{(w as any).createdByStaffName || (w as any).createdBy || "-"}</span>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Diedit Oleh</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">{(w as any).editedByStaffName || (w as any).editedBy || "-"}</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Anak Ke
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.index?.toString() || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Dibuat Pada
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.createdAt
-                        ? formatDate(child.createdAt)
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Diperbarui Pada
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.updatedAt
-                        ? formatDate(child.updatedAt)
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Dibuat Oleh
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {(child as any)?.createdByStaffName || child?.createdBy || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Diedit Oleh
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {(child as any)?.editedByStaffName || child?.editedBy || "-"}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Catatan
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90 wrap-break-words">
-                      {child?.notes || "-"}
-                    </span>
-                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 mt-5" />
                 </div>
+              )}
+
+              {/* Anak Tertanggung */}
+              <div>
+                <h5 className="text-base font-semibold text-gray-700 dark:text-white/80 mb-3">
+                  Anak Tertanggung ({groupChildren.length})
+                </h5>
+                {groupChildren.length > 0 ? (
+                  groupChildren.map((child: any, childIdx: number) => (
+                    <div key={child.id || childIdx} className={`border-t border-gray-200 dark:border-gray-700 pt-4 ${childIdx > 0 ? "mt-4" : ""}`}>
+                      <div className="flex flex-col gap-4 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
+                            <Image width={56} height={56} src={child.childrenPict || "/images/user/alt-user.png"} alt={`Profile ${child.childrenName}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="text-base font-semibold text-gray-800 dark:text-white/90 truncate">{child.childrenName}</h5>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">
+                                {child.childrenGender === "M" ? "Laki-laki" : child.childrenGender === "F" ? "Perempuan" : "-"}
+                              </span>
+                              <span className="text-gray-300 dark:text-gray-700">•</span>
+                              <Badge variant={child.isActive ? "solid" : "light"} color={child.isActive ? "success" : "error"}>
+                                {child.isActive ? "Aktif" : "Tidak Aktif"}
+                              </Badge>
+                              {!child.isCondition && (
+                                <>
+                                  <span className="text-gray-300 dark:text-gray-700">•</span>
+                                  <Badge variant="light" color="warning" size="sm">ABK</Badge>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:justify-end">
+                          <Link href={`/children/edit/${child.id}?redirect=/family/view/${id}`}>
+                            <Button variant="outline" size="sm">Edit</Button>
+                          </Link>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Tanggal Lahir</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.childrenBirthdate ? formatDate(child.childrenBirthdate) : "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Usia</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{calculateAge(child?.childrenBirthdate) !== null ? `${calculateAge(child?.childrenBirthdate)} Tahun` : "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">NIK</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.nik || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Jenjang Pendidikan</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.educationLevel || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Tingkat Pendidikan</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.educationGrade || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Nama Sekolah</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.schoolName || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Pekerjaan</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.childrenJob || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Alamat</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.childrenAddress || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Nomor Telp</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium text-gray-800 dark:text-white/90 flex-1">{child?.childrenPhone || "-"}</span>
+                            {child?.childrenPhone && <WhatsAppButton phoneNumber={child.childrenPhone} />}
+                          </div>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Anak Ke</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.index?.toString() || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Dibuat Pada</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.createdAt ? formatDate(child.createdAt) : "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Diperbarui Pada</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.updatedAt ? formatDate(child.updatedAt) : "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Dibuat Oleh</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.createdByStaffName || child?.createdBy || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Diedit Oleh</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.editedByStaffName || child?.editedBy || "-"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg md:col-span-2 lg:col-span-3">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Catatan</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{child?.notes || "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Tidak ada anak yang tercatat di cluster ini.</p>
+                )}
               </div>
-            ))
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400">
-              Tidak ada data anak yang tercatat.
-            </p>
-          )}
-        </div>
+            </div>
+          );
+        })}
 
         {/* Validation Status */}
         <div className={`flex items-center gap-3 p-4 rounded-2xl border mb-5 ${

@@ -1,6 +1,6 @@
 import { Home, HomeTable } from "@/types/models/home";
 import { apiClient } from "../fetch/apiClient";
-import { API_HOME, API_HOME_EXPORT, API_HOME_OPTIMIZED, API_HOME_SUMMARY } from "@/constants/endpoint";
+import { API_HOME, API_HOME_EXPORT, API_HOME_OPTIMIZED, API_HOME_SUMMARY, API_HOME_SIBLING } from "@/constants/endpoint";
 import camelcaseKeys from "camelcase-keys";
 import {
   ApiResponseList,
@@ -107,6 +107,14 @@ export const deleteHome = async (id: number) => {
   } catch (error) {
     throw error;
   }
+};
+
+export const addSiblingHome = async (sourceHomeId: number | string, waliId: number) => {
+  return await fetchWithAuth(API_HOME_SIBLING(sourceHomeId), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ waliId }),
+  });
 };
 
 export const getHomesList = async (): Promise<HomeTable[]> => {

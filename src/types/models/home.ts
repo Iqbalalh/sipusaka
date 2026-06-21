@@ -3,6 +3,14 @@ import { BaseEmployee } from "./employee";
 import { Partner } from "./partner";
 import { Wali } from "./wali";
 
+export interface WaliEntry {
+  homeId: number;
+  waliId: number | null;
+  wali: Wali | null;
+  regionId: number | null;
+  regions: { id?: number; regionId?: number; regionName: string } | null;
+}
+
 export interface BaseHome {
   id: number | null;
   partnerId?: number | null;
@@ -20,6 +28,7 @@ export interface Home extends BaseHome {
   employee: BaseEmployee;
   partner: Partner;
   wali: Wali;
+  walis?: WaliEntry[];
   childrens: BaseChildren[];
   selectedRegionName?: string | null;
   regions?: {
@@ -82,6 +91,7 @@ export interface HomeTable {
     } | null;
   };
   wali: Wali | null;
+  walis?: WaliEntry[];
   regions: {
     id: number;
     regionName: string;

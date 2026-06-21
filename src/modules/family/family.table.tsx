@@ -247,7 +247,8 @@ const exportFamilyToExcel = async (
 
     const dataRows: any[] = [];
     exportData.forEach((home) => {
-      const children = (home as any).children || [];
+      // allChildren from grouped export (all sibling homes); fallback to legacy .children
+      const children = (home as any).allChildren || (home as any).children || [];
 
       const totalChildAssistance = children.reduce((sum: number, child: any) => {
         const childAmt = (child.childAssistance ?? []).reduce(
@@ -255,6 +256,9 @@ const exportFamilyToExcel = async (
         );
         return sum + childAmt;
       }, 0);
+
+      // allWaliNames from grouped export; fallback to single wali name
+      const waliName = (home as any).allWaliNames || home.wali?.waliName || "-";
 
       const base = {
         id: home.id,
@@ -266,7 +270,7 @@ const exportFamilyToExcel = async (
         partnerStatus: home.partners?.isActive ? "Aktif" : "Tidak Aktif",
         isValidated: (home as any).isValidated ? "Sudah Dikunjungi" : "Belum Dikunjungi",
         hasFoto: (home as any).hasFoto ? "Ada Foto" : "Tidak Ada Foto",
-        waliName: home.wali?.waliName || "-",
+        waliName,
         address: home.partners?.address || "-",
         postalCode: home.postalCode || home.partners?.postalCode || "-",
         phoneNumber: home.partners?.phoneNumber || "-",
