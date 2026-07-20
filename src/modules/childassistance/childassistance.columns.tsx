@@ -13,11 +13,11 @@ import Link from "next/link";
 // COLUMN CONFIGURATION
 // ==============================================
 export const getChildAssistanceColumns = (
-  _router: any,
   regions: Region[],
   educationLevels: string[],
   providers: string[],
   role?: string,
+  onDelete?: (id: number) => void,
 ): TableColumnsType<ChildAssistance> => [
   {
     title: "Bantuan Ke-",
@@ -155,13 +155,11 @@ export const getChildAssistanceColumns = (
             <EyeOutlined />
           </ButtonUI>
         </Link>
-        {role !== "staff" && (
+        {role !== "staff" && onDelete && (
           <ButtonUI
             size="xs"
             onClick={() => {
-              if (!record.id) return;
-              // @ts-ignore
-              record._openDeleteModal(record.id);
+              if (record.id) onDelete(record.id);
             }}
           >
             <DeleteOutlined />

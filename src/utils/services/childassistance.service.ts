@@ -85,17 +85,17 @@ export const getAllChildAssistanceOptimized = async (
       page: page.toString(),
       pageSize: pageSize.toString(),
     });
-    
+
     if (search.trim()) {
       params.append('search', search);
     }
-    
+
     const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
     const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
-    
+
     const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
     const pagination = json.pagination;
-    
+
     return {
       data: Array.isArray(data) ? data : [],
       pagination: pagination || {

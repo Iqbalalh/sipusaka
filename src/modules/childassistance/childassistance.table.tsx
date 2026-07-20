@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Modal, Input, Spin, Button as AntButton } from "antd";
-import {
-  LoadingOutlined,
-  SearchOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
-import Link from "next/link";
+import { Table, Modal, Input, Button as AntButton } from "antd";
+import type { TableProps } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import {
@@ -20,9 +13,22 @@ import {
   deleteChildAssistance,
   getAllChildAssistanceOptimized,
 } from "@/utils/services/childassistance.service";
+import { getChildAssistanceColumns } from "./childassistance.columns";
+import { Region } from "@/types/models/region";
+import { getRegionsList } from "@/utils/services/region.service";
 import { formatDate } from "@/utils/formatter/formatDate";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+
+// ==============================================
+// CLIENT-SIDE FILTER KEYS (kept in URL for bookmark/share)
+// ==============================================
+const CLIENT_FILTER_KEYS = [
+  "assistanceProvider",
+  "educationLevel",
+  "regionId",
+  "assistanceDate",
+] as const;
 
 // ==============================================
 // EXCEL EXPORT
@@ -99,36 +105,6 @@ const exportToExcel = async (data: ChildAssistance[]) => {
 };
 
 // ==============================================
-// BADGE HELPERS
-// ==============================================
-const LevelBadge = ({ value }: { value?: string | null }) =>
-  value ? (
-    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-      {value}
-    </span>
-  ) : (
-    <span className="text-gray-400">-</span>
-  );
-
-const ProviderBadge = ({ value }: { value?: string | null }) =>
-  value ? (
-    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-      {value}
-    </span>
-  ) : (
-    <span className="text-gray-400">-</span>
-  );
-
-const RegionBadge = ({ value }: { value?: string | null }) =>
-  value ? (
-    <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-      {value}
-    </span>
-  ) : (
-    <span className="text-gray-400">-</span>
-  );
-
-// ==============================================
 // MAIN COMPONENT
 // ==============================================
 export default function ChildAssistanceTable() {
@@ -142,119 +118,212 @@ export default function ChildAssistanceTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [data, setData] = useState<ChildAssistance[]>([]);
+  // URL state
+  const page = Number(searchParams.get("page")) || 1;
+  const urlSearch = searchParams.get("search") || "";
+  const urlFilters: Record<string, any[]> = useMemo(() => {
+    try {
+      return JSON.parse(searchParams.get("filters") || "{}");
+    } catch {
+      return {};
+    }
+  }, [searchParams]);
+
+  const [allData, setAllData] = useState<ChildAssistance[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
-  const pageSize = 20;
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isFirstRender = useRef(true);
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
 
+  // Delete state
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // The rows that survive search + column filters (kept in sync via Table.onChange)
+  const [visibleRows, setVisibleRows] = useState<ChildAssistance[]>([]);
+
   // ==========================
-  // FETCH
+  // URL HELPER
   // ==========================
-  const fetchData = useCallback(
-    async (page: number, search: string) => {
-      setLoading(true);
-      try {
-        const res = await getAllChildAssistanceOptimized(page, pageSize, search);
+  const pushParams = useCallback(
+    (updates: Record<string, string>) => {
+      const p = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v) p.set(k, v);
+        else p.delete(k);
+      });
+      router.push(`?${p.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  // ==========================
+  // FETCH (all records once, client-side table)
+  // ==========================
+  const loadData = useCallback(() => {
+    setLoading(true);
+    // Large pageSize → load everything; the optimized payload includes region data
+    getAllChildAssistanceOptimized(1, 100000, "")
+      .then((res) => {
         const rows = Array.isArray(res.data) ? res.data : [];
-        setData(
+        setAllData(
           [...rows].sort(
             (a, b) =>
               new Date(b.assistanceDate).getTime() - new Date(a.assistanceDate).getTime()
           )
         );
-        setTotal(res.pagination?.total ?? 0);
-        setCurrentPage(res.pagination?.page ?? page);
-      } catch (err) {
+      })
+      .catch((err) => {
         notifyFromResult(notifyRef.current, { error: err });
-        setData([]);
-        setTotal(0);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pageSize]
+        setAllData([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    getRegionsList().then(setRegions).catch(() => {});
+  }, [loadData]);
+
+  // ==========================
+  // CLIENT-SIDE SEARCH
+  // ==========================
+  const searchedData = useMemo(() => {
+    if (!urlSearch.trim()) return allData;
+    const q = urlSearch.toLowerCase();
+    return allData.filter(
+      (r) =>
+        r.children?.childrenName?.toLowerCase().includes(q) ||
+        r.assistanceProvider?.toLowerCase().includes(q) ||
+        r.educationLevel?.toLowerCase().includes(q) ||
+        r.schoolName?.toLowerCase().includes(q) ||
+        r.notes?.toLowerCase().includes(q)
+    );
+  }, [allData, urlSearch]);
+
+  // Keep visibleRows aligned when search changes (before Table.onChange fires)
+  useEffect(() => {
+    setVisibleRows(searchedData);
+  }, [searchedData]);
+
+  const handleSearch = useCallback(
+    (val: string) => pushParams({ search: val, page: "1" }),
+    [pushParams]
   );
 
-  // Initial fetch (read URL params)
-  useEffect(() => {
-    const pg = parseInt(searchParams.get("page") ?? "1", 10);
-    const sq = searchParams.get("search") ?? "";
-    setCurrentPage(pg);
-    setSearchQuery(sq);
-    fetchData(pg, sq);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Search debounce
-  useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => fetchData(1, searchQuery), 500);
-    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
-  }, [searchQuery, fetchData]);
-
-  const updateUrl = (page: number, search = searchQuery) => {
-    const p = new URLSearchParams(searchParams.toString());
-    p.set("page", String(page));
-    if (search.trim()) p.set("search", search); else p.delete("search");
-    router.push(`?${p.toString()}`, { scroll: false });
-  };
+  // ==========================
+  // TABLE CHANGE (persist column filters in URL, track visible rows)
+  // ==========================
+  const handleTableChange: TableProps<ChildAssistance>["onChange"] = useCallback(
+    (_pagination: any, filters: Record<string, any>, _sorter: any, extra: any) => {
+      // Persist client-side column filters in the URL
+      const cleaned: Record<string, any[]> = {};
+      CLIENT_FILTER_KEYS.forEach((key) => {
+        const vals = filters[key];
+        if (vals && vals.length > 0) cleaned[key] = vals;
+      });
+      const next = JSON.stringify(cleaned);
+      const current = JSON.stringify(urlFilters);
+      if (next !== current) {
+        pushParams({ filters: Object.keys(cleaned).length > 0 ? next : "", page: "1" });
+      }
+      // Track the effectively-visible rows for export
+      if (extra?.currentDataSource) {
+        setVisibleRows(extra.currentDataSource as ChildAssistance[]);
+      }
+    },
+    [urlFilters, pushParams]
+  );
 
   // ==========================
   // DELETE
   // ==========================
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteId) return;
     setDeleteLoading(true);
     try {
       await deleteChildAssistance(deleteId);
-      await fetchData(currentPage, searchQuery);
       setIsDeleteModalOpen(false);
+      loadData();
       notifyFromResult(notifyRef.current, { successMessage: "Data bantuan anak berhasil dihapus" });
     } catch (err) {
       notifyFromResult(notifyRef.current, { error: err });
     } finally {
       setDeleteLoading(false);
     }
-  };
+  }, [deleteId, loadData]);
 
   // ==========================
-  // EXPORT
+  // EXPORT (whatever is currently visible after search + filters)
   // ==========================
-  const handleExport = async () => {
-    if (data.length === 0) return;
+  const handleExport = useCallback(async () => {
+    if (visibleRows.length === 0) return;
     setExportLoading(true);
     try {
-      await exportToExcel(data);
+      await exportToExcel(visibleRows);
       notifyFromResult(notifyRef.current, {
-        successMessage: `Export ${data.length} data berhasil!`,
+        successMessage: `Export ${visibleRows.length} data berhasil!`,
       });
     } catch (err) {
       notifyFromResult(notifyRef.current, { error: err });
     } finally {
       setExportLoading(false);
     }
-  };
+  }, [visibleRows]);
 
   // ==========================
-  // PAGINATION HELPERS
+  // COLUMNS
   // ==========================
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const providers = useMemo(
+    () =>
+      [...new Set(allData.map((r) => r.assistanceProvider).filter(Boolean) as string[])].sort(),
+    [allData]
+  );
+  const educationLevels = useMemo(
+    () =>
+      [...new Set(allData.map((r) => r.educationLevel?.trim()).filter(Boolean) as string[])].sort(),
+    [allData]
+  );
 
-  const goToPage = (page: number) => {
-    if (page < 1 || page > totalPages) return;
-    updateUrl(page);
-    fetchData(page, searchQuery);
-  };
+  const baseColumns = useMemo(
+    () =>
+      getChildAssistanceColumns(
+        regions,
+        educationLevels,
+        providers,
+        session?.user?.role,
+        isAdmin
+          ? (id) => {
+              setDeleteId(id);
+              setIsDeleteModalOpen(true);
+            }
+          : undefined
+      ),
+    [regions, educationLevels, providers, session?.user?.role, isAdmin]
+  );
+
+  // Reflect URL filters back into the Table's controlled filter state.
+  // antd requires ALL filterable columns to be controlled once any is — so
+  // every column with filters/filterDropdown gets an explicit filteredValue.
+  const columns = useMemo(
+    () =>
+      baseColumns.map((col) => {
+        const key = col.key as string;
+        if (CLIENT_FILTER_KEYS.includes(key as any)) {
+          return { ...col, filteredValue: urlFilters[key] ?? null };
+        }
+        if ((col as any).filters !== undefined || (col as any).filterDropdown !== undefined) {
+          return { ...col, filteredValue: null };
+        }
+        return col;
+      }),
+    [baseColumns, urlFilters]
+  );
 
   // ==========================
   // RENDER
@@ -277,19 +346,19 @@ export default function ChildAssistanceTable() {
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Total:{" "}
-            <span className="font-bold text-gray-900 dark:text-white">{total}</span>
-            {" "}data
-          </p>
-          <Input
+        <div className="w-full max-w-[360px]">
+          <Input.Search
             placeholder="Cari nama anak, penyedia, tingkat pendidikan..."
-            prefix={<SearchOutlined className="text-gray-400" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchInput(val);
+              if (!val) handleSearch("");
+            }}
+            onSearch={handleSearch}
+            enterButton="Cari"
             allowClear
-            style={{ width: 320 }}
+            style={{ width: "100%" }}
           />
         </div>
         <div className="flex gap-2">
@@ -297,171 +366,35 @@ export default function ChildAssistanceTable() {
             icon={<DownloadOutlined />}
             onClick={handleExport}
             loading={exportLoading}
-            disabled={data.length === 0}
+            disabled={visibleRows.length === 0}
           >
-            Export ({data.length})
+            Export ({visibleRows.length})
           </AntButton>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-        <table className="w-full text-sm min-w-[900px]">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">#</th>
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Nama Anak</th>
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Tanggal</th>
-              <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">Jumlah</th>
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Penyedia</th>
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Jenjang Pendidikan</th>
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Kelas / Sekolah</th>
-              <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Wilayah</th>
-              <th className="px-4 py-3 text-center font-semibold whitespace-nowrap">Dokumen</th>
-              {isAdmin && (
-                <th className="px-4 py-3 text-center font-semibold whitespace-nowrap">Aksi</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={isAdmin ? 10 : 9} className="py-16 text-center text-gray-400">
-                  <Spin indicator={<LoadingOutlined spin />} size="large" />
-                </td>
-              </tr>
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={isAdmin ? 10 : 9} className="py-16 text-center text-gray-400">
-                  {searchQuery ? "Tidak ada data yang cocok dengan pencarian." : "Belum ada data bantuan anak."}
-                </td>
-              </tr>
-            ) : (
-              data.map((item, index) => (
-                <tr
-                  key={item.id}
-                  className={`border-t border-gray-100 dark:border-gray-700 hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors ${
-                    index % 2 === 1 ? "bg-gray-50/50 dark:bg-gray-800/30" : "bg-white dark:bg-transparent"
-                  }`}
-                >
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                    {item.assistanceNumber ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                    {item.children?.childrenName ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                    {item.assistanceDate ? formatDate(item.assistanceDate) : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                    {item.assistanceAmount
-                      ? `Rp ${item.assistanceAmount.toLocaleString("id-ID")}`
-                      : "-"}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <ProviderBadge value={item.assistanceProvider} />
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <LevelBadge value={item.educationLevel} />
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                    <span>{item.educationGrade ?? "-"}</span>
-                    {item.schoolName && (
-                      <span className="block text-xs text-gray-400 truncate max-w-[180px]">
-                        {item.schoolName}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <RegionBadge value={item.children?.homes?.regions?.regionName} />
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-500 whitespace-nowrap">
-                    {(item.childAssistanceDocs?.length ?? 0) > 0
-                      ? `${item.childAssistanceDocs!.length} dokumen`
-                      : "-"}
-                  </td>
-                  {isAdmin && (
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex gap-1.5 justify-center">
-                        <AntButton
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() =>
-                            item.childrenId &&
-                            router.push(`/children/view/${item.childrenId}`)
-                          }
-                        />
-                        <AntButton
-                          size="small"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => {
-                            if (item.id) {
-                              setDeleteId(item.id);
-                              setIsDeleteModalOpen(true);
-                            }
-                          }}
-                        />
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* PAGINATION */}
-      {!loading && total > pageSize && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 text-sm text-gray-600 dark:text-gray-400">
-          <p>
-            Menampilkan{" "}
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, total)}
-            </span>{" "}
-            dari <span className="font-semibold text-gray-900 dark:text-white">{total}</span> data
-          </p>
-          <div className="flex items-center gap-1">
-            <AntButton
-              size="small"
-              disabled={currentPage <= 1}
-              onClick={() => goToPage(currentPage - 1)}
-            >
-              &laquo;
-            </AntButton>
-            {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
-              let page: number;
-              if (totalPages <= 7) {
-                page = i + 1;
-              } else if (currentPage <= 4) {
-                page = i + 1;
-              } else if (currentPage >= totalPages - 3) {
-                page = totalPages - 6 + i;
-              } else {
-                page = currentPage - 3 + i;
-              }
-              return (
-                <AntButton
-                  key={page}
-                  size="small"
-                  type={page === currentPage ? "primary" : "default"}
-                  onClick={() => goToPage(page)}
-                >
-                  {page}
-                </AntButton>
-              );
-            })}
-            <AntButton
-              size="small"
-              disabled={currentPage >= totalPages}
-              onClick={() => goToPage(currentPage + 1)}
-            >
-              &raquo;
-            </AntButton>
-          </div>
-        </div>
-      )}
+      <Table
+        columns={columns}
+        dataSource={searchedData}
+        rowKey="id"
+        bordered
+        loading={loading}
+        // Each row has a `children` object (child info); prevent antd from
+        // treating it as nested tree rows by pointing at an unused key.
+        expandable={{ childrenColumnName: "__childRows__" }}
+        pagination={{
+          current: page,
+          pageSize: 20,
+          total: searchedData.length,
+          showSizeChanger: false,
+          showQuickJumper: true,
+          showTotal: (t, range) => `${range[0]}-${range[1]} dari ${t} data`,
+          onChange: (p) => pushParams({ page: String(p) }),
+        }}
+        onChange={handleTableChange}
+        scroll={{ x: "max-content", y: 520 }}
+      />
     </>
   );
 }
