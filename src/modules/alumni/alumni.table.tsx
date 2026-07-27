@@ -1,0 +1,496 @@
+"use client";
+
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Table, Modal, Input, Progress, Skeleton } from "antd";
+import { Button as AntButton } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
+import { FaUserGraduate, FaMars, FaVenus } from "react-icons/fa6";
+import type { TableProps } from "antd";
+import { useNotify } from "@/context/NotificationContext";
+import { notifyFromResult } from "@/utils/fetch/notify";
+import Link from "next/link";
+
+import {
+  Alumni,
+  AlumniFilters,
+  AlumniStats,
+  deleteAlumni,
+  getAlumniForExport,
+  getAlumniOptimized,
+  getAlumniStats,
+} from "@/utils/services/alumni.service";
+import { getAlumniColumns } from "./alumni.columns";
+import { formatDate } from "@/utils/formatter/formatDate";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+
+// ==============================================
+// SERVER FILTER KEYS
+// ==============================================
+const SERVER_FILTER_KEYS = ["alumniGender", "educationLevel"] as const;
+
+const toAlumniFilters = (raw: Record<string, string[]>): AlumniFilters => ({
+  gender: raw["alumniGender"]?.[0],
+  educationLevel: raw["educationLevel"]?.[0],
+});
+
+// ==============================================
+// INSIGHT PANEL (lightweight)
+// ==============================================
+function AlumniInsightPanel({ stats, loading }: { stats: AlumniStats | null; loading: boolean }) {
+  if (loading || !stats) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-white/3">
+            <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const tiles = [
+    { icon: <FaUserGraduate />, label: "Total Alumni", value: stats.total, color: "bg-blue-500" },
+    { icon: <FaMars />, label: "Laki-laki", value: stats.male, color: "bg-indigo-500" },
+    { icon: <FaVenus />, label: "Perempuan", value: stats.female, color: "bg-rose-500" },
+  ];
+
+  const eduEntries = Object.entries(stats.byEducationLevel ?? {}).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="space-y-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {tiles.map((t) => (
+          <div
+            key={t.label}
+            className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]"
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${t.color}`}>
+              {t.icon}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">{t.label}</p>
+              <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-white truncate">{t.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {eduEntries.length > 0 && (
+        <div className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-white/3 p-4">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+            Pendidikan Terakhir
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {eduEntries.map(([level, count]) => (
+              <span
+                key={level}
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+              >
+                {level}
+                <span className="rounded-full bg-blue-600 px-1.5 text-white">{count}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==============================================
+// EXCEL EXPORT
+// ==============================================
+const exportAlumniToExcel = async (
+  exportData: Alumni[],
+  setShowProgress: (show: boolean) => void,
+  setProgress: (progress: number) => void,
+) => {
+  try {
+    setShowProgress(true);
+    setProgress(10);
+
+    if (!exportData || exportData.length === 0) {
+      setShowProgress(false);
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Data Alumni", {
+      views: [{ state: "frozen", ySplit: 1 }],
+    });
+    setProgress(40);
+
+    worksheet.columns = [
+      { header: "ID Alumni", key: "id", width: 12 },
+      { header: "Foto", key: "alumniPict", width: 40 },
+      { header: "Nama Alumni", key: "alumniName", width: 25 },
+      { header: "NIK", key: "nik", width: 20 },
+      { header: "Jenis Kelamin", key: "alumniGender", width: 15 },
+      { header: "Tanggal Lahir", key: "alumniBirthdate", width: 20 },
+      { header: "Usia", key: "age", width: 12 },
+      { header: "Pendidikan Terakhir", key: "educationLevel", width: 20 },
+      { header: "Pekerjaan", key: "alumniJob", width: 25 },
+      { header: "No. Telepon", key: "alumniPhone", width: 20 },
+      { header: "Alamat", key: "alumniAddress", width: 40 },
+      { header: "Keterangan", key: "notes", width: 40 },
+      { header: "Dibuat Pada", key: "createdAt", width: 20 },
+      { header: "Diperbarui Pada", key: "updatedAt", width: 20 },
+      { header: "Dibuat Oleh", key: "createdBy", width: 15 },
+      { header: "Diedit Oleh", key: "editedBy", width: 15 },
+    ];
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 30;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+      cell.border = {
+        top: { style: "thin" }, left: { style: "thin" },
+        bottom: { style: "thin" }, right: { style: "thin" },
+      };
+    });
+
+    setProgress(50);
+
+    exportData.forEach((a, index) => {
+      const excelRow = worksheet.addRow({
+        id: a.id,
+        alumniPict: a.alumniPict || "-",
+        alumniName: a.alumniName || "-",
+        nik: a.nik || "-",
+        alumniGender: a.alumniGender === "M" ? "Laki-laki" : a.alumniGender === "F" ? "Perempuan" : "-",
+        alumniBirthdate: a.alumniBirthdate ? formatDate(a.alumniBirthdate) : "-",
+        age: a.age ? `${a.age} Tahun` : "-",
+        educationLevel: a.educationLevel || "-",
+        alumniJob: a.alumniJob || "-",
+        alumniPhone: a.alumniPhone || "-",
+        alumniAddress: a.alumniAddress || "-",
+        notes: a.notes || "-",
+        createdAt: a.createdAt ? formatDate(a.createdAt) : "-",
+        updatedAt: a.updatedAt ? formatDate(a.updatedAt) : "-",
+        createdBy: (a as any)?.createdByStaffName || a.createdBy || "-",
+        editedBy: (a as any)?.editedByStaffName || a.editedBy || "-",
+      });
+
+      if (index % 2 === 1) {
+        excelRow.eachCell((cell) => {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
+        });
+      }
+      excelRow.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+        cell.border = {
+          top: { style: "thin" }, left: { style: "thin" },
+          bottom: { style: "thin" }, right: { style: "thin" },
+        };
+      });
+
+      if (exportData.length > 10 && index % Math.floor(exportData.length / 10) === 0) {
+        setProgress(50 + Math.floor((index / exportData.length) * 30));
+      }
+    });
+
+    setProgress(80);
+
+    worksheet.columns?.forEach((column: any) => {
+      if (!column || typeof column.eachCell !== "function") return;
+      let maxLength = 10;
+      column.eachCell({ includeEmpty: true }, (cell: any) => {
+        const value = cell.value ? cell.value.toString() : "";
+        maxLength = Math.max(maxLength, value.length);
+      });
+      column.width = Math.min(maxLength + 4, 50);
+    });
+
+    setProgress(90);
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "data-alumni.xlsx",
+    );
+    setProgress(100);
+    setTimeout(() => {
+      setShowProgress(false);
+      setProgress(0);
+    }, 1000);
+  } catch (error) {
+    console.error("Export failed:", error);
+    setShowProgress(false);
+    setProgress(0);
+  }
+};
+
+// ==============================================
+// MAIN COMPONENT
+// ==============================================
+export default function AlumniTable() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
+
+  const { notify } = useNotify();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // URL state
+  const page = Number(searchParams.get("page")) || 1;
+  const urlSearch = searchParams.get("search") || "";
+  const urlFilters: Record<string, string[]> = useMemo(() => {
+    try {
+      return JSON.parse(searchParams.get("filters") || "{}");
+    } catch {
+      return {};
+    }
+  }, [searchParams]);
+
+  const pushParams = useCallback(
+    (updates: Partial<Record<string, string>>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([k, v]) => {
+        if (!v) params.delete(k);
+        else params.set(k, v);
+      });
+      router.push(`/alumni?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const [data, setData] = useState<Alumni[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [showProgress, setShowProgress] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const [stats, setStats] = useState<AlumniStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  // Fetch table data + stats on URL change
+  useEffect(() => {
+    setLoading(true);
+    setStatsLoading(true);
+    const filters = toAlumniFilters(urlFilters);
+    Promise.all([
+      getAlumniOptimized(page, 50, urlSearch, filters),
+      getAlumniStats(urlSearch, filters),
+    ])
+      .then(([tableRes, statsRes]) => {
+        setData(Array.isArray(tableRes.data) ? tableRes.data : []);
+        setTotal(tableRes.pagination?.total ?? 0);
+        setStats(statsRes);
+      })
+      .catch((err) => {
+        notifyFromResult(notify, { error: err });
+        setData([]);
+        setTotal(0);
+      })
+      .finally(() => {
+        setLoading(false);
+        setStatsLoading(false);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, urlSearch, searchParams.get("filters")]);
+
+  // Education-level filter options derived from stats
+  const eduFilters = useMemo(
+    () =>
+      Object.keys(stats?.byEducationLevel ?? {})
+        .filter((k) => k && k !== "Tidak Diketahui")
+        .sort()
+        .map((l) => ({ text: l, value: l })),
+    [stats],
+  );
+
+  const handleSearch = useCallback(
+    (val: string) => pushParams({ search: val, page: "1" }),
+    [pushParams],
+  );
+
+  const handleTableChange: TableProps<Alumni>["onChange"] = useCallback(
+    (_pagination: any, filters: Record<string, any>) => {
+      const cleaned: Record<string, string[]> = {};
+      SERVER_FILTER_KEYS.forEach((key) => {
+        const vals = filters[key];
+        if (vals && vals.length > 0) cleaned[key] = vals.map(String);
+      });
+      const next = JSON.stringify(cleaned);
+      const current = JSON.stringify(urlFilters);
+      if (next !== current) {
+        pushParams({ filters: Object.keys(cleaned).length > 0 ? next : "", page: "1" });
+      }
+    },
+    [urlFilters, pushParams],
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAlumni(deleteId);
+      setIsDeleteModalOpen(false);
+      const filters = toAlumniFilters(urlFilters);
+      const [tableRes, statsRes] = await Promise.all([
+        getAlumniOptimized(page, 50, urlSearch, filters),
+        getAlumniStats(urlSearch, filters),
+      ]);
+      setData(Array.isArray(tableRes.data) ? tableRes.data : []);
+      setTotal(tableRes.pagination?.total ?? 0);
+      setStats(statsRes);
+      notifyFromResult(notify, { successMessage: "Alumni berhasil dihapus" });
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [deleteId, page, urlSearch, urlFilters, notify]);
+
+  const handleExport = useCallback(async () => {
+    if (exportLoading) return;
+    setExportLoading(true);
+    try {
+      const filters = toAlumniFilters(urlFilters);
+      const exportData = await getAlumniForExport(urlSearch, filters);
+      await exportAlumniToExcel(exportData, setShowProgress, setProgress);
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setExportLoading(false);
+    }
+  }, [exportLoading, urlSearch, urlFilters]);
+
+  const baseColumns = useMemo(
+    () =>
+      getAlumniColumns(
+        session?.user?.role,
+        eduFilters,
+        isAdmin
+          ? (id) => {
+              setDeleteId(id);
+              setIsDeleteModalOpen(true);
+            }
+          : undefined,
+      ),
+    [session?.user?.role, eduFilters, isAdmin],
+  );
+
+  const columnsWithState = useMemo(
+    () =>
+      baseColumns.map((col) => {
+        const key = col.key as string;
+        if (SERVER_FILTER_KEYS.includes(key as any)) {
+          return { ...col, filteredValue: urlFilters[key] ?? null };
+        }
+        if ((col as any).filters !== undefined || (col as any).filterDropdown !== undefined) {
+          return { ...col, filteredValue: null };
+        }
+        return col;
+      }),
+    [baseColumns, urlFilters],
+  );
+
+  return (
+    <>
+      {/* INSIGHT PANEL */}
+      <AlumniInsightPanel stats={stats} loading={statsLoading} />
+
+      {/* DELETE MODAL */}
+      <Modal
+        title="Konfirmasi Hapus"
+        open={isDeleteModalOpen}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        confirmLoading={deleteLoading}
+        okText="Hapus"
+        okButtonProps={{ danger: true }}
+        cancelText="Batal"
+        onOk={handleDelete}
+      >
+        <p>Apakah Anda yakin ingin menghapus data alumni ini?</p>
+      </Modal>
+
+      {/* EXPORT PROGRESS */}
+      {showProgress && (
+        <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sedang mengekspor data...</span>
+            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
+          </div>
+          <Progress percent={progress} status="active" strokeColor="#2563EB" />
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+        <div className="alumni-search-wrap w-full max-w-[340px]">
+          <style>{`
+            .alumni-search-wrap .ant-input-search-button { box-shadow: none !important; }
+            .alumni-search-wrap .ant-input-affix-wrapper-focused { clip-path: inset(-5px 0px -5px -5px) !important; }
+            .alumni-search-wrap:focus-within .ant-input-search-button { border-color: #1677ff !important; box-shadow: 0 0 0 2px rgba(5,145,255,0.1) !important; clip-path: inset(-5px -5px -5px 0px); }
+          `}</style>
+          <Input.Search
+            placeholder="Cari nama alumni, NIK, telepon..."
+            value={searchInput}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchInput(val);
+              if (!val) handleSearch("");
+            }}
+            onSearch={handleSearch}
+            enterButton="Cari"
+            allowClear
+            style={{ width: "100%" }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <AntButton
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+            loading={exportLoading}
+            disabled={data.length === 0}
+          >
+            Export ({total})
+          </AntButton>
+          {isAdmin && (
+            <Link href="/alumni/create">
+              <AntButton type="primary">+</AntButton>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <Table
+        columns={columnsWithState}
+        dataSource={data}
+        rowKey="id"
+        bordered
+        loading={loading}
+        pagination={{
+          current: page,
+          pageSize: 50,
+          total,
+          showSizeChanger: false,
+          onChange: (p) => pushParams({ page: String(p) }),
+        }}
+        onChange={handleTableChange}
+        scroll={{ x: "max-content", y: 500 }}
+      />
+    </>
+  );
+}

@@ -35,6 +35,9 @@ export const API_WALI_SUMMARY = `${baseUrl}/api/wali/summary`;
 // Childrens
 export const API_CHILDREN = `${baseUrl}/api/children`;
 
+// Alumni
+export const API_ALUMNI = `${baseUrl}/api/alumni`;
+
 // UMKM
 export const API_UMKM = `${baseUrl}/api/umkm`;
 export const API_UMKM_OPTIMIZED = `${baseUrl}/api/umkm/optimized`;

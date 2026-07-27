@@ -2,11 +2,11 @@
 
 // Hooks
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 // Components
-import { Spin, Modal, Form, Input, DatePicker, Upload, message, Image, Select } from "antd";
+import { Spin, Modal, Form, Input, DatePicker, Upload, message, Image, Select, Popconfirm } from "antd";
 import { EDUCATION_LEVEL_OPTIONS } from "@/constants/option";
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
@@ -44,6 +44,7 @@ import { extractKeyFromPresignedUrl } from "@/utils/formatter/extractKeyFromPres
 import { calculateAge } from "@/utils/formatter/calculateAge";
 import { formatDate } from "@/utils/formatter/formatDate";
 import { getChildren } from "@/utils/services/children.service";
+import { promoteChildToAlumni } from "@/utils/services/alumni.service";
 import { notifyFromResult } from "@/utils/fetch/notify";
 import { useNotify } from "@/context/NotificationContext";
 import { API_IMAGE } from "@/constants/endpoint";
@@ -53,11 +54,13 @@ export default function ChildrenView() {
   // Data state
   const [data, setData] = useState<Children | null>(null);
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin" || session?.user?.role === "superadmin";
 
   // Page State
   const [loading, setLoading] = useState(true);
+  const [promoteLoading, setPromoteLoading] = useState(false);
   const { notify } = useNotify();
 
   // Assistance state
@@ -114,6 +117,25 @@ export default function ChildrenView() {
       fetchAssistance();
     }
   }, [fetchAssistance, id]);
+
+  // ==========================
+  // JADIKAN ALUMNI
+  // ==========================
+  const handlePromoteToAlumni = async () => {
+    setPromoteLoading(true);
+    try {
+      const res = await promoteChildToAlumni(Number(id));
+      const json = await res.json();
+      const newId = json?.data?.id;
+      messageApi.success({ content: "Anak asuh berhasil dijadikan alumni", key: "promote-alumni", duration: 2 });
+      if (newId) router.push(`/alumni/view/${newId}`);
+      else router.push("/alumni");
+    } catch (err) {
+      notifyFromResult(notify, { error: err });
+    } finally {
+      setPromoteLoading(false);
+    }
+  };
 
   // ==========================
   // ASSISTANCE HANDLERS
@@ -320,6 +342,19 @@ export default function ChildrenView() {
             >
               Print
             </Button>
+            {isAdmin && data?.isActive === false && (
+              <Popconfirm
+                title="Jadikan alumni?"
+                description="Data anak asuh ini akan disalin menjadi data alumni baru."
+                okText="Jadikan Alumni"
+                cancelText="Batal"
+                onConfirm={handlePromoteToAlumni}
+              >
+                <Button variant="outline" size="sm" disabled={promoteLoading}>
+                  {promoteLoading ? "Memproses..." : "Jadikan Alumni"}
+                </Button>
+              </Popconfirm>
+            )}
             {isAdmin && (
               <Link href={`/children/edit/${data?.id}`}>
                 <Button variant="outline" size="sm">

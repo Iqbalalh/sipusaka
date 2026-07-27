@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import {
   FaShop,
   FaChildReaching,
+  FaUserGraduate,
   FaHouseChimney,
   FaChartSimple,
   FaUserTie,
@@ -48,6 +49,11 @@ const navItems: NavItem[] = [
     icon: <FaChildReaching className="text-2xl" />,
     name: "Anak Asuh",
     path: "/children",
+  },
+  {
+    icon: <FaUserGraduate className="text-2xl" />,
+    name: "Alumni",
+    path: "/alumni",
   },
   {
     icon: <FaShop className="text-2xl" />,
