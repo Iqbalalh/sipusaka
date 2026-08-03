@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Progress, Skeleton, Table, Modal, Input, Button as AntButton } from "antd";
+import { Progress, Skeleton, Table, Modal, Input, Button as AntButton, Spin } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import {
   FaUsers,
@@ -16,12 +16,13 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 // Types
-import { HomeTable } from "@/types/models/home";
+import { Home, HomeTable } from "@/types/models/home";
 import { Region } from "@/types/models/region";
 
 // Utils
 import {
   deleteHome,
+  getHomeDetail,
   getHomesForExport,
   getHomesOptimized,
   getHomeSummary,
@@ -391,6 +392,71 @@ const exportFamilyToExcel = async (
 const SERVER_FILTER_KEYS = ["regionId", "isValidated", "isActive", "familyVisits"];
 
 // ==============================================
+// EXPANDED ROW — full family across sibling home ids (same parents)
+// ==============================================
+function ExpandedFamily({ detail }: { detail: Home | "loading" | undefined }) {
+  if (!detail || detail === "loading") {
+    return (
+      <div className="flex justify-center py-4">
+        <Spin size="small" />
+      </div>
+    );
+  }
+
+  const walis = detail.walis ?? [];
+  const children = (detail.childrens ?? []) as Array<{
+    id: number;
+    childrenName: string;
+    isActive?: boolean | null;
+    homeId?: number | null;
+  }>;
+
+  return (
+    <div className="p-2">
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+        Keluarga ini terdiri dari {walis.length} rumah (id keluarga berbeda) dengan orang tua yang sama.
+      </p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {walis.map((entry) => {
+          const kids = children.filter((c) => c.homeId === entry.homeId);
+          return (
+            <div
+              key={entry.homeId}
+              className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/40"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                  {entry.wali?.waliName || "Tanpa Wali"}
+                </span>
+                <span className="text-[11px] text-gray-400">ID Keluarga #{entry.homeId}</span>
+              </div>
+              <div className="mb-1 text-xs text-gray-500 dark:text-gray-400">Anak ({kids.length})</div>
+              {kids.length > 0 ? (
+                <ul className="list-disc space-y-0.5 pl-4">
+                  {kids.map((c) => (
+                    <li key={c.id} className="text-sm text-gray-700 dark:text-gray-300">
+                      {c.childrenName}
+                      {c.isActive ? "" : " (Tidak Aktif)"}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="text-xs italic text-gray-400">Tidak ada anak di rumah ini.</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3">
+        <Link href={`/family/view/${detail.id}`} className="text-xs text-blue-600 hover:underline">
+          Lihat keluarga utuh →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ==============================================
 // MAIN COMPONENT
 // ==============================================
 export default function FamilyTable() {
@@ -437,6 +503,27 @@ export default function FamilyTable() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
+
+  // Expanded rows: lazily-loaded full family (all sibling home ids) keyed by canonical home id
+  const [expandedDetails, setExpandedDetails] = useState<Record<number, Home | "loading">>({});
+  const loadedExpandRef = useRef<Set<number>>(new Set());
+  const loadExpandDetail = useCallback(async (homeId: number) => {
+    if (loadedExpandRef.current.has(homeId)) return;
+    loadedExpandRef.current.add(homeId);
+    setExpandedDetails((prev) => ({ ...prev, [homeId]: "loading" }));
+    try {
+      const detail = await getHomeDetail(homeId);
+      setExpandedDetails((prev) => ({ ...prev, [homeId]: detail }));
+    } catch (err) {
+      console.error(err);
+      loadedExpandRef.current.delete(homeId);
+      setExpandedDetails((prev) => {
+        const next = { ...prev };
+        delete next[homeId];
+        return next;
+      });
+    }
+  }, []);
 
   // Search input decoupled from URL — only commits on Enter / Cari
   const [searchInput, setSearchInput] = useState(urlSearch);
@@ -642,6 +729,15 @@ export default function FamilyTable() {
             }}
             scroll={{ x: "max-content", y: isLg ? 500 : "calc(100vh - 430px)" }}
             onChange={handleTableChange}
+            expandable={{
+              rowExpandable: (record) => (record.walis?.length ?? 0) > 1,
+              onExpand: (expanded, record) => {
+                if (expanded) loadExpandDetail(record.id);
+              },
+              expandedRowRender: (record) => (
+                <ExpandedFamily detail={expandedDetails[record.id]} />
+              ),
+            }}
           />
         </>
       )}

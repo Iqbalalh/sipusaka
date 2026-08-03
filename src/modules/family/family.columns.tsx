@@ -94,11 +94,22 @@ export const getFamilyColumns = (regions: Region[], role?: string, onDelete?: (i
     key: "waliName",
     render: (_, home) => {
       const walis = home.walis;
-      if (walis && walis.length > 0) {
-        const names = walis.map((w) => w.wali?.waliName).filter(Boolean);
-        if (names.length > 0) return names.join(", ");
-      }
-      return home.wali?.waliName || "-";
+      const names =
+        walis && walis.length > 0
+          ? walis.map((w) => w.wali?.waliName).filter(Boolean)
+          : [];
+      const display = names.length > 0 ? names.join(", ") : home.wali?.waliName || "-";
+      const homeCount = walis?.length ?? 0;
+      return (
+        <span className="flex items-center gap-2">
+          <span>{display}</span>
+          {homeCount > 1 && (
+            <Badge size="sm" color="info">
+              {homeCount} wali
+            </Badge>
+          )}
+        </span>
+      );
     },
   },
   {
