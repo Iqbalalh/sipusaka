@@ -313,10 +313,13 @@ export default function FamilyView() {
     if (!selectedWaliId) return;
     setAddWaliLoading(true);
     try {
-      await addSiblingHome(id, selectedWaliId);
+      // Use the live canonical home id — the URL id may point to a sibling that
+      // was since deleted.
+      const activeId = data?.id ?? id;
+      await addSiblingHome(activeId, selectedWaliId);
       setAddWaliOpen(false);
       // Refresh family data
-      const home = await getHomeDetail(id);
+      const home = await getHomeDetail(activeId);
       setData(home);
       messageApi.success({ content: "Wali berhasil ditambahkan", key: "add-wali", duration: 2 });
     } catch (err) {
@@ -330,8 +333,14 @@ export default function FamilyView() {
     setDeletingSiblingId(siblingHomeId);
     try {
       await deleteHome(siblingHomeId);
-      // Refresh family data
-      const home = await getHomeDetail(id);
+      // Refresh from a surviving sibling — the deleted home may be the one the
+      // URL/`data.id` points to, which would 404 on reload.
+      const survivingId =
+        (data?.walis ?? [])
+          .map((w) => w.homeId)
+          .filter((h) => h !== siblingHomeId)
+          .sort((a, b) => a - b)[0] ?? (data?.id ?? id);
+      const home = await getHomeDetail(survivingId);
       setData(home);
       messageApi.success({ content: "Wali berhasil dihapus dari keluarga", key: "del-wali", duration: 2 });
     } catch (err) {
@@ -346,7 +355,7 @@ export default function FamilyView() {
     setAddAnakLoading(true);
     try {
       await Promise.all(selectedChildIds.map((childId) => assignChildToHome(childId, addAnakTargetHomeId)));
-      const home = await getHomeDetail(id);
+      const home = await getHomeDetail(data?.id ?? id);
       setData(home);
       setAddAnakTargetHomeId(null);
       setSelectedChildIds([]);
@@ -365,6 +374,9 @@ export default function FamilyView() {
       </div>
     );
   }
+
+  // Live canonical home id for links/redirects (URL id may be a deleted sibling)
+  const activeId = data?.id ?? id;
 
   return (
     <>
@@ -460,7 +472,7 @@ export default function FamilyView() {
                 </Button>
               )}
               {isAdmin && (
-                <Link href={`/family/edit/${id}`}>
+                <Link href={`/family/edit/${activeId}`}>
                   <Button variant="outline" size="sm">
                     Edit
                   </Button>
@@ -536,7 +548,7 @@ export default function FamilyView() {
             </div>
 
             <div className="flex items-center gap-2 sm:justify-end">
-              <Link href={`/employee/edit/${data?.employeeId}?redirect=/family/view/${id}`}>
+              <Link href={`/employee/edit/${data?.employeeId}?redirect=/family/view/${activeId}`}>
                 <Button variant="outline" size="sm">
                   Edit
                 </Button>
@@ -656,7 +668,7 @@ export default function FamilyView() {
             </div>
 
             <div className="flex items-center gap-2 sm:justify-end">
-              <Link href={`/partner/edit/${data?.partnerId}?redirect=/family/view/${id}`}>
+              <Link href={`/partner/edit/${data?.partnerId}?redirect=/family/view/${activeId}`}>
                 <Button variant="outline" size="sm">
                   Edit
                 </Button>
@@ -789,7 +801,7 @@ export default function FamilyView() {
                     </Button>
                   )}
                   {w && entry.waliId && (
-                    <Link href={`/wali/edit/${entry.waliId}?redirect=/family/view/${id}`}>
+                    <Link href={`/wali/edit/${entry.waliId}?redirect=/family/view/${activeId}`}>
                       <Button variant="outline" size="sm">Edit Wali</Button>
                     </Link>
                   )}
@@ -912,7 +924,7 @@ export default function FamilyView() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 sm:justify-end">
-                          <Link href={`/children/edit/${child.id}?redirect=/family/view/${id}`}>
+                          <Link href={`/children/edit/${child.id}?redirect=/family/view/${activeId}`}>
                             <Button variant="outline" size="sm">Edit</Button>
                           </Link>
                         </div>

@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateWali from "@/modules/wali/wali.create";
+import WaliForm from "@/components/custom/form/WaliForm";
 
 export default function Children() {
   return (
     <AdminGuard>
       <div>
-        <CreateWali />
+        <WaliForm mode="create" />
       </div>
     </AdminGuard>
   );

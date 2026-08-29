@@ -22,12 +22,8 @@ export interface HomePaginatedResponse {
 }
 
 export const getHomes = async (): Promise<HomeTable[]> => {
-  try {
-    const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
 };
 
 export const getHomesOptimized = async (
@@ -36,62 +32,46 @@ export const getHomesOptimized = async (
   search: string = "",
   filters?: Record<string, any>
 ): Promise<HomePaginatedResponse> => {
-  try {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      pageSize: pageSize.toString(),
-    });
+  const params = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+  });
 
-    if (search.trim()) params.append("search", search);
-    if (filters && Object.keys(filters).length > 0) {
-      params.append("filters", JSON.stringify(filters));
-    }
-
-    const url = `${API_HOME_OPTIMIZED}?${params.toString()}`;
-    const json = await apiClient<ApiResponseList<HomeTable> & { pagination: PaginationResponse }>(url);
-
-    const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
-    const pagination = json.pagination;
-
-    return {
-      data: Array.isArray(data) ? data : [],
-      pagination: pagination || {
-        page: 1,
-        pageSize: pageSize,
-        total: 0,
-        totalPages: 1,
-      },
-    };
-  } catch (error) {
-    throw error;
+  if (search.trim()) params.append("search", search);
+  if (filters && Object.keys(filters).length > 0) {
+    params.append("filters", JSON.stringify(filters));
   }
+
+  const url = `${API_HOME_OPTIMIZED}?${params.toString()}`;
+  const json = await apiClient<ApiResponseList<HomeTable> & { pagination: PaginationResponse }>(url);
+
+  const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
+  const pagination = json.pagination;
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    pagination: pagination || {
+      page: 1,
+      pageSize: pageSize,
+      total: 0,
+      totalPages: 1,
+    },
+  };
 };
 
 export const getHome = async (id: number | string): Promise<Home> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/${id}`);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/${id}`);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
 };
 
 export const getHomeDetail = async (id: number | string): Promise<Home> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/detail/${id}`);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/detail/${id}`);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
 };
 
 export const getHomeWithIds = async (id: number | string): Promise<Home> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/detail/${id}`);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<Home>>(`${API_HOME}/detail/${id}`);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as Home;
 };
 
 export const updateHome = async (id: string | number, fd: FormData) => {
@@ -102,11 +82,7 @@ export const updateHome = async (id: string | number, fd: FormData) => {
 };
 
 export const deleteHome = async (id: number) => {
-  try {
-    return await deleteResource(`${API_HOME}/${id}`);
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(`${API_HOME}/${id}`);
 };
 
 export const addSiblingHome = async (sourceHomeId: number | string, waliId: number) => {
@@ -118,36 +94,24 @@ export const addSiblingHome = async (sourceHomeId: number | string, waliId: numb
 };
 
 export const getHomesList = async (): Promise<HomeTable[]> => {
-  try {
-    const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseList<HomeTable>>(API_HOME);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
 };
 
 export const getHomesForExport = async (search?: string, filters?: Record<string, any>): Promise<HomeTable[]> => {
-  try {
-    const params = new URLSearchParams();
-    if (search?.trim()) params.append("search", search.trim());
-    if (filters && Object.keys(filters).length > 0) params.append("filters", JSON.stringify(filters));
-    const qs = params.toString();
-    const url = qs ? `${API_HOME_EXPORT}?${qs}` : API_HOME_EXPORT;
-    const json = await apiClient<ApiResponseList<HomeTable>>(url);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
-  } catch (error) {
-    throw error;
-  }
+  const params = new URLSearchParams();
+  if (search?.trim()) params.append("search", search.trim());
+  if (filters && Object.keys(filters).length > 0) params.append("filters", JSON.stringify(filters));
+  const qs = params.toString();
+  const url = qs ? `${API_HOME_EXPORT}?${qs}` : API_HOME_EXPORT;
+  const json = await apiClient<ApiResponseList<HomeTable>>(url);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as HomeTable[];
 };
 
 // Loads all homes using the optimized endpoint (same data structure as table display)
 export const getAllHomes = async (): Promise<HomeTable[]> => {
-  try {
-    const response = await getHomesOptimized(1, 9999, "");
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await getHomesOptimized(1, 9999, "");
+  return response.data;
 };
 
 export interface HomeSummary {
@@ -158,15 +122,11 @@ export interface HomeSummary {
 }
 
 export const getHomeSummary = async (search?: string, filters?: Record<string, any>): Promise<HomeSummary> => {
-  try {
-    const params = new URLSearchParams();
-    if (search?.trim()) params.append("search", search.trim());
-    if (filters && Object.keys(filters).length > 0) params.append("filters", JSON.stringify(filters));
-    const qs = params.toString();
-    const url = qs ? `${API_HOME_SUMMARY}?${qs}` : API_HOME_SUMMARY;
-    const json = await apiClient<ApiResponseSingle<HomeSummary>>(url);
-    return json.data;
-  } catch (error) {
-    throw error;
-  }
+  const params = new URLSearchParams();
+  if (search?.trim()) params.append("search", search.trim());
+  if (filters && Object.keys(filters).length > 0) params.append("filters", JSON.stringify(filters));
+  const qs = params.toString();
+  const url = qs ? `${API_HOME_SUMMARY}?${qs}` : API_HOME_SUMMARY;
+  const json = await apiClient<ApiResponseSingle<HomeSummary>>(url);
+  return json.data;
 };

@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateFamily from "@/modules/family/family.create";
+import FamilyForm from "@/components/custom/form/FamilyForm";
 
 export default function Family() {
   return (
     <AdminGuard>
       <div>
-        <CreateFamily />
+        <FamilyForm mode="create" />
       </div>
     </AdminGuard>
   );

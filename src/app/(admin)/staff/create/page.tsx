@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateStaff from "@/modules/staff/staff.create";
+import StaffForm from "@/components/custom/form/StaffForm";
 
 export default function Staff() {
   return (
     <AdminGuard>
       <div>
-        <CreateStaff />
+        <StaffForm mode="create" />
       </div>
     </AdminGuard>
   );

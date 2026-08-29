@@ -48,47 +48,35 @@ export interface UmkmVisitDoc {
 export const getUmkmVisits = async (
   umkmId?: number
 ): Promise<UmkmVisit[]> => {
-  try {
-    const url = umkmId ? `${API_UMKM_VISIT}?umkmId=${umkmId}` : API_UMKM_VISIT;
-    const json = await apiClient<ApiResponseList<UmkmVisit>>(url);
-    // Handle different response structures
-    let data = json.data || [];
-    // If json itself is an array, use it directly
-    if (Array.isArray(json)) {
-      data = json;
-    }
-    return camelcaseKeys(data, { deep: true }) as unknown as UmkmVisit[];
-  } catch (error) {
-    throw error;
+  const url = umkmId ? `${API_UMKM_VISIT}?umkmId=${umkmId}` : API_UMKM_VISIT;
+  const json = await apiClient<ApiResponseList<UmkmVisit>>(url);
+  // Handle different response structures
+  let data = json.data || [];
+  // If json itself is an array, use it directly
+  if (Array.isArray(json)) {
+    data = json;
   }
+  return camelcaseKeys(data, { deep: true }) as unknown as UmkmVisit[];
 };
 
 export const getAllUmkmVisits = async (): Promise<UmkmVisit[]> => {
-  try {
-    const json = await apiClient<ApiResponseList<UmkmVisit>>(
-      `${API_UMKM_VISIT}?limit=10000`
-    );
-    // Handle different response structures
-    let data = json.data || [];
-    // If json itself is an array, use it directly
-    if (Array.isArray(json)) {
-      data = json;
-    }
-    return camelcaseKeys(data, { deep: true }) as unknown as UmkmVisit[];
-  } catch (error) {
-    throw error;
+  const json = await apiClient<ApiResponseList<UmkmVisit>>(
+    `${API_UMKM_VISIT}?limit=10000`
+  );
+  // Handle different response structures
+  let data = json.data || [];
+  // If json itself is an array, use it directly
+  if (Array.isArray(json)) {
+    data = json;
   }
+  return camelcaseKeys(data, { deep: true }) as unknown as UmkmVisit[];
 };
 
 export const getUmkmVisit = async (id: number | string): Promise<UmkmVisit> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<UmkmVisit>>(
-      `${API_UMKM_VISIT}/${id}`
-    );
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as UmkmVisit;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<UmkmVisit>>(
+    `${API_UMKM_VISIT}/${id}`
+  );
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as UmkmVisit;
 };
 
 export const createUmkmVisit = async (fd: FormData) => {
@@ -106,22 +94,14 @@ export const updateUmkmVisit = async (id: string | number, fd: FormData) => {
 };
 
 export const deleteUmkmVisit = async (id: number) => {
-  try {
-    return await deleteResource(`${API_UMKM_VISIT}/${id}`);
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(`${API_UMKM_VISIT}/${id}`);
 };
 
 export const deleteUmkmVisitDocument = async (
   visitId: number,
   docId: number
 ) => {
-  try {
-    return await deleteResource(
-      `${API_UMKM_VISIT}/${visitId}/documents/${docId}`
-    );
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(
+    `${API_UMKM_VISIT}/${visitId}/documents/${docId}`
+  );
 };

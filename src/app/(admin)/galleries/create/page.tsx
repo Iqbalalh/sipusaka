@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateGallery from "@/modules/galleries/galleries.create";
+import GalleryForm from "@/components/custom/form/GalleryForm";
 
 export default function Gallery() {
   return (
     <AdminGuard>
       <div>
-        <CreateGallery />
+        <GalleryForm mode="create" />
       </div>
     </AdminGuard>
   );

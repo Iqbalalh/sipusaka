@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateCategory from "@/modules/categories/categories.create";
+import CategoryForm from "@/components/custom/form/CategoryForm";
 
 export default function Category() {
   return (
     <AdminGuard>
       <div>
-        <CreateCategory />
+        <CategoryForm mode="create" />
       </div>
     </AdminGuard>
   );

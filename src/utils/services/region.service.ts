@@ -6,12 +6,8 @@ import { apiClient } from "../fetch/apiClient";
 import { fetchWithAuth } from "../fetch/fetchWithAuth";
 
 export const getRegionsList = async (): Promise<Region[]> => {
-  try {
-    const json = await apiClient<ApiResponseList<Region>>(`${API_REGION}/list`);
-    return camelcaseKeys(json.data, { deep: true }) as Region[];
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseList<Region>>(`${API_REGION}/list`);
+  return camelcaseKeys(json.data, { deep: true }) as Region[];
 };
 
 export interface RegionStat {
@@ -51,13 +47,9 @@ export interface RegionStat {
 }
 
 export const getRegionStats = async (): Promise<RegionStat[]> => {
-  try {
-    const res = await fetchWithAuth(API_REGION_STATS);
-    const json = await res.json();
-    return camelcaseKeys(json.data ?? [], { deep: true }) as RegionStat[];
-  } catch (error) {
-    throw error;
-  }
+  const res = await fetchWithAuth(API_REGION_STATS);
+  const json = await res.json();
+  return camelcaseKeys(json.data ?? [], { deep: true }) as RegionStat[];
 };
 
 export interface GlobalEducationLevels {
@@ -72,12 +64,8 @@ export interface GlobalEducationLevels {
 }
 
 export const getGlobalEducationLevels = async (): Promise<GlobalEducationLevels> => {
-  try {
-    const res = await fetchWithAuth(API_DASHBOARD);
-    const json = await res.json();
-    const edu = json.data?.educationLevels ?? {};
-    return camelcaseKeys(edu, { deep: false }) as GlobalEducationLevels;
-  } catch (error) {
-    throw error;
-  }
+  const res = await fetchWithAuth(API_DASHBOARD);
+  const json = await res.json();
+  const edu = json.data?.educationLevels ?? {};
+  return camelcaseKeys(edu, { deep: false }) as GlobalEducationLevels;
 };

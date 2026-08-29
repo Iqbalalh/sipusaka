@@ -55,32 +55,24 @@ export interface UmkmMonitoringDoc {
 export const getUmkmMonitoring = async (
   umkmId?: number
 ): Promise<UmkmMonitoring[]> => {
-  try {
-    const url = umkmId
-      ? `${API_UMKM_MONITORING}?umkmId=${umkmId}`
-      : API_UMKM_MONITORING;
-    const json = await apiClient<ApiResponseList<UmkmMonitoring>>(url);
-    return camelcaseKeys(json.data ?? json, {
-      deep: true,
-    }) as unknown as UmkmMonitoring[];
-  } catch (error) {
-    throw error;
-  }
+  const url = umkmId
+    ? `${API_UMKM_MONITORING}?umkmId=${umkmId}`
+    : API_UMKM_MONITORING;
+  const json = await apiClient<ApiResponseList<UmkmMonitoring>>(url);
+  return camelcaseKeys(json.data ?? json, {
+    deep: true,
+  }) as unknown as UmkmMonitoring[];
 };
 
 export const getUmkmMonitoringById = async (
   id: number | string
 ): Promise<UmkmMonitoring> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<UmkmMonitoring>>(
-      `${API_UMKM_MONITORING}/${id}`
-    );
-    return camelcaseKeys(json.data ?? json, {
-      deep: true,
-    }) as unknown as UmkmMonitoring;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<UmkmMonitoring>>(
+    `${API_UMKM_MONITORING}/${id}`
+  );
+  return camelcaseKeys(json.data ?? json, {
+    deep: true,
+  }) as unknown as UmkmMonitoring;
 };
 
 export const createUmkmMonitoring = async (fd: FormData) => {
@@ -98,22 +90,14 @@ export const updateUmkmMonitoring = async (id: string | number, fd: FormData) =>
 };
 
 export const deleteUmkmMonitoring = async (id: number) => {
-  try {
-    return await deleteResource(`${API_UMKM_MONITORING}/${id}`);
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(`${API_UMKM_MONITORING}/${id}`);
 };
 
 export const deleteUmkmMonitoringDocument = async (
   monitoringId: number,
   docId: number
 ) => {
-  try {
-    return await deleteResource(
-      `${API_UMKM_MONITORING}/${monitoringId}/documents/${docId}`
-    );
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(
+    `${API_UMKM_MONITORING}/${monitoringId}/documents/${docId}`
+  );
 };

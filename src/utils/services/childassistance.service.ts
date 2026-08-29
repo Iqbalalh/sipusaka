@@ -64,15 +64,11 @@ export interface ChildAssistancePaginatedResponse {
 export const getChildAssistance = async (
   childrenId?: number
 ): Promise<ChildAssistance[]> => {
-  try {
-    const url = childrenId
-      ? `${API_CHILD_ASSISTANCE}?childrenId=${childrenId}`
-      : API_CHILD_ASSISTANCE;
-    const json = await apiClient<ApiResponseList<ChildAssistance>>(url);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
-  } catch (error) {
-    throw error;
-  }
+  const url = childrenId
+    ? `${API_CHILD_ASSISTANCE}?childrenId=${childrenId}`
+    : API_CHILD_ASSISTANCE;
+  const json = await apiClient<ApiResponseList<ChildAssistance>>(url);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
 };
 
 export const getAllChildAssistanceOptimized = async (
@@ -80,45 +76,37 @@ export const getAllChildAssistanceOptimized = async (
   pageSize: number = 20,
   search: string = ""
 ): Promise<ChildAssistancePaginatedResponse> => {
-  try {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      pageSize: pageSize.toString(),
-    });
+  const params = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+  });
 
-    if (search.trim()) {
-      params.append('search', search);
-    }
-
-    const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
-    const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
-
-    const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
-    const pagination = json.pagination;
-
-    return {
-      data: Array.isArray(data) ? data : [],
-      pagination: pagination || {
-        page: 1,
-        pageSize: pageSize,
-        total: 0,
-        totalPages: 1,
-      },
-    };
-  } catch (error) {
-    throw error;
+  if (search.trim()) {
+    params.append('search', search);
   }
+
+  const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
+  const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
+
+  const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
+  const pagination = json.pagination;
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    pagination: pagination || {
+      page: 1,
+      pageSize: pageSize,
+      total: 0,
+      totalPages: 1,
+    },
+  };
 };
 
 export const getChildAssistanceById = async (id: number | string): Promise<ChildAssistance> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<ChildAssistance>>(
-      `${API_CHILD_ASSISTANCE}/${id}`
-    );
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<ChildAssistance>>(
+    `${API_CHILD_ASSISTANCE}/${id}`
+  );
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance;
 };
 
 export const createChildAssistance = async (fd: FormData) => {
@@ -136,64 +124,48 @@ export const updateChildAssistance = async (id: string | number, fd: FormData) =
 };
 
 export const deleteChildAssistance = async (id: number) => {
-  try {
-    return await deleteResource(`${API_CHILD_ASSISTANCE}/${id}`);
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(`${API_CHILD_ASSISTANCE}/${id}`);
 };
 
 export const deleteChildAssistanceDocument = async (
   assistanceId: number,
   docId: number
 ) => {
-  try {
-    return await deleteResource(
-      `${API_CHILD_ASSISTANCE}/${assistanceId}/documents/${docId}`
-    );
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(
+    `${API_CHILD_ASSISTANCE}/${assistanceId}/documents/${docId}`
+  );
 };
 
 export const getAllChildAssistanceByYear = async (
   year: number
 ): Promise<ChildAssistance[]> => {
-  try {
-    // Get all records without date filter from API
-    const params = new URLSearchParams({
-      pageSize: '9999', // Get all records
-      page: '1'
-    });
-    
-    const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
-    const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
-    
-    const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
-    const allData = Array.isArray(data) ? data : [];
-    
-    // Filter by assistance date on client side
-    const startDate = new Date(year, 0, 1); // January 1st
-    const endDate = new Date(year, 11, 31, 23, 59, 59, 999); // December 31st end of day
-    
-    const filteredData = allData.filter((item) => {
-      if (!item.assistanceDate) return false;
-      const assistanceDate = new Date(item.assistanceDate);
-      return assistanceDate >= startDate && assistanceDate <= endDate;
-    });
-    
-    return filteredData;
-  } catch (error) {
-    throw error;
-  }
+  // Get all records without date filter from API
+  const params = new URLSearchParams({
+    pageSize: '9999', // Get all records
+    page: '1'
+  });
+  
+  const url = `${API_CHILD_ASSISTANCE_OPTIMIZED}?${params.toString()}`;
+  const json = await apiClient<ApiResponseList<ChildAssistance> & { pagination: PaginationResponse }>(url);
+  
+  const data = camelcaseKeys(json.data ?? json, { deep: true }) as unknown as ChildAssistance[];
+  const allData = Array.isArray(data) ? data : [];
+  
+  // Filter by assistance date on client side
+  const startDate = new Date(year, 0, 1); // January 1st
+  const endDate = new Date(year, 11, 31, 23, 59, 59, 999); // December 31st end of day
+  
+  const filteredData = allData.filter((item) => {
+    if (!item.assistanceDate) return false;
+    const assistanceDate = new Date(item.assistanceDate);
+    return assistanceDate >= startDate && assistanceDate <= endDate;
+  });
+  
+  return filteredData;
 };
 
 export const getChildAssistanceYears = async (): Promise<number[]> => {
-  try {
-    const url = `${API_CHILD_ASSISTANCE}/years`;
-    const json = await apiClient<{ data: number[] }>(url);
-    return json.data ?? [];
-  } catch (error) {
-    throw error;
-  }
+  const url = `${API_CHILD_ASSISTANCE}/years`;
+  const json = await apiClient<{ data: number[] }>(url);
+  return json.data ?? [];
 };

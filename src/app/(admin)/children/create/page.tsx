@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateChildren from "@/modules/children/children.create";
+import ChildrenForm from "@/components/custom/form/ChildrenForm";
 
 export default function Children() {
   return (
     <AdminGuard>
       <div>
-        <CreateChildren />
+        <ChildrenForm mode="create" />
       </div>
     </AdminGuard>
   );

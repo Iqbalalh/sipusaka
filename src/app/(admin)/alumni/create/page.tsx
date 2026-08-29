@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateAlumni from "@/modules/alumni/alumni.create";
+import AlumniForm from "@/components/custom/form/AlumniForm";
 
 export default function AlumniCreate() {
   return (
     <AdminGuard>
       <div>
-        <CreateAlumni />
+        <AlumniForm mode="create" />
       </div>
     </AdminGuard>
   );

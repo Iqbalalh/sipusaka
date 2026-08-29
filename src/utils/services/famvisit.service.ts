@@ -43,24 +43,16 @@ export interface FamilyVisitDoc {
 export const getFamilyVisits = async (
   homeId?: number
 ): Promise<FamilyVisit[]> => {
-  try {
-    const url = homeId ? `${API_FAMILY_VISIT}?homeId=${homeId}` : API_FAMILY_VISIT;
-    const json = await apiClient<ApiResponseList<FamilyVisit>>(url);
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as FamilyVisit[];
-  } catch (error) {
-    throw error;
-  }
+  const url = homeId ? `${API_FAMILY_VISIT}?homeId=${homeId}` : API_FAMILY_VISIT;
+  const json = await apiClient<ApiResponseList<FamilyVisit>>(url);
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as FamilyVisit[];
 };
 
 export const getFamilyVisit = async (id: number | string): Promise<FamilyVisit> => {
-  try {
-    const json = await apiClient<ApiResponseSingle<FamilyVisit>>(
-      `${API_FAMILY_VISIT}/${id}`
-    );
-    return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as FamilyVisit;
-  } catch (error) {
-    throw error;
-  }
+  const json = await apiClient<ApiResponseSingle<FamilyVisit>>(
+    `${API_FAMILY_VISIT}/${id}`
+  );
+  return camelcaseKeys(json.data ?? json, { deep: true }) as unknown as FamilyVisit;
 };
 
 export const createFamilyVisit = async (fd: FormData) => {
@@ -78,22 +70,14 @@ export const updateFamilyVisit = async (id: string | number, fd: FormData) => {
 };
 
 export const deleteFamilyVisit = async (id: number) => {
-  try {
-    return await deleteResource(`${API_FAMILY_VISIT}/${id}`);
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(`${API_FAMILY_VISIT}/${id}`);
 };
 
 export const deleteFamilyVisitDocument = async (
   visitId: number,
   docId: number
 ) => {
-  try {
-    return await deleteResource(
-      `${API_FAMILY_VISIT}/${visitId}/documents/${docId}`
-    );
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(
+    `${API_FAMILY_VISIT}/${visitId}/documents/${docId}`
+  );
 };

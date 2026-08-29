@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateUmkm from "@/modules/umkm/umkm.create";
+import UmkmForm from "@/components/custom/form/UmkmForm";
 
 export default function Umkm() {
   return (
     <AdminGuard>
       <div>
-        <CreateUmkm />
+        <UmkmForm mode="create" />
       </div>
     </AdminGuard>
   );

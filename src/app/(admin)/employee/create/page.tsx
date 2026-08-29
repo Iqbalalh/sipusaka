@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreateEmployee from "@/modules/employee/employee.create";
+import EmployeeForm from "@/components/custom/form/EmployeeForm";
 
 export default function Employee() {
   return (
     <AdminGuard>
       <div>
-        <CreateEmployee />
+        <EmployeeForm mode="create" />
       </div>
     </AdminGuard>
   );

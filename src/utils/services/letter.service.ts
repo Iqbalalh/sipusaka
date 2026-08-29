@@ -80,11 +80,7 @@ export const updateLetter = async (id: string | number, fd: FormData) => {
 };
 
 export const deleteLetter = async (id: number) => {
-  try {
-    return await deleteResource(`${API_LETTERS}/${id}`);
-  } catch (error) {
-    throw error;
-  }
+  return await deleteResource(`${API_LETTERS}/${id}`);
 };
 
 export const submitLetter = async (id: number) => {

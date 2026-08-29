@@ -1,11 +1,11 @@
 import AdminGuard from "@/components/custom/AdminGuard";
-import CreatePartner from "@/modules/partner/partner.create";
+import PartnerForm from "@/components/custom/form/PartnerForm";
 
 export default function Partner() {
   return (
     <AdminGuard>
       <div>
-        <CreatePartner />
+        <PartnerForm mode="create" />
       </div>
     </AdminGuard>
   );
