@@ -46,6 +46,7 @@ import {
   deleteUmkmVisit,
   deleteUmkmVisitDocument,
 } from "@/utils/services/umkmvisit.service";
+import { compressFiles } from "@/utils/image/compressImage";
 import {
   UmkmMonitoring,
   UmkmMonitoringDoc,
@@ -261,12 +262,9 @@ export default function UmkmView() {
         formData.append("notes", values.notes);
       }
 
-      // Append files
-      fileList.forEach((file: UploadFile) => {
-        if (file.originFileObj) {
-          formData.append("documents", file.originFileObj);
-        }
-      });
+      // Append files (compressed)
+      const docs = fileList.map((f) => f.originFileObj).filter(Boolean) as File[];
+      (await compressFiles(docs)).forEach((f) => formData.append("documents", f));
 
       if (editingVisit) {
         await updateUmkmVisit(editingVisit.id, formData);
@@ -436,12 +434,9 @@ export default function UmkmView() {
         formData.append("otherNotes", values.otherNotes);
       }
 
-      // Append files
-      monitoringFileList.forEach((file: UploadFile) => {
-        if (file.originFileObj) {
-          formData.append("documents", file.originFileObj);
-        }
-      });
+      // Append files (compressed)
+      const docs = monitoringFileList.map((f) => f.originFileObj).filter(Boolean) as File[];
+      (await compressFiles(docs)).forEach((f) => formData.append("documents", f));
 
       if (editingMonitoring) {
         await updateUmkmMonitoring(editingMonitoring.id, formData);

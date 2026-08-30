@@ -1,18 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { validateImage } from "@/utils/validator/validateImage";
+import { compressImage } from "@/utils/image/compressImage";
 
 export const useFilePreview = () => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  const selectFile = useCallback((f: File) => {
+  const selectFile = useCallback(async (f: File) => {
     const error = validateImage(f);
     if (error) throw new Error(error);
 
+    const compressed = await compressImage(f);
+
     if (preview) URL.revokeObjectURL(preview);
 
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setFile(compressed);
+    setPreview(URL.createObjectURL(compressed));
   }, [preview]);
 
   const clearFile = useCallback(() => {

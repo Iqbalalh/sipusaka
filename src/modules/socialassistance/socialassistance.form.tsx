@@ -7,6 +7,7 @@ import { LoadingOutlined, UploadOutlined } from "@ant-design/icons";
 import type { UploadFile } from "antd/es/upload/interface";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
+import { compressFiles } from "@/utils/image/compressImage";
 import {
   SocialAssistance,
   SocialAssistanceFormData,
@@ -100,12 +101,9 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
       formData.append("totalAmount", String(totalAmount));
       if (notes) formData.append("notes", notes);
 
-      // Append files
-      fileList.forEach((file: UploadFile) => {
-        if (file.originFileObj) {
-          formData.append("documents", file.originFileObj);
-        }
-      });
+      // Append files (compressed)
+      const docs = fileList.map((f) => f.originFileObj).filter(Boolean) as File[];
+      (await compressFiles(docs)).forEach((f) => formData.append("documents", f));
 
       if (isEditMode && id) {
         await updateSocialAssistance(id, formData);

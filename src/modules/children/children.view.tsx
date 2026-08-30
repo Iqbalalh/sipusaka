@@ -36,6 +36,7 @@ import {
   deleteChildAssistance,
   deleteChildAssistanceDocument,
 } from "@/utils/services/childassistance.service";
+import { compressFiles } from "@/utils/image/compressImage";
 import type { UploadFile } from "antd/es/upload/interface";
 import dayjs from "dayjs";
 
@@ -243,12 +244,9 @@ export default function ChildrenView() {
         formData.append("notes", values.notes);
       }
 
-      // Append files
-      fileList.forEach((file: UploadFile) => {
-        if (file.originFileObj) {
-          formData.append("documents", file.originFileObj);
-        }
-      });
+      // Append files (compressed)
+      const docs = fileList.map((f) => f.originFileObj).filter(Boolean) as File[];
+      (await compressFiles(docs)).forEach((f) => formData.append("documents", f));
 
       if (editingAssistance) {
         await updateChildAssistance(editingAssistance.id, formData);

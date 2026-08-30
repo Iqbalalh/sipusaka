@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal, message } from "antd";
 import { createWali } from "@/utils/services/wali.service";
 import FileInput from "@/components/form/input/FileInput";
+import { compressImage } from "@/utils/image/compressImage";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { TextInput } from "@/components/custom/TextInput";
@@ -67,7 +68,7 @@ export default function CreateWaliModal({
       });
 
       if (photoFile) {
-        fd.append("photo", photoFile);
+        fd.append("photo", await compressImage(photoFile));
       }
 
       const res = await createWali(fd);

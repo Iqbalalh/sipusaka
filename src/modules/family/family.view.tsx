@@ -50,6 +50,7 @@ import {
   deleteFamilyVisit,
   deleteFamilyVisitDocument,
 } from "@/utils/services/famvisit.service";
+import { compressFiles } from "@/utils/image/compressImage";
 import type { UploadFile } from "antd/es/upload/interface";
 import dayjs from "dayjs";
 
@@ -236,12 +237,9 @@ export default function FamilyView() {
         formData.append("notes", values.notes);
       }
 
-      // Append files
-      fileList.forEach((file: UploadFile) => {
-        if (file.originFileObj) {
-          formData.append("documents", file.originFileObj);
-        }
-      });
+      // Append files (compressed)
+      const docs = fileList.map((f) => f.originFileObj).filter(Boolean) as File[];
+      (await compressFiles(docs)).forEach((f) => formData.append("documents", f));
 
       if (editingVisit) {
         await updateFamilyVisit(editingVisit.id, formData);

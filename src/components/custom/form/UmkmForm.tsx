@@ -19,6 +19,7 @@ import { TextInput } from "@/components/custom/TextInput";
 import { useFormSubmit } from "@/hooks/useFormSubmit";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
+import { compressFiles } from "@/utils/image/compressImage";
 import { fetchWithAuth } from "@/utils/fetch/fetchWithAuth";
 import { API_UMKM } from "@/constants/endpoint";
 import { getRegionsList } from "@/utils/services/region.service";
@@ -207,11 +208,8 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
     }
 
     const extraData = new FormData();
-    fileList.forEach((file) => {
-      if (file.originFileObj) {
-        extraData.append("photos", file.originFileObj);
-      }
-    });
+    const photos = fileList.map((f) => f.originFileObj).filter(Boolean) as File[];
+    (await compressFiles(photos)).forEach((f) => extraData.append("photos", f));
 
     const { success, error } = await submit(form, extraData);
     if (!success) {

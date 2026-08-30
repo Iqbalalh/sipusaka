@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Image, Popconfirm, Flex, Spin, Checkbox, DatePicker, Progress } from "antd";
 import { LoadingOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
@@ -19,6 +19,7 @@ import { SelectInput } from "@/components/custom/SelectInput";
 // Hooks & Utils
 import { useFormSubmit } from "@/hooks/useFormSubmit";
 import { useFilePreview } from "@/hooks/useFilePreview";
+import { compressFiles } from "@/utils/image/compressImage";
 import { useMultipleFilePreview } from "@/hooks/useMultipleFilePreview";
 import { useNotify } from "@/context/NotificationContext";
 import { notifyFromResult } from "@/utils/fetch/notify";
@@ -262,7 +263,13 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
     });
   }, []);
 
+  // Synchronous re-entrancy lock — compression adds a multi-second gap before
+  // the button disables, so guard the whole submit against double-clicks.
+  const submittingRef = useRef(false);
+
   const handleSubmit = useCallback(async () => {
+    if (submittingRef.current) return;
+
     // Get files based on mode
     const filesToUpload = mode === "create" ? multipleFiles.map(f => f.file) : (imageFile ? [imageFile] : []);
 
@@ -271,38 +278,44 @@ export default function GalleryForm({ mode, galleryId }: GalleryFormProps) {
       return notify("warning", validation.error!);
     }
 
-    const extraData = new FormData();
+    submittingRef.current = true;
+    try {
+      const extraData = new FormData();
 
-    // Append files based on mode
-    if (mode === "create" && multipleFiles.length > 0) {
-      multipleFiles.forEach((fileWithPreview) => {
-        extraData.append("images", fileWithPreview.file);
-      });
-    } else if (imageFile) {
-      extraData.append("image", imageFile);
-    }
-
-    if (selectedCategories.length > 0) {
-      selectedCategories.forEach((catId) => {
-        extraData.append("categoryIds", catId.toString());
-      });
-    }
-
-    // Use XHR with progress for multi-file create, regular submit for single/edit
-    if (mode === "create" && multipleFiles.length > 1) {
-      try {
-        setUploadProgress(0);
-        await uploadWithProgress(API_GALLERIES, extraData);
-        notify("success", "Galeri berhasil ditambahkan!");
-        router.push("/galleries");
-      } catch (err: any) {
-        notify("error", err.message || "Gagal mengunggah gambar.");
+      // Append files based on mode
+      if (mode === "create" && multipleFiles.length > 0) {
+        // imageFile (single/edit) is already compressed by useFilePreview; the
+        // multi-file list is raw, so compress it here before upload.
+        const compressed = await compressFiles(multipleFiles.map((f) => f.file));
+        compressed.forEach((f) => extraData.append("images", f));
+      } else if (imageFile) {
+        extraData.append("image", imageFile);
       }
-    } else {
-      const { success, error } = await submit(form, extraData);
-      if (!success) {
-        notifyFromResult(notify, { error });
+
+      if (selectedCategories.length > 0) {
+        selectedCategories.forEach((catId) => {
+          extraData.append("categoryIds", catId.toString());
+        });
       }
+
+      // Use XHR with progress for multi-file create, regular submit for single/edit
+      if (mode === "create" && multipleFiles.length > 1) {
+        try {
+          setUploadProgress(0);
+          await uploadWithProgress(API_GALLERIES, extraData);
+          notify("success", "Galeri berhasil ditambahkan!");
+          router.push("/galleries");
+        } catch (err: any) {
+          notify("error", err.message || "Gagal mengunggah gambar.");
+        }
+      } else {
+        const { success, error } = await submit(form, extraData);
+        if (!success) {
+          notifyFromResult(notify, { error });
+        }
+      }
+    } finally {
+      submittingRef.current = false;
     }
   }, [form, imageFile, multipleFiles, mode, selectedCategories, submit, notify, uploadWithProgress, router]);
 

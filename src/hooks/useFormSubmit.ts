@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { buildFormData } from "@/utils/form/buildFormData";
 import { ApiError } from "@/types/generic/api-error";
 
@@ -7,8 +7,13 @@ export const useFormSubmit = (
   onSuccess?: (data?: any) => void
 ) => {
   const [loading, setLoading] = useState(false);
+  // Synchronous re-entrancy lock — makes submit idempotent against
+  // double-clicks even before `loading` re-renders the disabled button.
+  const submittingRef = useRef(false);
 
   const submit = async (data: Record<string, any>, extra?: FormData) => {
+    if (submittingRef.current) return { success: false, error: null };
+    submittingRef.current = true;
     setLoading(true);
     try {
       const fd = buildFormData(data);
@@ -44,6 +49,7 @@ export const useFormSubmit = (
       return { success: false, error: finalError };
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 

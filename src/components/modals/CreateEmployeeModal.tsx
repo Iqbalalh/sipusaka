@@ -6,6 +6,7 @@ import { Option } from "@/types/generic/select-option";
 import { GENDER_OPTIONS, PLH_OPTIONS } from "@/constants/option";
 import { createEmployee } from "@/utils/services/employee.service";
 import FileInput from "@/components/form/input/FileInput";
+import { compressImage } from "@/utils/image/compressImage";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
@@ -80,7 +81,7 @@ export default function CreateEmployeeModal({
       });
 
       if (photoFile) {
-        fd.append("photo", photoFile);
+        fd.append("photo", await compressImage(photoFile));
       }
 
       const res = await createEmployee(fd);

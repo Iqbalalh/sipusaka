@@ -5,6 +5,7 @@ import { Modal, message } from "antd";
 import { Option } from "@/types/generic/select-option";
 import { createPartner } from "@/utils/services/partner.service";
 import FileInput from "@/components/form/input/FileInput";
+import { compressImage } from "@/utils/image/compressImage";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
@@ -80,7 +81,7 @@ export default function CreatePartnerModal({
       });
 
       if (photoFile) {
-        fd.append("photo", photoFile);
+        fd.append("photo", await compressImage(photoFile));
       }
 
       const res = await createPartner(fd);

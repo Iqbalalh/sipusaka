@@ -6,6 +6,7 @@ import { BaseChildren } from "@/types/models/children";
 import { GENDER_OPTIONS } from "@/constants/option";
 import { createChildren } from "@/utils/services/children.service";
 import FileInput from "@/components/form/input/FileInput";
+import { compressImage } from "@/utils/image/compressImage";
 import Button from "@/components/ui/button/Button";
 import { FormField } from "@/components/custom/FormField";
 import { SelectInput } from "@/components/custom/SelectInput";
@@ -79,7 +80,7 @@ export default function CreateChildrenModal({
       });
 
       if (photoFile) {
-        fd.append("photo", photoFile);
+        fd.append("photo", await compressImage(photoFile));
       }
 
       const res = await createChildren(fd);
