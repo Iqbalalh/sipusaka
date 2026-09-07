@@ -245,15 +245,6 @@ export default function GalleriesTable() {
     [regions, categories, session?.user?.role, isAdmin],
   );
 
-  const columnsWithState = useMemo(
-    () =>
-      baseColumns.map((col) => ({
-        ...col,
-        ...(col.filters !== undefined ? { filteredValue: null } : {}),
-      })),
-    [baseColumns],
-  );
-
   return (
     <>
       {/* DELETE MODAL */}
@@ -325,7 +316,7 @@ export default function GalleriesTable() {
 
       {/* TABLE */}
       <Table
-        columns={columnsWithState}
+        columns={baseColumns}
         dataSource={data}
         rowKey="id"
         bordered
@@ -333,10 +324,16 @@ export default function GalleriesTable() {
         pagination={{
           current: page,
           pageSize: 50,
-          total: data.length,
+          // No controlled `total` — antd derives it from the column-filtered
+          // rows so the count stays correct when filters are applied.
           showSizeChanger: false,
           showTotal: (t) => `Jumlah Data: ${t}`,
           onChange: (p) => pushParams({ page: String(p) }),
+        }}
+        onChange={(_pagination, _filters, _sorter, extra) => {
+          // Reset to page 1 whenever the column filters change, so an active
+          // page doesn't land past the (now shorter) filtered result.
+          if (extra.action === "filter" && page !== 1) pushParams({ page: "1" });
         }}
         scroll={{ x: "max-content", y: 500 }}
       />

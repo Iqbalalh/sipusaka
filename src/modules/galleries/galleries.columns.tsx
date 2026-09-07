@@ -48,6 +48,7 @@ export const getGalleryColumns = (regions: Region[] = [], categories: Category[]
     key: "categories",
     dataIndex: "categories",
     filters: categories.map((c) => ({ text: c.name, value: c.id })),
+    onFilter: (value, record) => !!record.categories?.some((c) => c.id === value),
     render: (_: any, gallery: Gallery) => {
       if (!gallery.categories || gallery.categories.length === 0) return "-";
       return gallery.categories.map((cat) => cat.name).join(", ");
@@ -76,6 +77,7 @@ export const getGalleryColumns = (regions: Region[] = [], categories: Category[]
       text: r.regionName,
       value: r.regionId,
     })),
+    onFilter: (value, record) => record.regionId === value,
     render: (_: any, gallery: Gallery) => {
       return gallery.regionName || "-";
     },
