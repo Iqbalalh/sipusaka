@@ -18,6 +18,7 @@ import {
   FaHandHoldingHeart,
   FaUsers,
   FaEnvelope,
+  FaMapLocationDot,
 } from "react-icons/fa6";
 import { ChevronDownIcon, HorizontaLDots } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
@@ -100,6 +101,11 @@ const superadminItems: NavItem[] = [
     icon: <FaUsers className="text-2xl" />,
     name: "User",
     path: "/users",
+  },
+  {
+    icon: <FaMapLocationDot className="text-2xl" />,
+    name: "Pengaturan Wilayah",
+    path: "/regions",
   },
 ];
 

@@ -10,6 +10,30 @@ export const getRegionsList = async (): Promise<Region[]> => {
   return camelcaseKeys(json.data, { deep: true }) as Region[];
 };
 
+// Full region records (with createdAt / audit) for the management table
+export const getRegions = async (): Promise<Region[]> => {
+  const json = await apiClient<ApiResponseList<Region>>(API_REGION);
+  return camelcaseKeys(json.data, { deep: true }) as Region[];
+};
+
+export const createRegion = async (regionName: string) =>
+  apiClient(API_REGION, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ regionName }),
+  });
+
+export const updateRegion = async (id: number, regionName: string) =>
+  apiClient(`${API_REGION}/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ regionName }),
+  });
+
+export const deleteRegion = async (id: number): Promise<void> => {
+  await apiClient<void>(`${API_REGION}/${id}`, { method: "DELETE" });
+};
+
 export interface RegionStat {
   regionId: number;
   regionName: string;
