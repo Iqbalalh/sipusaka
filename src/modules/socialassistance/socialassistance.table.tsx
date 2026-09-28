@@ -165,6 +165,7 @@ const exportSocialAssistanceToExcel = async (
       { header: "Alat Kesehatan", key: "medicalEquipment", width: 30 },
       { header: "Uang", key: "cashAmount", width: 20 },
       { header: "Total", key: "totalAmount", width: 20 },
+      { header: "Pengajuan", key: "pengajuan", width: 20 },
       { header: "Keterangan", key: "notes", width: 30 },
       { header: "Tanggal Dibuat", key: "createdAt", width: 20 },
     ];
@@ -209,6 +210,7 @@ const exportSocialAssistanceToExcel = async (
         medicalEquipment: medicalEquipmentStr,
         cashAmount: item.cashAmount ? `Rp ${item.cashAmount.toLocaleString("id-ID")}` : "-",
         totalAmount: item.totalAmount ? `Rp ${item.totalAmount.toLocaleString("id-ID")}` : "-",
+        pengajuan: item.pengajuan ? `Rp ${item.pengajuan.toLocaleString("id-ID")}` : "-",
         notes: item.notes || "-",
         createdAt: item.createdAt ? formatDate(item.createdAt) : "-",
       });

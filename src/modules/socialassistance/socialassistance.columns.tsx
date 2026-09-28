@@ -161,6 +161,24 @@ export const getSocialAssistanceColumns = (
     exportRender: (value: number) => value ?? "",
   } as any,
   {
+    title: "Pengajuan",
+    dataIndex: "pengajuan",
+    key: "pengajuan",
+    width: 130,
+    align: "right",
+    render: (value: number, record: any) => {
+      if (!value) return <span className="text-gray-400">-</span>;
+      // Cross-check: highlight amber when the submitted amount differs from the total (realisasi)
+      const mismatch = record.totalAmount != null && record.totalAmount !== value;
+      return (
+        <span className={mismatch ? "font-semibold text-amber-600" : "text-gray-700 dark:text-gray-300"}>
+          Rp {value.toLocaleString("id-ID")}
+        </span>
+      );
+    },
+    exportRender: (value: number) => value ?? "",
+  } as any,
+  {
     title: "Keterangan",
     dataIndex: "notes",
     key: "notes",

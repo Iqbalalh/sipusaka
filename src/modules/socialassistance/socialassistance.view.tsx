@@ -167,6 +167,7 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
           <tr><th>Total Alat Kesehatan</th><td class="text-right">Rp ${equipmentTotal.toLocaleString("id-ID")}</td></tr>
           <tr><th>Uang</th><td class="text-right">Rp ${cashAmount.toLocaleString("id-ID")}</td></tr>
           <tr class="total-row"><th>Total</th><td class="text-right">Rp ${totalAmount.toLocaleString("id-ID")}</td></tr>
+          ${data?.pengajuan != null ? `<tr><th>Pengajuan</th><td class="text-right">Rp ${data.pengajuan.toLocaleString("id-ID")}</td></tr>` : ""}
         </table>
 
         <h2>Keterangan</h2>
@@ -290,6 +291,19 @@ export default function SocialAssistanceView({ id }: SocialAssistanceViewProps) 
               Rp {totalAmount.toLocaleString("id-ID")}
             </span>
           </div>
+          {data?.pengajuan != null && (
+            <div className="flex justify-between items-center py-2 px-3">
+              <span className="text-gray-600 dark:text-gray-400">Pengajuan (sumber lain)</span>
+              <span className={`font-medium ${data.pengajuan !== totalAmount ? "text-amber-600" : ""}`}>
+                Rp {data.pengajuan.toLocaleString("id-ID")}
+                {data.pengajuan !== totalAmount && (
+                  <span className="ml-2 text-xs">
+                    (selisih Rp {Math.abs(totalAmount - data.pengajuan).toLocaleString("id-ID")})
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

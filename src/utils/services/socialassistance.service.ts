@@ -29,6 +29,7 @@ export interface SocialAssistance {
   equipmentNominal?: number | null;
   cashAmount?: number | null;
   totalAmount?: number | null;
+  pengajuan?: number | null;
   notes?: string | null;
   documents?: SocialAssistanceDoc[];
   createdAt: string;
@@ -58,6 +59,7 @@ export interface SocialAssistanceFormData {
   equipmentNominal?: number | null;
   cashAmount?: number | null;
   totalAmount?: number | null;
+  pengajuan?: number | null;
   notes?: string | null;
 }
 

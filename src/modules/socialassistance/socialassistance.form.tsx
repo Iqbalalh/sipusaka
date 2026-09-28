@@ -43,6 +43,7 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
   const [equipmentQuantity, setEquipmentQuantity] = useState<number | null>(null);
   const [equipmentNominal, setEquipmentNominal] = useState<number | null>(null);
   const [cashAmount, setCashAmount] = useState<number | null>(null);
+  const [pengajuan, setPengajuan] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
@@ -68,6 +69,7 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
           setEquipmentQuantity(data.equipmentQuantity || null);
           setEquipmentNominal(data.equipmentNominal || null);
           setCashAmount(data.cashAmount || null);
+          setPengajuan(data.pengajuan ?? null);
           setNotes(data.notes || "");
         }
       } catch (err) {
@@ -99,6 +101,7 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
       if (equipmentNominal != null) formData.append("equipmentNominal", String(equipmentNominal));
       if (cashAmount != null) formData.append("cashAmount", String(cashAmount));
       formData.append("totalAmount", String(totalAmount));
+      if (pengajuan != null) formData.append("pengajuan", String(pengajuan));
       if (notes) formData.append("notes", notes);
 
       // Append files (compressed)
@@ -300,6 +303,27 @@ export default function SocialAssistanceForm({ id }: SocialAssistanceFormProps) 
         <div className="text-xs text-gray-500 mt-1">
           Alat Kesehatan: Rp {equipmentTotal.toLocaleString("id-ID")} + Uang: Rp {(cashAmount || 0).toLocaleString("id-ID")}
         </div>
+      </div>
+
+      {/* Pengajuan — nominal dari sumber lain, untuk cross-check dengan Total */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Pengajuan (Rp)
+        </label>
+        <Input
+          type="number"
+          min={0}
+          value={pengajuan ?? ""}
+          onChange={(e) => setPengajuan(e.target.value ? Number(e.target.value) : null)}
+          placeholder="Nominal pengajuan (sumber lain)"
+          className="w-full"
+        />
+        {pengajuan != null && pengajuan !== totalAmount && (
+          <div className="text-xs text-amber-600 mt-1">
+            Selisih dengan Total: Rp {Math.abs(totalAmount - pengajuan).toLocaleString("id-ID")}
+            {pengajuan > totalAmount ? " (pengajuan lebih besar)" : " (pengajuan lebih kecil)"}
+          </div>
+        )}
       </div>
 
       {/* Notes */}
