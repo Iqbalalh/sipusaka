@@ -244,9 +244,17 @@ export const TableMetrics = () => {
             <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/30">
               <FaChild className="text-white text-2xl" />
             </div>
-            <Badge color="warning" size="md">
-              {getCount(dashboardData?.children?.abk)} ABK
-            </Badge>
+            <div className="flex flex-col gap-2">
+              <Badge color="primary" size="md">
+                {getCount(dashboardData?.children?.total)} Total
+              </Badge>
+              <Badge color="error" size="md">
+                {getCount(dashboardData?.children?.inactive)} Non-aktif
+              </Badge>
+              <Badge color="warning" size="md">
+                {getCount(dashboardData?.children?.abk)} ABK
+              </Badge>
+            </div>
           </div>
 
           <div className="mt-5">
