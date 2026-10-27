@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
     path: "/",
   },
   {
-    name: "Keluarga Asuh",
+    name: "Keluarga",
     icon: <FaHouseChimney className="text-2xl" />,
     subItems: [
       { name: "Keluarga", path: "/family", pro: false },
@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <FaChildReaching className="text-2xl" />,
-    name: "Anak Asuh",
+    name: "Anak",
     path: "/children",
   },
   {

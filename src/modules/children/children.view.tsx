@@ -128,7 +128,7 @@ export default function ChildrenView() {
       const res = await promoteChildToAlumni(Number(id));
       const json = await res.json();
       const newId = json?.data?.id;
-      messageApi.success({ content: "Anak asuh berhasil dijadikan alumni", key: "promote-alumni", duration: 2 });
+      messageApi.success({ content: "Anak berhasil dijadikan alumni", key: "promote-alumni", duration: 2 });
       if (newId) router.push(`/alumni/view/${newId}`);
       else router.push("/alumni");
     } catch (err) {
@@ -343,7 +343,7 @@ export default function ChildrenView() {
             {isAdmin && data?.isActive === false && (
               <Popconfirm
                 title="Jadikan alumni?"
-                description="Data anak asuh ini akan disalin menjadi data alumni baru."
+                description="Data anak ini akan disalin menjadi data alumni baru."
                 okText="Jadikan Alumni"
                 cancelText="Batal"
                 onConfirm={handlePromoteToAlumni}

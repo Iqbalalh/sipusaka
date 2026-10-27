@@ -348,12 +348,12 @@ export default function UmkmForm({ mode, umkmId }: UmkmFormProps) {
                 />
               </FormField>
 
-              <FormField label="Anak Asuh">
+              <FormField label="Anak">
                 <SelectInput
                   value={form.waliId}
                   onChange={(value) => handleFieldChange("waliId", value)}
                   options={walis}
-                  placeholder="Pilih anak asuh"
+                  placeholder="Pilih anak"
                 />
               </FormField>
 

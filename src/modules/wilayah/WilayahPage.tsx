@@ -223,13 +223,13 @@ function RegionDetailCard({ stat, eduData, eduLoading }: {
       {/* Overview row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard icon={<FaHouseChimney />} label="Keluarga" value={stat.familiesActive ?? stat.families} sub={`dari ${stat.families} total`} color="bg-blue-500" />
-        <StatCard icon={<FaChildReaching />} label="Anak Asuh Aktif" value={stat.children.active} color="bg-indigo-500" />
+        <StatCard icon={<FaChildReaching />} label="Anak Aktif" value={stat.children.active} color="bg-indigo-500" />
         <StatCard icon={<FaShop />} label="UMKM Aktif" value={stat.umkm.active} color="bg-orange-500" />
       </div>
 
       {/* Children breakdown — bar grid */}
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3 p-5">
-        <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-3">Rincian Anak Asuh</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-3">Rincian Anak</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
           {CHILDREN_BREAKDOWN.map((item) => {
             const count = children[item.key] ?? 0;

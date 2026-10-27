@@ -106,7 +106,7 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
       return fetchWithAuth(url, { method, body: fd });
     },
     (data) => {
-      const message = mode === "edit" ? "Data anak asuh berhasil diperbarui!" : "Anak asuh berhasil ditambahkan!";
+      const message = mode === "edit" ? "Data anak berhasil diperbarui!" : "Anak berhasil ditambahkan!";
       notifyFromResult(notify, { successMessage: message });
       const id = mode === "edit" ? childrenId : data?.data?.id;
       const redirect = searchParams.get('redirect');
@@ -201,7 +201,7 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
     );
   }
 
-  const pageTitle = mode === "edit" ? `Edit Anak Asuh: ${form.childrenName}` : "Tambah Data Anak Asuh";
+  const pageTitle = mode === "edit" ? `Edit Anak: ${form.childrenName}` : "Tambah Data Anak";
 
   return (
     <div className="pb-10">
@@ -209,7 +209,7 @@ export default function ChildrenForm({ mode, childrenId }: ChildrenFormProps) {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="space-y-6">
-          <ComponentCard title="Data Utama Anak Asuh">
+          <ComponentCard title="Data Utama Anak">
             <div className="space-y-5">
               <FormField label="Nama Anak" required>
                 <TextInput

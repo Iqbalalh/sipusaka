@@ -5,15 +5,15 @@ import FamilyTable from "@/modules/family/family.table";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Keluarga Asuh",
+  title: "Keluarga",
 };
 
 export default function FamilyTables() {
   return (
     <div>
-      <PageBreadcrumb pageTitle="Keluarga Asuh" />
+      <PageBreadcrumb pageTitle="Keluarga" />
       <div className="space-y-6">
-        <ComponentCard title="Data Keluarga Asuh" header={false}>
+        <ComponentCard title="Data Keluarga" header={false}>
           <Suspense>
             <FamilyTable />
           </Suspense>

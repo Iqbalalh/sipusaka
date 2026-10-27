@@ -327,7 +327,7 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
   // ==============================================
   // RENDER FORM
   // ==============================================
-  const pageTitle = mode === "edit" ? "Edit Data Keluarga Asuh" : "Tambah Data Keluarga Asuh";
+  const pageTitle = mode === "edit" ? "Edit Data Keluarga" : "Tambah Data Keluarga";
   const submitButtonText = mode === "edit" ? "Update Keluarga" : "Simpan Keluarga";
 
   return (
@@ -337,7 +337,7 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
 
       <div className="space-y-6">
         {/* HOME GROUP */}
-        <ComponentCard title="Keluarga Asuh">
+        <ComponentCard title="Keluarga">
           <div className="space-y-5">
             <FormField label="Wilayah" required>
               <SelectInput
@@ -462,7 +462,7 @@ export default function FamilyForm({ mode, familyId, homeData }: FamilyFormProps
         </ComponentCard>
 
         {/* CHILDREN GROUP */}
-        <ComponentCard title="Anak Asuh">
+        <ComponentCard title="Anak">
           <div className="space-y-4">
             <div className="flex gap-2">
               <Select

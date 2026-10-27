@@ -18,7 +18,7 @@ export const {
   remove: deleteAlumni,
 } = crudService<Alumni>(API_ALUMNI);
 
-/** Promote an (inactive) anak asuh into a new alumni record. */
+/** Promote an (inactive) anak into a new alumni record. */
 export const promoteChildToAlumni = async (childrenId: number | string) => {
   return await fetchWithAuth(`${API_ALUMNI}/from-children/${childrenId}`, {
     method: "POST",

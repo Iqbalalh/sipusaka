@@ -181,7 +181,7 @@ const exportChildrenToExcel = async (
     }
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Data Anak Asuh", {
+    const worksheet = workbook.addWorksheet("Data Anak", {
       views: [{ state: "frozen", ySplit: 1 }],
     });
     setProgress(40);
@@ -311,7 +311,7 @@ const exportChildrenToExcel = async (
       new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-      "data-anak-asuh.xlsx",
+      "data-anak.xlsx",
     );
     setProgress(100);
     setTimeout(() => {
@@ -448,7 +448,7 @@ export default function ChildrenTable() {
         setData(Array.isArray(res.data) ? res.data : []);
         setTotal(res.pagination?.total ?? 0);
       });
-      notifyFromResult(notify, { successMessage: "Anak asuh berhasil dihapus" });
+      notifyFromResult(notify, { successMessage: "Anak berhasil dihapus" });
     } catch (err) {
       notifyFromResult(notify, { error: err });
     } finally {
@@ -517,7 +517,7 @@ export default function ChildrenTable() {
         cancelText="Batal"
         onOk={handleDelete}
       >
-        <p>Apakah Anda yakin ingin menghapus data anak asuh ini?</p>
+        <p>Apakah Anda yakin ingin menghapus data anak ini?</p>
       </Modal>
 
       {/* EXPORT PROGRESS */}
